@@ -1,3 +1,7 @@
+# Nur Standard-Müll: regenerierbar / transient.
+# Alles andere (Engine-Code, Docs, Assets/Fixtures, Outputs) wird committed —
+# private enterprise git.
 node_modules/
 phase0/cache/
 *.log
+*.out

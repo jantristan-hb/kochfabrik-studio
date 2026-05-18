@@ -1,0 +1,9 @@
+{
+  "1": [
+    {
+      "match": { "t": "rect", "fill": "1B0000", "nearX": 0.212, "nearY": 5.370 },
+      "set": { "x": 0.130, "y": 5.449, "w": 13.059, "h": 1.913 },
+      "note": "Cover-Banner: von Jan manuell perfekt hinter den Text gesetzt (2026-05-18)"
+    }
+  ]
+}
