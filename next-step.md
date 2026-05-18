@@ -3,45 +3,95 @@
 > Stand 2026-05-18. Engine (faithful PDF→editierbares PPTX) = **Sprint 1
 > integriert** (`main`). Phase D = die Generierungs-Brücke.
 
-## ⏯️ Resume — exakter Arbeitsstand (2026-05-18, Cold-Start lesen!)
+## ⏯️ Resume — exakter Arbeitsstand (2026-05-18, Cold-Start ZUERST lesen)
 
-**Branch `phase-d-01-composition-ingest`** (off `main`), teils gepusht.
-**Uncommittet/zu verifizieren** (Stand Session-Ende):
-- `phase0/sql/schema.sql` — neu: **zwei Tabellen** `menu_composition` +
-  `info_slide` + `image(slide_kind,slide_id)` + `src_pdf`. (Postgres
-  `pptxgen-pg`, Port 5434, db `pptxgen` läuft.)
-- `phase0/scripts/ingest_compositions.py` — Klassifikator auf **strukturell**
-  umgestellt (`classify()`), aber main()-Insert noch auf ALTE eine-Tabelle
-  → **muss auf menu/info+src_pdf umgebaut werden** bevor Reingest.
-- `phase0/scripts/build_menu_deck.py` — Proof „N reine Menüs".
-- `phase0/scripts/compose_demo.py` — Composer-Kern (hand-gefüttert).
-- `phase0/scripts/_deckpipe.py` — **NEU**: volle Per-Deck-Pipeline inkl.
-  Logo-Transparenz + Gold-Logo, deck-genamespaced. **build_menu_deck.py &
-  compose_demo.py müssen darauf umgestellt werden** (sie skippen aktuell
-  die Logo-Schritte → Logo-Regression, von Jan moniert).
-- `phase0/spike-pptxgenjs/extract.py` — **Off-Page-Filter eingebaut**
-  (`onpage()` droppt Elemente komplett außerhalb der Mediabox → killt
-  „MIT ZWEITER ZEILE IN GOLD"). **Verify offen:** Bechtle weiter 8 Slides
-  faithful + Stray-Text weg.
+### Repo / Doku-Querverweise (alles hier verlinkt)
+- Projekt: `~/work/03 AKARA Solutions GmbH/kochfabrik/pptxgenerator_v2`,
+  GitHub `jantristan-hb/pptxgenerator_v2` (privat).
+- `main` = **Sprint 1 integriert** (Engine fertig). Phase-D-WIP auf Branch
+  **`phase-d-01-composition-ingest`** (committed+gepusht, Commit `853edf4`):
+  `git checkout phase-d-01-composition-ingest`.
+- Engine-Doku: `README.md`. Herleitung/Holzwege/pdfminer-Fallen:
+  `~/work/Projects/claude-pptx/pptxGenJS/PDF-zu-PPTX Rekonstruktion — Learnings.md`.
+  Memory-Index: `project_pptxgenerator_v2_spike.md`. Sprint-1:
+  `docs/sprint-1/`, `PROGRESS.md`, `CLAUDE.md`.
 
-**Empirisches Ergebnis (wichtig):** Struktur-Klassifikator getestet via
-`build_menu_deck.py 30` → **zu lose**: echte Speisen-Menüs erkannt (gut),
-aber False Positives: Crew-/Intro-Slide, Foto-Galerie, Getränke-Slides
-(strukturell identisch zu Speisen-Menüs). → **Gemini-Ground-Truth-Check
-ist zwingend** (nicht optional) zum Kalibrieren/Verschärfen, BEVOR Korpus
-in die DB. Getränke evtl. eigene Rolle.
+### Daten / Infra
+- Korpus (199 Präsentations-PDFs): `~/Nextcloud/Kochfabrik Dokumente/
+  AKARA_Präsentationen/` (`Angebot #*` = A4-Text-Angebote, NICHT Menü-Korpus
+  — aber das sind die **BANKETTprofi-Input-Beispiele**).
+- Muster-Angebote (Input-Hälfte): `~/Nextcloud/Kochfabrik Dokumente/
+  AKARA_Muster_Angebote/` (z.B. Risk_Ident, 4D-v20-Producer, gelabelter
+  key:value-Textlayer).
+- Postgres clean-room: Container **`pptxgen-pg`** (pgvector-Image, Port
+  5434, db `pptxgen`, pw `pptxgen`). Falls aus: `podman start pptxgen-pg`.
+  Schema: `phase0/sql/schema.sql` (zwei Tabellen `menu_composition` +
+  `info_slide` + `image(slide_kind,slide_id)` + `src_pdf`).
+- Tools: python3+pdfminer.six+Pillow+psycopg2, node+pptxgenjs
+  (`spike-pptxgenjs/node_modules`, sonst `npm i`), poppler
+  (pdftohtml/pdfimages/pdftoppm/pdfinfo), libreoffice. Open Sans systemweit
+  installiert; **Wingdings fehlt** (Icon-Glyphs offen).
 
-**Nächste konkrete Aktion (Resume hier):**
-1. extract.py-Off-Page-Fix verifizieren (`convert.py assets/ref.pdf` →
-   8 Slides, kein „ZWEITER ZEILE"), committen+pushen.
-2. build_menu_deck.py + compose_demo.py auf `_deckpipe.process_deck`
-   umstellen (Logo-Transparenz zurück), gemergte `logos.json` schreiben.
-3. Gemini-Validierungs-Skript: ~25 Decks Slide-Render → „Speisen-Menü?
-   Rolle?" → Accuracy/Confusion vs. `classify()` → `classify()` schärfen.
-4. ingest_compositions.py main() auf menu/info-Tabellen + src_pdf umbauen,
-   Stichprobe → erst dann Korpus.
+### Skript-Inventar (alle in `phase0/`)
+| Datei | Zweck | Run |
+|---|---|---|
+| `spike-pptxgenjs/convert.py` | PDF→editierbares PPTX (volle Pipeline) | `convert.py <pdf> [out] / --batch DIR` |
+| `spike-pptxgenjs/extract.py` | pdfminer→elements.json (+onpage-Filter) | `extract.py <pdf> [out.json]` |
+| `spike-pptxgenjs/reconstruct.js` | elements.json→pptx | `node reconstruct.js <el.json> <out>` |
+| `spike-pptxgenjs/readback_overrides.py` | Hand-Korrektur→overrides.json | `<pptx> <deck>` |
+| `scripts/_deckpipe.py` | volle Per-Deck-Pipeline, deck-namespaced (Logo!) | import |
+| `scripts/build_menu_deck.py` | EINE pptx aller Menü-Kandidaten (Kuratierung) | `build_menu_deck.py [out]` |
+| `scripts/ingest_compositions.py` | classify() + (TODO) DB-Ingest | `--n N / --all` |
+| `scripts/compose_demo.py` | Composer-Kern (hand-gefüttert) | `<out> "<pdf>::page" …` |
+| `scripts/phase_b_gate.py` | Engine-Mess-Gate | `--n 25` |
 
-**Verify-Befehle:** je Skript Header. DB: `PGPASSWORD=pptxgen psql -h
+### Status der Bausteine
+- **Engine**: fertig, integriert, generalisiert (Sprint 1 + Phase-B 25/25).
+- **Off-Page-Filter** (`extract.py onpage()`): committed, **verifiziert
+  faithful** (Bechtle byte-identisch, „MIT ZWEITER ZEILE IN GOLD" weg).
+- **`_deckpipe.py`**: behebt Logo-Regression (Demos/Composer müssen die
+  volle Pipeline inkl. `extract_logos`+`apply_official_logo` fahren —
+  bloßes pdftohtml+extract → opakes Logo). `build_menu_deck.py` nutzt es.
+- **Klassifikator `classify()`**: strukturell, title-unabhängig. Empirisch
+  **bewusst zu lose** (False Positives: Crew/Intro, Foto-Galerie, Getränke
+  — strukturell wie Speisen-Menüs). Das ist OK für den gewählten Weg ↓.
+- **`ingest_compositions.py main()`**: Insert noch ALTes Single-Table —
+  **TODO**: auf curation-basierte Labels umbauen (s.u.), nicht auf
+  classify() allein.
+
+### Gewählter Ground-Truth-Weg (Jans Entscheidung — wichtig!)
+Statt Klassifikator-Perfektion: **EINE pptx mit allen Menü-Kandidaten aus
+allen 199 PDFs** → Jan löscht Falsch-Slides von Hand → die übrig
+bleibenden Slides = Menü-Ground-Truth. classify() ist nur ein Wegwerf-
+Vorfilter (inklusiv, lieber zu viel). Gemini-Check optional/sekundär,
+nicht mehr zwingend.
+
+### 🟡 LÄUFT beim Session-Ende
+`build_menu_deck.py /tmp/all_menus.pptx` als Hintergrund-Job über alle
+199 PDFs. Output: `/tmp/all_menus.pptx`, Log: `/tmp/allmenus.log`.
+Nach Fertigstellung: Jan kuratiert (Falsch-Slides löschen).
+
+### ‼️ KRITISCHE LÜCKE — vor DB-Ingest schließen
+`build_menu_deck.py` schreibt **kein Manifest** `slide_no → (deck,page)`.
+Ohne das kann die kuratierte pptx NICHT auf Quell-(Deck,Seite)
+zurückgemappt werden → menu_composition nicht befüllbar.
+**Nächste Aktion #1:** build_menu_deck.py um ein `manifest.json`
+(`{slide_no:{deck,page,src_pdf}}`) erweitern, Deck NEU bauen (oder Mapping
+nachträglich aus Reihenfolge rekonstruieren, falls Jan vorher kuratiert
+hat). Dann: kuratierte pptx → überlebende slide_no → manifest → diese
+(deck,page) als `menu_composition`, Rest als `info_slide` ingesten.
+
+### Nächste konkrete Aktionen (Resume-Reihenfolge)
+1. **Manifest in build_menu_deck.py** (s.o.) — Blocker für alles Weitere.
+2. all_menus.pptx fertig? → Jan kuratieren lassen → curate-Mapping.
+3. `ingest_compositions.py main()` auf curation-Labels + menu/info +
+   src_pdf umbauen → Stichprobe → ganzer Korpus.
+4. Composer-Kern (compose_demo.py generalisieren): menu_composition nach
+   Form matchen → Foto-SET + Text → reconstruct → editierbar.
+5. Input-Adapter: Angebot/Prompt → `model.json`.
+6. Phase-C-Reste (s.u.) bei Gelegenheit.
+
+**Verify-Befehle:** je Skript-Header. DB: `PGPASSWORD=pptxgen psql -h
 localhost -p 5434 -U postgres -d pptxgen`. Engine: `cd
 phase0/spike-pptxgenjs && python3 convert.py <pdf> out.pptx`.
 
