@@ -9,12 +9,19 @@ const { emitText } = require("./lib/text");
 const { isFrame, bleed, backedBy } = require("./lib/frame");
 // lib/gutter.js bewusst NICHT eingebunden: Original ist links eng -> 1:1
 
-const PAGE_W = 960, PAGE_H = 540, U = 72;
+// Usage: reconstruct.js [elements.json] [out.pptx]
+const EL_PATH = process.argv[2] || "elements.json";
+const OUT_PATH = process.argv[3] || "reconstructed.pptx";
+const U = 72;
+const raw = JSON.parse(fs.readFileSync(EL_PATH, "utf8"));
+const meta = raw._meta || { w_pt: 960, h_pt: 540 };   // Seitenmaß aus PDF
+const el = Object.fromEntries(
+  Object.entries(raw).filter(([k]) => k !== "_meta"));
+const PAGE_W = meta.w_pt, PAGE_H = meta.h_pt;
 const SW = PAGE_W / U, SH = PAGE_H / U;
-const el = JSON.parse(fs.readFileSync("elements.json", "utf8"));
 
 const pres = new pptxgen();
-pres.defineLayout({ name: "KF", width: PAGE_W / U, height: PAGE_H / U });
+pres.defineLayout({ name: "KF", width: SW, height: SH });
 pres.layout = "KF";
 
 let R = 0, I = 0, T = 0;
@@ -69,5 +76,5 @@ for (const pno of Object.keys(el).sort((a, b) => +a - +b)) {
   }
 }
 
-pres.writeFile({ fileName: "reconstructed.pptx" }).then(() =>
-  console.log(`OK: ${Object.keys(el).length} Slides | ${R} Rects, ${I} Bilder, ${T} Texte — Reihenfolge 1:1, alle editierbar`));
+pres.writeFile({ fileName: OUT_PATH }).then(() =>
+  console.log(`OK: ${Object.keys(el).length} Slides @ ${PAGE_W}x${PAGE_H}pt | ${R} Rects, ${I} Bilder, ${T} Texte → ${OUT_PATH}`));
