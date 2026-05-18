@@ -1,12 +1,18 @@
--- pptxgenerator_v2 — Kompositions-Korpus (clean-room, eigene DB)
--- Eine "composition" = das vom Menschen kuratierte Foto-SET einer Slide
--- + deren Gericht-Text. Wiederverwendungs-Einheit (Harmonie geschenkt).
--- pgvector-Image vorhanden; Embedding-Spalte kommt erst wenn semantischer
--- Teil-Tausch nachweislich nötig ist (nicht jetzt).
+-- pptxgenerator_v2 — Korpus, getrennt nach Slide-Rolle.
+-- menu_composition = dedizierte Speisen-/Menü-Slides (Composer-Quelle für
+--   Gericht/Grill-Matching; das kuratierte Foto-SET = Harmonie geschenkt).
+-- info_slide       = Cover/Über-uns/Team/Kontakt/Agenda/Ausstattung etc.
+-- src_pdf: Provenienz, damit der Composer das Deck re-extrahieren kann.
 
-CREATE TABLE IF NOT EXISTS composition (
+DROP TABLE IF EXISTS image CASCADE;
+DROP TABLE IF EXISTS composition CASCADE;
+DROP TABLE IF EXISTS menu_composition CASCADE;
+DROP TABLE IF EXISTS info_slide CASCADE;
+
+CREATE TABLE menu_composition (
   id        SERIAL PRIMARY KEY,
   deck      TEXT NOT NULL,
+  src_pdf   TEXT NOT NULL,
   page      INT  NOT NULL,
   n_photos  INT  NOT NULL,
   dishes    TEXT[] NOT NULL DEFAULT '{}',
@@ -14,13 +20,26 @@ CREATE TABLE IF NOT EXISTS composition (
   UNIQUE (deck, page)
 );
 
-CREATE TABLE IF NOT EXISTS image (
-  id       SERIAL PRIMARY KEY,
-  comp_id  INT REFERENCES composition(id) ON DELETE CASCADE,
-  file     TEXT NOT NULL,        -- Basename des pdftohtml-Fotos
-  x REAL, y REAL, w REAL, h REAL -- Zoll, Position im Set (Layout-Signatur)
+CREATE TABLE info_slide (
+  id        SERIAL PRIMARY KEY,
+  deck      TEXT NOT NULL,
+  src_pdf   TEXT NOT NULL,
+  page      INT  NOT NULL,
+  n_photos  INT  NOT NULL,
+  role_hint TEXT,                 -- cover / ueber-uns / kontakt / agenda / ?
+  texts     TEXT[] NOT NULL DEFAULT '{}',
+  created   TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (deck, page)
+);
+
+CREATE TABLE image (
+  id         SERIAL PRIMARY KEY,
+  slide_kind TEXT NOT NULL,       -- 'menu' | 'info'
+  slide_id   INT  NOT NULL,
+  file       TEXT NOT NULL,
+  x REAL, y REAL, w REAL, h REAL
   -- später: embedding vector(N)  -- pgvector, nur bei Bedarf
 );
 
-CREATE INDEX IF NOT EXISTS image_comp_idx ON image(comp_id);
-CREATE INDEX IF NOT EXISTS comp_nphotos_idx ON composition(n_photos);
+CREATE INDEX image_slide_idx  ON image(slide_kind, slide_id);
+CREATE INDEX menu_nphotos_idx ON menu_composition(n_photos);

@@ -87,7 +87,15 @@ for pi, page in enumerate(pages):
     seq = []
     img_k = 0
     ph = page.height                       # Seitenhöhe je Seite (y-Flip)
+    pw = page.width
     srcs = srcs_by_page[pi] if pi < len(srcs_by_page) else []
+
+    def onpage(e):
+        # Pasteboard/Master-Hilfstext (z.B. "MIT ZWEITER ZEILE IN GOLD")
+        # liegt KOMPLETT außerhalb der Seiten-Mediabox -> im PDF geclippt,
+        # PPTX clippt nicht -> nie mitgenerieren. Kein 1:1-Verstoß.
+        x0, y0, x1, y1 = e.bbox
+        return not (x1 <= 0 or x0 >= pw or y1 <= 0 or y0 >= ph)
 
     def walk(obj):
         global img_k
@@ -96,12 +104,12 @@ for pi, page in enumerate(pages):
                 f = hexc(getattr(e, "non_stroking_color", None))
                 b = box(e, ph)
                 # nur Sub-2px-Hairlines raus; dünne Seitenränder behalten
-                if f and b["w"] >= 0.03 and b["h"] >= 0.03:
+                if f and b["w"] >= 0.03 and b["h"] >= 0.03 and onpage(e):
                     seq.append({"t": "rect", "fill": f, **b})
             elif isinstance(e, LTImage):
                 src = srcs[img_k] if img_k < len(srcs) else None
                 img_k += 1
-                if src:
+                if src and onpage(e):
                     seq.append({"t": "image", "src": src, **box(e, ph)})
             elif isinstance(e, LTFigure):
                 walk(e)
@@ -125,7 +133,7 @@ for pi, page in enumerate(pages):
                         "weight": wt.replace("Italic", "") or "Regular",
                         "italic": "Italic" in wt,
                     })
-                if lines:
+                if lines and onpage(e):
                     seq.append({"t": "text", **box(e, ph), "lines": lines})
             elif isinstance(e, LTTextContainer):
                 walk(e)

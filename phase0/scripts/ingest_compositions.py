@@ -28,6 +28,41 @@ DSN = dict(host="localhost", port=5434, user="postgres",
            password="pptxgen", dbname="pptxgen")
 
 
+# Wegwerf-Struktur-Klassifikator: titel-UNABHÄNGIG, nur Struktur.
+# Stärkstes Signal in echten KF-Decks: '|'-getrennte Zutatenzeilen +
+# Mehr-Foto-Grid. Wird gegen Gemini ground-truth-validiert (validate_*).
+ROLE_HINT_RX = [
+    ("ueber-uns", r"über uns|wer wir sind|leidenschaft|philosophie"),
+    ("team", r"unser team|küchencrew|kochteam"),
+    ("kontakt", r"kontakt|ansprechpartner|wir freuen uns|@|telefon"),
+    ("agenda", r"vereinbarung|ablauf|timing"),
+    ("ausstattung", r"ausstattung|gästemobiliar|location|räumlichkeit"),
+]
+
+
+def classify(page_no, lines, n_photos):
+    """(kind, role_hint) rein strukturell. lines = [{'txt','size'}...]."""
+    if page_no == 1:
+        return "info", "cover"
+    txts = [l["txt"].strip() for l in lines if l["txt"].strip()]
+    sizes = [l.get("size", 12) for l in lines]
+    n = len(txts)
+    max_sz = max(sizes) if sizes else 12
+    n_pipe = sum(1 for t in txts if "|" in t)          # KF-Zutatenlisten
+    n_small = sum(1 for s in sizes if s <= 16)         # Dish/Ingredient-Zeilen
+    title_only = n <= 3 and max_sz > 30                # Cover/Sektionstitel
+
+    is_menu = (n_photos >= 2 and (n_pipe >= 1 or n_small >= 4)
+               and not title_only)
+    if is_menu:
+        return "menu", None
+    joined = " ".join(txts).lower()
+    for role, rx in ROLE_HINT_RX:
+        if re.search(rx, joined, re.I):
+            return "info", role
+    return "info", "cover" if title_only else "sonst"
+
+
 def is_content_photo(im, W, H):
     """Food-Foto-Set-Member: groß genug, nicht Furniture, nicht Voll-BG."""
     w, h = im["w"], im["h"]
