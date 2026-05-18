@@ -8,3 +8,4 @@ phase0/cache/
 convert-report.json
 __pycache__/
 *.pyc
+phase0/data/

@@ -28,11 +28,14 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _deckpipe import slugify, process_deck                       # noqa
 
 CORPUS_DIR = "/home/jrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Präsentationen"
-CURATED = "/tmp/all_menus.pptx"
-SLIDES_JSON = "/tmp/all_menus.slides.json"
-SPIKE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                     "spike-pptxgenjs")
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA = os.path.join(_ROOT, "data")                 # persistent, raus aus /tmp
+CURATED = os.path.join(DATA, "all_menus.pptx")
+SLIDES_JSON = os.path.join(DATA, "all_menus.slides.json")
+SPIKE = os.path.join(_ROOT, "spike-pptxgenjs")
 MODEL, DIM, TASK = "gemini-embedding-001", 768, "SEMANTIC_SIMILARITY"
+DSN = dict(host="localhost", port=5434, user="postgres",
+           password="pptxgen", dbname="pptxgen")
 
 FOOTER = re.compile(r"(KOCHfabrik|Kochfabrik|koch-fabrik|Prisdorf|Pinneberg|"
                     r"BIC:|DE\d|HRB|Steuernummer|Gerichtsstand|www\.|@|"
@@ -171,17 +174,30 @@ def cos_topk(q, M, k):
 
 
 def cmd_match(pdf, k, offer=""):
+    """Produktiv: nur die Angebot-Gänge live embedden, Korpus-Treffer
+    via pgvector-ANN (menu_composition.embedding, cosine). Kein
+    Live-Re-Embed der 1010 mehr."""
+    import psycopg2
     courses = parse_offer(pdf, offer)
-    rows = load_corpus()
-    print(f"Angebot: {len(courses)} Speisen-Gänge | Korpus: {len(rows)} Slides")
+    cx = psycopg2.connect(**DSN)
+    cu = cx.cursor()
+    cu.execute("SELECT count(*) FROM menu_composition "
+               "WHERE embedding IS NOT NULL")
+    n = cu.fetchone()[0]
+    print(f"Angebot: {len(courses)} Speisen-Gänge | "
+          f"Korpus (pgvector): {n} Slides")
     ce = embed([f"{c} — {b}" for c, b in courses])
-    me = embed([f"{r['headline']} — {r['body']}" for r in rows])
     for (c, b), qv in zip(courses, ce):
+        q = "[" + ",".join(f"{x:.6f}" for x in qv) + "]"
+        cu.execute(
+            "SELECT deck,page,headline,body,module_label,"
+            "1-(embedding<=>%s::vector) sim FROM menu_composition "
+            "ORDER BY embedding<=>%s::vector LIMIT %s", (q, q, k))
         print(f"\n### {c}  ({b[:70]}…)")
-        for i, sc in cos_topk(qv, me, k):
-            r = rows[i]
-            print(f"  {sc:.3f}  {r['deck']}::{r['page']:>2}  "
-                  f"{r['headline'][:30]:30}  | {r['body'][:54]}")
+        for deck, pg, hl, bd, lab, sim in cu.fetchall():
+            print(f"  {sim:.3f}  {deck[:26]}::{pg:>2}  "
+                  f"[{(lab or '')[:16]:16}] {hl[:24]:24} | {bd[:42]}")
+    cx.close()
 
 
 def cmd_build(pdf, picks, out):
