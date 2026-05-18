@@ -21,6 +21,10 @@ import re
 import sys
 
 from pptx import Presentation
+from pptx.oxml.ns import qn
+
+SLIDE_RT = ("http://schemas.openxmlformats.org/officeDocument/2006/"
+            "relationships/slide")
 
 
 def norm(s):
@@ -80,6 +84,11 @@ def main():
                 to_del.append((i, f"block:{b[:40]}"))
                 break
 
+    # Alt-Waisen aus früheren ungehärteten Läufen (slide-Rel ohne sldId).
+    live = {s.get(qn("r:id")) for s in prs.slides._sldIdLst}
+    orphans = sum(1 for r in prs.part.rels.values()
+                  if r.reltype == SLIDE_RT and r.rId not in live)
+
     print(f"Slides gesamt: {total}")
     print(f"Treffer: {len(to_del)}  →  bleiben: {total - len(to_del)}")
     for b in blocks:
@@ -90,19 +99,37 @@ def main():
     if to_del[:8]:
         ex = ", ".join(f"S{n}" for n, _ in to_del[:8])
         print(f"  Beispiele: {ex}{' …' if len(to_del) > 8 else ''}")
+    if orphans:
+        print(f"  Alt-Waisen-Parts zum Kompaktieren: {orphans}")
 
     if a.dry:
         print("\n[dry] nichts geschrieben.")
         return
-    if not to_del:
-        print("\nNichts zu löschen.")
+    if not to_del and not orphans:
+        print("\nNichts zu tun (keine Treffer, keine Waisen).")
         return
 
-    # Löschen über sldIdLst (Notizen behaltener Slides bleiben unberührt).
+    # Löschen: sldId raus UND die presentation→slide-Relation droppen, sonst
+    # bleibt das Slide-Part als unerreichbare Waise im Paket (Bloat +
+    # Duplicate-Name-Warnungen, kumuliert über Iterationen).
     lst = prs.slides._sldIdLst
-    ids = list(lst)
+    sld_ids = list(lst)
     for i, _ in sorted(to_del, reverse=True):
-        lst.remove(ids[i - 1])
+        sid = sld_ids[i - 1]
+        rid = sid.get(qn("r:id"))
+        lst.remove(sid)
+        try:
+            prs.part.drop_rel(rid)
+        except (KeyError, ValueError):
+            pass
+
+    # Kompaktierung: jede slide-Relation ohne sldId-Eintrag wegwerfen —
+    # räumt auch Alt-Waisen aus früheren (ungehärteten) Läufen ab. Notes-
+    # Parts hängen am Slide-Part → werden automatisch mit unerreichbar.
+    keep = {s.get(qn("r:id")) for s in lst}
+    for rel in list(prs.part.rels.values()):
+        if rel.reltype == SLIDE_RT and rel.rId not in keep:
+            prs.part.drop_rel(rel.rId)
 
     out = a.out or a.inp
     tmp = out + ".tmp"
