@@ -67,14 +67,44 @@ def convert(pdf, out_pptx, keep=False):
             shutil.rmtree(work, ignore_errors=True)
 
 
+def run_batch(in_dir, out_dir, keep):
+    import glob
+    pdfs = sorted(glob.glob(os.path.join(in_dir, "*.pdf")))
+    if not pdfs:
+        sys.exit(f"Keine *.pdf in {in_dir}")
+    os.makedirs(out_dir, exist_ok=True)
+    ok, fail = [], []
+    for n, pdf in enumerate(pdfs, 1):
+        name = os.path.splitext(os.path.basename(pdf))[0]
+        out = os.path.join(out_dir, name + ".pptx")
+        print(f"[{n}/{len(pdfs)}] {os.path.basename(pdf)} ...",
+              file=sys.stderr)
+        try:
+            convert(pdf, out, keep=keep)
+            ok.append(name)
+        except Exception as ex:
+            fail.append((name, str(ex).splitlines()[-1][:160]))
+    print(f"\n=== Batch: {len(ok)} OK, {len(fail)} Fehler ===")
+    for name, err in fail:
+        print(f"  FEHLER {name}: {err}")
+    sys.exit(1 if fail else 0)
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("pdf", help="Input-PDF")
+    ap.add_argument("pdf", nargs="?", default=None, help="Input-PDF")
     ap.add_argument("out", nargs="?", default=None,
                     help="Output-PPTX (default: <pdf>.pptx)")
+    ap.add_argument("--batch", metavar="DIR",
+                    help="alle *.pdf in DIR konvertieren")
+    ap.add_argument("--out", dest="out_dir", metavar="DIR", default="out",
+                    help="Batch-Output-Verzeichnis (default: out/)")
     ap.add_argument("--keep", action="store_true",
                     help="Work-Dir nicht löschen")
     a = ap.parse_args()
+    if a.batch:
+        run_batch(a.batch, a.out_dir, a.keep)
+    if not a.pdf:
+        ap.error("Input-PDF fehlt (oder --batch DIR nutzen)")
     out = a.out or (os.path.splitext(a.pdf)[0] + ".pptx")
-    result = convert(a.pdf, out, keep=a.keep)
-    print(f"OK: {result}")
+    print(f"OK: {convert(a.pdf, out, keep=a.keep)}")
