@@ -41,6 +41,10 @@
 | `spike-pptxgenjs/readback_overrides.py` | Hand-Korrektur→overrides.json | `<pptx> <deck>` |
 | `scripts/_deckpipe.py` | volle Per-Deck-Pipeline, deck-namespaced (Logo!) | import |
 | `scripts/build_menu_deck.py` | EINE pptx aller Menü-Kandidaten (Kuratierung) | `build_menu_deck.py [out]` |
+| `scripts/curate.py` | regelbasiert Slides löschen (Headline-Block/`--drop`), notiz-erhaltend+gehärtet | `curate.py <pptx> --block "..." [--dry]` |
+| `scripts/slide_text.py` | pro Slide deck/page/headline/body→JSON | `slide_text.py <pptx> [out.json]` |
+| `scripts/embed_cluster.py` | Gemini-Embed (headline-only,gecacht)+Cluster→tags.json | `embed_cluster.py embed\|cluster <slides.json> [--th]` |
+| `scripts/resort_pptx.py` | pptx nach Cluster umsortieren (gehärteter Save) | `resort_pptx.py <pptx>` |
 | `scripts/ingest_compositions.py` | classify() + (TODO) DB-Ingest | `--n N / --all` |
 | `scripts/compose_demo.py` | Composer-Kern (hand-gefüttert) | `<out> "<pdf>::page" …` |
 | `scripts/phase_b_gate.py` | Engine-Mess-Gate | `--n 25` |
@@ -75,33 +79,55 @@ Slides sind **ähnlichkeits-sortiert** (Struktur-Signatur: #Fotos +
 Foto-Grid + Textblöcke) → gleiche Archetypen am Stück → Block-Löschen.
 Smoke (5 Decks) verifiziert: Manifest+Notizen+Sort ok.
 
-### 🟡 LÄUFT beim Session-Ende
-`build_menu_deck.py /tmp/all_menus.pptx` Vollauf über alle 199 PDFs
-(Hintergrund). Output: `/tmp/all_menus.pptx` + `.manifest.json`,
-Log: `/tmp/allmenus2.log`. (Voriger Lauf ohne Manifest: 1546 Slides /
-394 MB / 171 Decks — Größenordnung erwartbar.)
+### ✅ Vollauf fertig + kuratiert + cluster-sortiert (2026-05-18 spät)
+`build_menu_deck.py` Vollauf: **1546 Kandidaten / 171 Decks / 0 Fehler**.
+Dann `curate.py` (Headline-Blockliste, notiz-erhaltend, gehärtet —
+droppt Slide-Part-Rel + kompaktiert Alt-Waisen):
+- Runde 1: `WERTSCHÄTZUNG IST DER SCHLÜSSEL`+`PERSONAL` → 1546→1238
+- Runde 2: `CREW`+`IM NORDEN`+`IN THE NORTH`+`STATTUNG` → 1238→**1050**
+(Logistik/Personal/Crew/Equipment raus — Jans Keep-Scope: **Essen +
+Getränke + Mahlzeiten behalten**, nur Logistik/Deko/Personal löschen.
+Getränke-Slides bleiben! SOFTES&HOPFIGES NICHT gelöscht.)
+Backup: `/tmp/all_menus_1050_<ts>.pptx` (+manifest).
 
-### Curation→DB Rückmapping (Rezept)
-Nach Jans Kuratierung (Falsch-Slides gelöscht):
+**Tagging = Embedding-Cluster (Jans Wahl, nicht classify/Fold-Map):**
+`slide_text.py`→`embed_cluster.py`→`resort_pptx.py`. Gemini
+`gemini-embedding-001`, **headline-only** (Body fragmentiert gleichen
+Modultyp!), taskType SEMANTIC_SIMILARITY, dim 768, gecacht in
+`/tmp/all_menus.slides.json.emb.npz`. mean-zentrieren+L2 →
+AgglomerativeClustering(cosine, average), **th=0.12**: wiederkehrende
+Module je 1 Cluster (SWEET DREAMS 115, SOFTES&HOPFIGES 98, WINE TIME 94,
+SO EMPFANGEN 71, BIG BBQ 47, LIVE COOKING 41, …), 323 Cluster, 226
+Singletons (= individuelle Event-Menüs). `/tmp/all_menus.tags.json`
+(no,deck,page,headline,cluster). pptx in-place nach Cluster umsortiert
+(247 MB), 1050 Notizen erhalten, in Impress offen.
+
+### Curation→DB Rückmapping (Rezept, unverändert gültig)
+Nach finaler Kuratierung (Cluster-weise Falsch-Slides gelöscht):
 ```python
 from pptx import Presentation
 keep = {s.notes_slide.notes_text_frame.text.strip()
         for s in Presentation("all_menus.pptx").slides
         if s.has_notes_slide}            # {"deck::page", ...}
 ```
-→ diese (deck,page) = `menu_composition`; alle anderen (deck,page) des
-Korpus = `info_slide`. Das ersetzt classify() als Ground-Truth.
+→ diese (deck,page) = `menu_composition` MIT Cluster als `module_type`
+(aus tags.json joinen); Rest des Korpus = `info_slide`.
 
 ### Nächste konkrete Aktionen (Resume-Reihenfolge)
-1. all_menus.pptx fertig (Log `/tmp/allmenus2.log`)? → Jan kuratieren
-   (Block-Löschen dank Sortierung) → kuratierte pptx zurück.
-2. `ingest_compositions.py main()` umbauen: Labels aus den **überlebenden
-   Slide-Notizen** (Rezept oben) statt classify(); zwei Tabellen
-   `menu_composition`/`info_slide` + `src_pdf`; Stichprobe → Korpus.
-3. Composer-Kern (compose_demo.py generalisieren): menu_composition nach
-   Form matchen → Foto-SET + Text → reconstruct → editierbar.
-4. Input-Adapter: Angebot/Prompt → `model.json`.
-5. Phase-C-Reste (s.u.) bei Gelegenheit.
+1. Jan kuratiert cluster-sortiertes Deck (ganze Cluster keep/drop, da
+   semantisch gruppiert). curate.py `--block`/`--drop` weiter nutzbar;
+   ggf. `--drop-cluster <id>` ergänzen (tags.json-aware).
+2. **Postgres/pgvector laden** (Container `pptxgen-pg` Up:5434): Tabelle
+   `slide_embed(slide_no,deck,page,headline,cluster,embedding vector(768))`
+   aus npz+tags.json. = die DB die Jan wollte; pgvector für späteres
+   Composition-Matching/teilweisen Foto-Swap.
+3. `ingest_compositions.py main()` umbauen: Labels aus überlebenden
+   Slide-Notizen (Rezept oben) + Cluster als module_type; Tabellen
+   `menu_composition`/`info_slide` + `src_pdf`.
+4. Composer-Kern (compose_demo.py generalisieren, auf `_deckpipe`):
+   menu_composition nach Cluster/Form matchen → Foto-SET → reconstruct.
+5. Input-Adapter: Angebot/Prompt → `model.json`.
+6. Phase-C-Reste (s.u.) bei Gelegenheit.
 
 **Verify-Befehle:** je Skript-Header. DB: `PGPASSWORD=pptxgen psql -h
 localhost -p 5434 -U postgres -d pptxgen`. Engine: `cd
