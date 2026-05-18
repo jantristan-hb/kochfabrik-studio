@@ -73,3 +73,34 @@ def process_deck(pdf, shared):
         return slug, el, logos
     finally:
         shutil.rmtree(iso, ignore_errors=True)
+
+
+CACHE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                     "data", "cache")
+
+
+def cached_deck(pdf, shared):
+    """Drop-in für process_deck mit persistentem Cache (phase0/data/cache/
+    <slug>/: elements.json + logos.json + assets/). Lazy: erster Zugriff
+    extrahiert + persistiert, danach reine Kopie (keine Extraktion).
+    Reproduziert das shared/<slug>/assets-Layout → reconstruct unverändert.
+    """
+    slug = slugify(pdf)
+    cdir = os.path.join(CACHE, slug)
+    el_p = os.path.join(cdir, "elements.json")
+    ass = os.path.join(cdir, "assets")
+    if os.path.isfile(el_p) and os.path.isdir(ass):
+        shutil.copytree(ass, os.path.join(shared, slug, "assets"))
+        el = json.load(open(el_p))
+        lp = os.path.join(cdir, "logos.json")
+        logos = json.load(open(lp)) if os.path.isfile(lp) else {}
+        return slug, el, logos
+    # Cache-Miss → extrahieren und persistieren
+    slug, el, logos = process_deck(pdf, shared)
+    os.makedirs(cdir, exist_ok=True)
+    src_ass = os.path.join(shared, slug, "assets")
+    if os.path.isdir(src_ass) and not os.path.isdir(ass):
+        shutil.copytree(src_ass, ass)
+    json.dump(el, open(el_p, "w"))
+    json.dump(logos, open(os.path.join(cdir, "logos.json"), "w"))
+    return slug, el, logos

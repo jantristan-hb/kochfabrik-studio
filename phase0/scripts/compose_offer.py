@@ -25,7 +25,7 @@ import tempfile
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _deckpipe import slugify, process_deck                       # noqa
+from _deckpipe import slugify, cached_deck                       # noqa
 
 CORPUS_DIR = "/home/jrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Präsentationen"
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -212,7 +212,7 @@ def cmd_build(pdf, picks, out):
         by_src.setdefault(r["src"], []).append(int(r["page"]))
     n = 0
     for src, pages in by_src.items():
-        slug, el, lg = process_deck(src, shared)
+        slug, el, lg = cached_deck(src, shared)
         logos.update(lg)
         if meta is None:
             meta = el.get("_meta", {"w_pt": 960, "h_pt": 540})
@@ -373,7 +373,7 @@ def cmd_swap(path, offer, picks, out):
         if not src:
             print(f"  warn: PDF für {slug} fehlt", file=sys.stderr)
             continue
-        _, el, lg = process_deck(src, shared)
+        _, el, lg = cached_deck(src, shared)
         logos.update(lg)
         if meta is None:
             meta = el.get("_meta", {"w_pt": 960, "h_pt": 540})
