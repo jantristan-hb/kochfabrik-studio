@@ -269,45 +269,73 @@ def parse_offer_dishes(path, offer=""):
     return out
 
 
+GOLD = "AA8339"
+
+
 def text_swap(seq, dishes):
-    """Kleine Gericht-Caption-Blöcke (< 0.6·max Schrift) durch die
-    Angebot-Gerichte ersetzen; Headline/große Titel/Fotos unangetastet.
-    Stil (Größe/Farbe/Gewicht) wird vom Original-Slot übernommen."""
-    texts = [e for e in seq if e["t"] == "text"
-             and any(l.get("txt", "").strip() for l in e.get("lines", []))]
+    """KF-Gericht-Captions sind separate Mini-Elemente: Bold-weiß = Name,
+    folgende Regular = Beschreibung, Bold-gold = Sektions-Header (bleibt).
+    In Lesereihenfolge (Spalten→y) zu (Name, [Desc])-Paaren gruppieren,
+    NUR den Text der bestehenden Elemente ersetzen — Bbox + jeweiliges
+    Eigen-Styling unangetastet → Position & Formatierung bleiben exakt."""
+    texts = [e for e in seq if e["t"] == "text" and e.get("lines")]
     if not texts:
         return seq
+    mx = max(max(l["size"] for l in e["lines"]) for e in texts)
 
-    def msz(e):
-        return max((l["size"] for l in e["lines"]), default=0)
+    def w0(e):
+        return str(e["lines"][0].get("weight", "")).lower()
 
-    mx = max(msz(e) for e in texts)
-    slots = [e for e in texts if msz(e) < 0.6 * mx]
-    slots.sort(key=lambda e: (round(e["y"], 2), round(e["x"], 2)))
-    if not slots:
-        return seq
+    def c0(e):
+        return e["lines"][0].get("color", "")
 
-    def st(line):
-        return {k: line[k] for k in ("size", "color", "weight", "italic")
-                if k in line}
+    def is_cap(e):                       # Menü-Größenbereich (nicht Headline)
+        return max(l["size"] for l in e["lines"]) < 0.5 * mx
+    def is_name(e):                      # Gericht-Name: Bold + weiß
+        return w0(e) in ("bold", "extrabold") and c0(e) != GOLD
+    def is_sect(e):                      # KF-Sektions-Header: Bold + gold
+        return w0(e) in ("bold", "extrabold") and c0(e) == GOLD
 
-    nm = st(slots[0]["lines"][0])
-    ds = st(slots[0]["lines"][-1])
-    for i, slot in enumerate(slots):
-        if i < len(dishes):
-            name, desc = dishes[i]
-            ln = [dict(nm, txt=name)]
-            if desc:
-                ln.append(dict(ds, txt=desc))
-            slot["lines"] = ln
+    cap = sorted((e for e in texts if is_cap(e)),
+                 key=lambda e: (round(e["x"] * 2) / 2, round(e["y"], 2)))
+    pairs, i = [], 0                     # [(name_elem, [desc_elems])]
+    while i < len(cap):
+        if is_name(cap[i]):
+            descs, j = [], i + 1
+            while j < len(cap) and not is_name(cap[j]) \
+                    and not is_sect(cap[j]):
+                descs.append(cap[j])
+                j += 1
+            pairs.append((cap[i], descs))
+            i = j
         else:
-            slot["lines"] = [dict(nm, txt="")]          # überzählig leeren
-    if len(dishes) > len(slots):                         # Rest anhängen
-        tail = slots[-1]["lines"]
-        for name, desc in dishes[len(slots):]:
-            tail.append(dict(nm, txt=name))
-            if desc:
-                tail.append(dict(ds, txt=desc))
+            i += 1
+
+    def put(elem, txt):                  # Eigen-Stil halten, 1 Zeile, nur txt
+        s = elem["lines"][0]
+        elem["lines"] = [{k: s[k] for k in
+                          ("size", "color", "weight", "italic")
+                          if k in s} | {"txt": txt}]
+
+    for k, (nm, descs) in enumerate(pairs):
+        if k < len(dishes):
+            name, desc = dishes[k]
+            put(nm, name)
+            if descs:
+                put(descs[0], desc)
+                for extra in descs[1:]:
+                    put(extra, "")
+        else:                            # überzählige Slots leeren
+            put(nm, "")
+            for d in descs:
+                put(d, "")
+    if len(dishes) > len(pairs) and pairs:   # Rest an letzte Desc hängen
+        nm, descs = pairs[-1]
+        tgt = descs[0] if descs else nm
+        rest = " • ".join(f"{n} ({d})" if d else n
+                          for n, d in dishes[len(pairs):])
+        tgt["lines"][0]["txt"] = (tgt["lines"][0]["txt"] + " • "
+                                  + rest).strip(" •")
     return seq
 
 
