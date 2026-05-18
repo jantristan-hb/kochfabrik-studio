@@ -1,3 +1,7 @@
+> ⚠️ **SUPERSEDED** durch `2026-05-18-pptxgenerator-v2-mvp-design.md`.
+> Die Recon hat die Divergenzfrage billiger beantwortet; dieser Vision-Batch-
+> Ansatz wurde verworfen. Nur als Historie aufbewahrt.
+
 # Phase 0 — Menü-Kompositions-Divergenz (Decision-Gate-Spike)
 
 **Datum:** 2026-05-18

@@ -19,18 +19,22 @@ from PIL import Image
 
 CORPUS = "/home/jrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Präsentationen"
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-EXTRACT = os.path.join(HERE, "cache", "extract3")
+EXTRACT = os.path.join(HERE, "cache", "extract50")
 MIN_BYTES = 8 * 1024
 FOOD_MIN_AREA = 500_000      # ~ >= 0.5 MP  (1920x1065 hero >> das)
 FOOD_MIN_DIM = 600           # kürzeste Kante
 FURNITURE_DECK_FRAC = 0.80   # in >=80% Decks => Template-Furniture
 
 
-def list_sample(n=30):
+def list_sample(n=50):
     out = subprocess.run(["bash", "-lc",
-        f'cd "{CORPUS}" && ls *.pdf | grep -v "^Angebot #" | awk "NR%6==1"'],
+        f'cd "{CORPUS}" && ls *.pdf | grep -v "^Angebot #"'],
         capture_output=True, text=True)
-    return [x for x in out.stdout.splitlines() if x][:n]
+    full = [x for x in out.stdout.splitlines() if x]
+    if len(full) <= n:
+        return full
+    step = len(full) / n
+    return [full[int(i * step)] for i in range(n)]
 
 
 def sha(path):
@@ -62,7 +66,7 @@ def page_of(fn):
     return int(m.group(1)) if m else -1
 
 
-SAMPLE = list_sample(30)
+SAMPLE = list_sample(50)
 print(f"Sample: {len(SAMPLE)} Decks\n")
 
 # 1) Extrahieren + klassifizieren
