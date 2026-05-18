@@ -4,7 +4,7 @@
 const fs = require("fs");
 const pptxgen = require("pptxgenjs");
 const { resolve } = require("./lib/logos");
-const { apply } = require("./lib/overrides");
+const { apply, setDeck } = require("./lib/overrides");
 const { emitText } = require("./lib/text");
 const { isFrame, bleed, backedBy } = require("./lib/frame");
 // lib/gutter.js bewusst NICHT eingebunden: Original ist links eng -> 1:1
@@ -19,6 +19,7 @@ const el = Object.fromEntries(
   Object.entries(raw).filter(([k]) => k !== "_meta"));
 const PAGE_W = meta.w_pt, PAGE_H = meta.h_pt;
 const SW = PAGE_W / U, SH = PAGE_H / U;
+setDeck(meta.deck);   // Deck-gekeyte Overrides aktivieren
 
 const pres = new pptxgen();
 pres.defineLayout({ name: "KF", width: SW, height: SH });

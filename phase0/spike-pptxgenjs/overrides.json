@@ -1,9 +1,55 @@
 {
-  "1": [
-    {
-      "match": { "t": "rect", "fill": "1B0000", "nearX": 0.212, "nearY": 5.370 },
-      "set": { "x": 0.130, "y": 5.449, "w": 13.059, "h": 1.913 },
-      "note": "Cover-Banner: von Jan manuell perfekt hinter den Text gesetzt (2026-05-18)"
-    }
-  ]
+  "ref": {
+    "1": [
+      {
+        "match": {
+          "t": "rect",
+          "fill": "1B0000",
+          "nearX": 0.212,
+          "nearY": 5.37
+        },
+        "set": {
+          "x": 0.13,
+          "y": 5.449,
+          "w": 13.059,
+          "h": 1.913
+        },
+        "note": "Cover-Banner: von Jan manuell perfekt hinter den Text gesetzt (2026-05-18)"
+      }
+    ]
+  },
+  "bechtle": {
+    "1": [
+      {
+        "match": {
+          "t": "rect",
+          "fill": "1B0000",
+          "nearX": 0.13,
+          "nearY": 5.449
+        },
+        "set": {
+          "x": 0.13,
+          "y": 5.449,
+          "w": 13.059,
+          "h": 1.913
+        }
+      }
+    ],
+    "8": [
+      {
+        "match": {
+          "t": "rect",
+          "fill": "AA8339",
+          "nearX": 0.22,
+          "nearY": 2.217
+        },
+        "set": {
+          "x": 0.22,
+          "y": 2.217,
+          "w": 12.893,
+          "h": 0.908
+        }
+      }
+    ]
+  }
 }

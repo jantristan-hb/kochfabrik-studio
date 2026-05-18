@@ -75,9 +75,13 @@ def first_char(o):
 
 
 pages = list(extract_pages(A.pdf))
-out = {"_meta": {"w_pt": round(pages[0].width, 2),
-                 "h_pt": round(pages[0].height, 2)} if pages
-       else {"w_pt": 960.0, "h_pt": 540.0}}
+deck = re.sub(r"[^a-z0-9]+", "-",
+              os.path.splitext(os.path.basename(A.pdf))[0].lower()).strip("-")
+out = {"_meta": {
+    "deck": deck or "deck",
+    "w_pt": round(pages[0].width, 2) if pages else 960.0,
+    "h_pt": round(pages[0].height, 2) if pages else 540.0,
+}}
 
 for pi, page in enumerate(pages):
     seq = []
