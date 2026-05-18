@@ -66,30 +66,42 @@ bleibenden Slides = Menü-Ground-Truth. classify() ist nur ein Wegwerf-
 Vorfilter (inklusiv, lieber zu viel). Gemini-Check optional/sekundär,
 nicht mehr zwingend.
 
-### 🟡 LÄUFT beim Session-Ende
-`build_menu_deck.py /tmp/all_menus.pptx` als Hintergrund-Job über alle
-199 PDFs. Output: `/tmp/all_menus.pptx`, Log: `/tmp/allmenus.log`.
-Nach Fertigstellung: Jan kuratiert (Falsch-Slides löschen).
+### ✅ Manifest-Lücke GESCHLOSSEN (Commit `7e5107b`)
+`build_menu_deck.py` schreibt jetzt `<out>.manifest.json`
+(`{slide_no:{deck,page,src_pdf}}`) UND jede Slide trägt eine unsichtbare
+Notiz `"<deck-slug>::<page>"` (via additivem `reconstruct.js`-Hook
+`meta.notes`). Notizen überstehen Löschen/Umsortieren in PowerPoint.
+Slides sind **ähnlichkeits-sortiert** (Struktur-Signatur: #Fotos +
+Foto-Grid + Textblöcke) → gleiche Archetypen am Stück → Block-Löschen.
+Smoke (5 Decks) verifiziert: Manifest+Notizen+Sort ok.
 
-### ‼️ KRITISCHE LÜCKE — vor DB-Ingest schließen
-`build_menu_deck.py` schreibt **kein Manifest** `slide_no → (deck,page)`.
-Ohne das kann die kuratierte pptx NICHT auf Quell-(Deck,Seite)
-zurückgemappt werden → menu_composition nicht befüllbar.
-**Nächste Aktion #1:** build_menu_deck.py um ein `manifest.json`
-(`{slide_no:{deck,page,src_pdf}}`) erweitern, Deck NEU bauen (oder Mapping
-nachträglich aus Reihenfolge rekonstruieren, falls Jan vorher kuratiert
-hat). Dann: kuratierte pptx → überlebende slide_no → manifest → diese
-(deck,page) als `menu_composition`, Rest als `info_slide` ingesten.
+### 🟡 LÄUFT beim Session-Ende
+`build_menu_deck.py /tmp/all_menus.pptx` Vollauf über alle 199 PDFs
+(Hintergrund). Output: `/tmp/all_menus.pptx` + `.manifest.json`,
+Log: `/tmp/allmenus2.log`. (Voriger Lauf ohne Manifest: 1546 Slides /
+394 MB / 171 Decks — Größenordnung erwartbar.)
+
+### Curation→DB Rückmapping (Rezept)
+Nach Jans Kuratierung (Falsch-Slides gelöscht):
+```python
+from pptx import Presentation
+keep = {s.notes_slide.notes_text_frame.text.strip()
+        for s in Presentation("all_menus.pptx").slides
+        if s.has_notes_slide}            # {"deck::page", ...}
+```
+→ diese (deck,page) = `menu_composition`; alle anderen (deck,page) des
+Korpus = `info_slide`. Das ersetzt classify() als Ground-Truth.
 
 ### Nächste konkrete Aktionen (Resume-Reihenfolge)
-1. **Manifest in build_menu_deck.py** (s.o.) — Blocker für alles Weitere.
-2. all_menus.pptx fertig? → Jan kuratieren lassen → curate-Mapping.
-3. `ingest_compositions.py main()` auf curation-Labels + menu/info +
-   src_pdf umbauen → Stichprobe → ganzer Korpus.
-4. Composer-Kern (compose_demo.py generalisieren): menu_composition nach
+1. all_menus.pptx fertig (Log `/tmp/allmenus2.log`)? → Jan kuratieren
+   (Block-Löschen dank Sortierung) → kuratierte pptx zurück.
+2. `ingest_compositions.py main()` umbauen: Labels aus den **überlebenden
+   Slide-Notizen** (Rezept oben) statt classify(); zwei Tabellen
+   `menu_composition`/`info_slide` + `src_pdf`; Stichprobe → Korpus.
+3. Composer-Kern (compose_demo.py generalisieren): menu_composition nach
    Form matchen → Foto-SET + Text → reconstruct → editierbar.
-5. Input-Adapter: Angebot/Prompt → `model.json`.
-6. Phase-C-Reste (s.u.) bei Gelegenheit.
+4. Input-Adapter: Angebot/Prompt → `model.json`.
+5. Phase-C-Reste (s.u.) bei Gelegenheit.
 
 **Verify-Befehle:** je Skript-Header. DB: `PGPASSWORD=pptxgen psql -h
 localhost -p 5434 -U postgres -d pptxgen`. Engine: `cd
