@@ -5,3 +5,4 @@ node_modules/
 phase0/cache/
 *.log
 *.out
+convert-report.json
