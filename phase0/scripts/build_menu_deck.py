@@ -1,9 +1,13 @@
-"""build_menu_deck.py — EINE pptx mit ALLEN Menü-Kandidaten aus ALLEN PDFs.
+"""build_menu_deck.py — EINE pptx aller Menü-Kandidaten aus ALLEN PDFs,
+nach Ähnlichkeit sortiert + mit Manifest/Slide-Notizen für DB-Rückmapping.
 
-Mensch-kuratierter Ground-Truth statt Klassifikator-Perfektion:
-inklusiv sammeln (lieber zu viel), Jan löscht die Falschen von Hand.
-Volle Per-Deck-Pipeline via _deckpipe → transparentes/Gold-Logo bleibt,
-Bild-Namen deck-genamespaced, gemergte logos.json.
+- volle Per-Deck-Pipeline via _deckpipe → transparentes/Gold-Logo bleibt
+- Struktur-Signatur je Slide → gleiche Archetypen liegen AM STÜCK
+  (Block-Löschen statt Einzeljagd beim Kuratieren)
+- jede Slide bekommt unsichtbare Notiz "deck::page" (übersteht Löschen/
+  Umsortieren) + `<out>.manifest.json` (slide_no → deck/page/src_pdf)
+- Kuratierung: Falsch-Slides löschen → überlebende Slide-Notizen lesen =
+  exakte (deck,page)-Menge für menu_composition.
 
 Usage (aus spike-pptxgenjs/):
   python3 ../scripts/build_menu_deck.py /tmp/all_menus.pptx [--limit N]
@@ -24,6 +28,22 @@ SPIKE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
                      "spike-pptxgenjs")
 CORPUS = "/home/jrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Präsentationen"
 
+
+def signature(seq, W, H):
+    """Struktur-Fingerprint → gleiche Archetypen sortieren benachbart."""
+    photos = [e for e in seq
+              if e["t"] == "image" and is_content_photo(e, W, H)]
+    photos.sort(key=lambda e: (round(e["y"], 1), round(e["x"], 1)))
+    grid = ";".join(
+        f"{round(e['x']/W*8)},{round(e['y']/H*8)},"
+        f"{round(e['w']/W*8)},{round(e['h']/H*8)}" for e in photos)
+    ntext = sum(1 for e in seq if e["t"] == "text")
+    sizes = [ln["size"] for e in seq if e["t"] == "text"
+             for ln in e["lines"]]
+    title_b = int(max(sizes) // 8) if sizes else 0
+    return (len(photos), grid, ntext, title_b)
+
+
 ap = argparse.ArgumentParser()
 ap.add_argument("out", nargs="?", default="/tmp/all_menus.pptx")
 ap.add_argument("--limit", type=int, default=0, help="0 = alle Decks")
@@ -36,7 +56,9 @@ if a.limit:
     pdfs = pdfs[:a.limit]
 
 shared = tempfile.mkdtemp(prefix="allmenus_")
-combined, logos, meta, n = {}, {}, None, 0
+logos = {}
+meta = None
+items = []                       # (sig, slug, src_pdf, page, seq)
 ok_decks, fails = 0, []
 
 for i, pdf in enumerate(pdfs, 1):
@@ -54,28 +76,36 @@ for i, pdf in enumerate(pdfs, 1):
     if meta is None:
         meta = m
     W, H = m["w_pt"] / 72.0, m["h_pt"] / 72.0
-    for pg, seq in sorted(((k, v) for k, v in el.items() if k != "_meta"),
-                          key=lambda kv: int(kv[0])):
+    for pg, seq in ((k, v) for k, v in el.items() if k != "_meta"):
         nphoto = sum(1 for e in seq
                      if e["t"] == "image" and is_content_photo(e, W, H))
         lines = [ln for e in seq if e["t"] == "text" for ln in e["lines"]]
-        kind, _ = classify(int(pg), lines, nphoto)
-        if kind != "menu":
+        if classify(int(pg), lines, nphoto)[0] != "menu":
             continue
-        n += 1
-        combined[str(n)] = seq
+        items.append((signature(seq, W, H), slug, pdf, int(pg), seq))
 
-if n == 0:
-    sys.exit("Keine Menü-Kandidaten — Klassifikator/Filter prüfen.")
+if not items:
+    sys.exit("Keine Menü-Kandidaten.")
+
+items.sort(key=lambda t: t[0])           # ähnliche Slides benachbart
+combined, notes, manifest = {}, {}, {}
+for n, (_sig, slug, src, pg, seq) in enumerate(items, 1):
+    combined[str(n)] = seq
+    notes[str(n)] = f"{slug}::{pg}"
+    manifest[str(n)] = {"deck": slug, "page": pg, "src_pdf": src}
 
 mm = dict(meta or {"w_pt": 960, "h_pt": 540})
-mm["deck"] = "all-menus"            # keine Deck-Overrides
+mm["deck"] = "all-menus"
+mm["notes"] = notes                      # reconstruct.js → addNotes je Slide
 combined["_meta"] = mm
 json.dump(combined, open(os.path.join(shared, "elements.json"), "w"))
 json.dump(logos, open(os.path.join(shared, "logos.json"), "w"))
+json.dump(manifest, open(out + ".manifest.json", "w"), indent=1)
 subprocess.run(["node", os.path.join(SPIKE, "reconstruct.js"),
                 "elements.json", out], cwd=shared,
-               capture_output=True, check=True, timeout=1800)
-print(f"\nOK: {out} — {n} Menü-Kandidaten aus {ok_decks} Decks "
-      f"({len(fails)} Decks fehlgeschlagen)")
-print("Kuratieren: Falsch-Slides in PowerPoint/Impress von Hand löschen.")
+               capture_output=True, check=True, timeout=2400)
+print(f"\nOK: {out} — {len(items)} Menü-Kandidaten aus {ok_decks} Decks "
+      f"({len(fails)} fehlgeschlagen), ähnlichkeits-sortiert.")
+print(f"Manifest: {out}.manifest.json | Slide-Notizen: 'deck::page'")
+print("Kuratieren: Falsch-Slides löschen → überlebende Notizen = "
+      "menu_composition-Ground-Truth.")
