@@ -2,6 +2,28 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/)
 
+## [Sprint 2] — 2026-05-19 — EPIC-001 Chat-History + Restore + Tenant-Härtung
+
+### Hinzugefügt
+- **US-006: Chat-Persistenz** — `/api/angebot/chat` async + owner-
+  scoped; Offer create-or-update + me/bot-Turns in `chat_message`
+  (graceful bei DB-Ausfall).
+- **US-007: Laden inkl. Verlauf** — `store.get_offer_full`,
+  `/api/angebot/{id}` → `{angebot, chat}` (abwärtskompatibel).
+- **US-008: Exaktes Wiederöffnen** — `chat.html ?offer={id}`
+  rekonstruiert Editor-State + Chat-Stream 1:1, `history.replaceState`
+  reload-fest.
+- **US-010: Echtes Alembic** — `backend/alembic/` + Baseline 0001;
+  `migrate.py` create_all (idempotent) + STAMP statt Re-Create auf
+  Live-DB (droppt NIE), sonst `upgrade head`.
+- **US-011: Test-Infra** — `conftest` async session/Test-PG-Fixtures
+  + `pytest.ini` (`asyncio_mode=auto`).
+
+### Geändert / Behoben
+- **US-009: Multi-Tenant-Härtung** — `TenantError` + `_owned_offer`
+  Owner-Check vor jedem `chat_message` Read/Write (Regressionstest).
+- `requirements.txt`: psycopg2-binary, pytest, pytest-asyncio.
+
 ## [Sprint 1] — 2026-05-19 — EPIC-001 DB-Fundament + Persistenz + Nummern
 
 ### Hinzugefügt
