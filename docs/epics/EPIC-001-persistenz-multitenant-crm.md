@@ -1,7 +1,7 @@
 ---
 id: EPIC-001
 title: "Persistenz, Multi-Tenant & CRM für den Angebotsgenerator"
-status: OPEN
+status: IN_PROGRESS
 created: 2026-05-19
 project: kochfabrik-studio
 sprints: []
@@ -79,7 +79,7 @@ vorbereitet, aber noch nicht gebaut (manuelle User bleiben).
 
 | Sprint | Scope | Status |
 |--------|-------|--------|
-| Sprint 1 | DB-Fundament + Angebot-Persistenz + Nummern | ⏳ TODO |
+| Sprint 1 | DB-Fundament + Angebot-Persistenz + Nummern | ✅ DONE (live-verifiziert, master b0c7f36) |
 | Sprint 2 | Multi-Tenant + Chat-History + Wiederherstellung | ⏳ TODO |
 | Sprint 3 | Dashboard + Bibliothek + Kunden-CRM | ⏳ TODO |
 | Sprint 4 | OAuth2 (später) | ⏳ TODO |
