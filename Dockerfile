@@ -17,4 +17,5 @@ COPY engine ./engine
 
 ENV KF_IMG_MODEL=gemini-3-pro-image-preview
 EXPOSE 8000
-CMD ["uvicorn","backend.app:app","--host","0.0.0.0","--port","8000"]
+# Schema-Migration (idempotent, graceful — nie fatal) vor dem Server.
+CMD ["sh","-c","python -m backend.migrate; exec uvicorn backend.app:app --host 0.0.0.0 --port 8000"]

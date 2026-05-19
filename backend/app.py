@@ -205,6 +205,19 @@ def valid_cookie(tok):
         return False
 
 
+def _owner(request) -> str | None:
+    """owner_email aus gültigem Cookie (Multi-Tenant-Scope). OAuth
+    später: gleiche Abstraktion, nur diese Funktion erweitern."""
+    tok = request.cookies.get(COOKIE, "")
+    if not valid_cookie(tok):
+        return None
+    try:
+        raw = base64.urlsafe_b64decode(tok.encode()).decode()
+        return raw.rsplit("|", 2)[0].strip().lower()
+    except Exception:
+        return None
+
+
 # ---------------- Bild-Kern ----------------
 def _gemini_key():
     k = os.environ.get("GEMINI_API_KEY")
@@ -367,11 +380,17 @@ class ImgReq(BaseModel):
 
 
 @app.get("/api/health")
-def health():
+async def health():
+    try:
+        from . import db as _db
+        db_ok = await _db.ping()
+        db_err = "" if db_ok else _db.DB_ERR
+    except Exception as e:                                          # noqa
+        db_ok, db_err = False, f"{type(e).__name__}: {e}"
     return {"ok": True, "model": MODEL, "size": IMG_SIZE,
             "aspect": IMG_ASPECT, "key": bool(_gemini_key()),
             "bg_pool": len(_bg_pool()), "users": len(_users()),
-            "cats": len(CATS)}
+            "cats": len(CATS), "db": db_ok, "db_error": db_err}
 
 
 @app.post("/api/login")
@@ -443,22 +462,91 @@ def angebot_chat(r: AngebotChatReq):
     return {"angebot": upd}
 
 
+async def _persist(owner, angebot):
+    """Graceful: speichert Angebot + gibt zugewiesene Nummern zurück.
+    DB-Ausfall darf den PDF-/Save-Flow NICHT brechen."""
+    try:
+        from . import db as _db
+        if not owner or not await _db.ping():
+            return None, "DB nicht verfügbar — ohne Persistenz"
+        from .store import save_offer
+        return await save_offer(owner, angebot), None
+    except Exception as e:                                          # noqa
+        return None, f"Persistenz übersprungen: {type(e).__name__}"
+
+
 @app.post("/api/angebot/pdf")
-def angebot_pdf(r: AngebotPdfReq):
+async def angebot_pdf(r: AngebotPdfReq, request: Request):
     if not ENGINE_OK:
         return JSONResponse(
             {"error": "Angebots-Engine in diesem Deploy nicht "
              "verfügbar: " + (ENGINE_ERR or "")}, status_code=503)
     import tempfile
+    ang = dict(r.angebot)
+    res, warn = await _persist(_owner(request), ang)
+    if res:                       # zugewiesene Nummern ins PDF mergen
+        ang["angebots_nr"] = res["angebotsnummer"]
+        ang["kundennr"] = res["kundennummer"]
+        ang["_offer_id"] = res["offer_id"]
     try:
-        a = _angebot_from_dict(r.angebot)
+        a = _angebot_from_dict(ang)
         out = os.path.join(tempfile.mkdtemp(prefix="stud_ang_"),
                            "angebot.pdf")
         _render_pdf(a, out)
         data = base64.b64encode(open(out, "rb").read()).decode()
     except Exception as e:
         return JSONResponse({"error": str(e)[:240]}, status_code=502)
-    return {"pdf": "data:application/pdf;base64," + data}
+    return {"pdf": "data:application/pdf;base64," + data,
+            "saved": res, "persist_warn": warn}
+
+
+@app.post("/api/angebot/save")
+async def angebot_save(r: AngebotPdfReq, request: Request):
+    owner = _owner(request)
+    if not owner:
+        return JSONResponse({"error": "auth"}, status_code=401)
+    res, warn = await _persist(owner, dict(r.angebot))
+    if not res:
+        return JSONResponse({"error": warn or "DB nicht verfügbar"},
+                            status_code=503)
+    return res
+
+
+@app.get("/api/angebote")
+async def angebote_list(request: Request):
+    owner = _owner(request)
+    if not owner:
+        return JSONResponse({"error": "auth"}, status_code=401)
+    try:
+        from . import db as _db
+        if not await _db.ping():
+            return JSONResponse({"error": "DB nicht verfügbar",
+                                 "offers": []}, status_code=503)
+        from .store import list_offers
+        return {"offers": await list_offers(owner)}
+    except Exception as e:                                          # noqa
+        return JSONResponse({"error": str(e)[:200], "offers": []},
+                            status_code=503)
+
+
+@app.get("/api/angebot/{offer_id}")
+async def angebot_get(offer_id: int, request: Request):
+    owner = _owner(request)
+    if not owner:
+        return JSONResponse({"error": "auth"}, status_code=401)
+    try:
+        from . import db as _db
+        if not await _db.ping():
+            return JSONResponse({"error": "DB nicht verfügbar"},
+                                status_code=503)
+        from .store import get_offer
+        st = await get_offer(owner, offer_id)
+    except Exception as e:                                          # noqa
+        return JSONResponse({"error": str(e)[:200]}, status_code=503)
+    if st is None:
+        return JSONResponse({"error": "nicht gefunden"},
+                            status_code=404)
+    return {"angebot": st}
 
 
 def _korpus_ok():
