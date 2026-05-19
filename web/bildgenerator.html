@@ -61,10 +61,10 @@
   <div class="out" id="out"><div class="ph">Noch kein Bild — Prompt eingeben und generieren.</div></div>
 </div>
 <script>
-const EX=["Flying Fingerfood Mini-Burger Wagyu mit Cheddar",
- "Sweet Dreams Dessertvariation: NY Cheesecake, Schoko-Brownie",
- "BIG BBQ Buffet mit Tomahawk, Maishähnchen-Spieß, Pak Choi",
- "Empfang: Wassermelonen-Feta-Spieß mit Minze und Limette"];
+const EX=[
+ "Klassisches deutsches Frühstück: frische Brötchen, Aufschnitt, Käse, gekochtes Ei im Eierbecher, Butter, Marmelade, Kaffee",
+ "T-Bone Steak medium rare vom Grill mit Kräuterbutter, Rosmarin und Meersalz auf rustikalem Holzbrett",
+ "Perfektes Sashimi: Lachs, Thunfisch und Gelbschwanz in feinen Scheiben, Wasabi, eingelegter Ingwer, Sojaschälchen"];
 const chips=document.getElementById('chips');
 EX.forEach(t=>{const c=document.createElement('span');c.className='chip';
  c.textContent=t;c.onclick=()=>document.getElementById('p').value=t;
