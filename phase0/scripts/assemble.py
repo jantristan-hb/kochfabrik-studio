@@ -148,8 +148,17 @@ def main():
              for c, ds in courses]
     allv = embed(labels + heads + conts) if courses else []
     nL = len(labels)
-    Ln = np.asarray(allv[:nL], float) if nL else np.zeros((0, 768))
-    Ln = Ln / (np.linalg.norm(Ln, axis=1, keepdims=True) + 1e-9)
+    # Robust: kein Gang erkannt (z.B. kaufmännisches Angebots-PDF ohne
+    # Speisen) → allv leer; asarray wäre 1-D → norm(axis=1) crasht.
+    # Dann Food-Block leer lassen, Deck wird ohne Food gebaut.
+    if nL and len(allv) >= nL:
+        Ln = np.asarray(allv[:nL], float)
+        Ln = Ln / (np.linalg.norm(Ln, axis=1, keepdims=True) + 1e-9)
+    else:
+        Ln = np.zeros((0, 768))
+        if not courses:
+            print("  ⚠ Keine Speisen/Gänge im Angebot erkannt — Deck "
+                  "ohne Food-Slides (Cover + Frame + Ausstattung).")
     Hv = list(allv[nL:nL + len(heads)])
     Cv = list(allv[nL + len(heads):])
     picks = []                                # (pos, slug, page, dishes)

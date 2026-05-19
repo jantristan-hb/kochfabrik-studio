@@ -2,6 +2,16 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/)
 
+## [Unreleased]
+
+### Behoben
+- **assemble.py crasht bei 0 erkannten Gängen** — kaufmännische
+  Angebots-PDFs ohne Speisen (z.B. INBOUND/RAUMKARUSSELL/HOWDENRE)
+  führten im Category-Lock zu `numpy.AxisError` (leeres `embed()`-
+  Batch → 1-D-Array → `norm(axis=1)`). Jetzt: Food-Block wird leer
+  gelassen, Deck ohne Food gebaut (Cover + Frame + Ausstattung) plus
+  Klartext-Hinweis. Regression: `tests/test_empty_courses.py`.
+
 ## [Sprint 1 — Engine Phase A] — 2026-05-18
 
 Aus dem Ein-Deck-Spike eine parametrisierte, orchestrierte, robuste
