@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KOCHfabrik Studio — Bildgenerator</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  :root{ --gold:#AA8339; --ink:#2A2522; --cream:#FDFBF6; }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Open Sans',system-ui,sans-serif;
+        background:var(--cream);color:var(--ink)}
+  .bar{display:flex;align-items:center;gap:14px;padding:18px 28px;
+       background:#fff;border-bottom:3px solid var(--gold)}
+  .bar img{height:40px}
+  .bar h1{font-size:19px;margin:0;font-weight:700;letter-spacing:.3px}
+  .bar small{color:var(--gold);font-weight:700;margin-left:auto}
+  .wrap{max-width:920px;margin:38px auto;padding:0 22px}
+  .lead{font-size:15px;color:#6b6358;margin:0 0 18px}
+  .panel{background:#fff;border:1px solid #ece3d2;border-radius:14px;
+         padding:22px;box-shadow:0 6px 22px rgba(170,131,57,.07)}
+  textarea{width:100%;min-height:96px;border:1px solid #e0d6c2;
+           border-radius:10px;padding:14px;font:inherit;resize:vertical}
+  .row{display:flex;gap:12px;align-items:center;margin-top:14px;
+       flex-wrap:wrap}
+  button{background:var(--gold);color:#fff;border:0;border-radius:999px;
+         padding:13px 30px;font:inherit;font-weight:700;cursor:pointer}
+  button:disabled{opacity:.55;cursor:wait}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .chip{background:var(--cream);border:1px solid #e7dcc6;border-radius:
+        999px;padding:7px 14px;font-size:13px;cursor:pointer}
+  .out{margin-top:26px;text-align:center}
+  .out img{max-width:100%;border-radius:14px;border:6px solid var(--gold);
+           background:#fff}
+  .ph{color:#9a907f;font-size:14px;padding:60px 0}
+  .err{color:#a8324b;font-weight:600}
+  .spin{display:inline-block;width:18px;height:18px;border:3px solid
+        #fff;border-top-color:transparent;border-radius:50%;
+        animation:s .8s linear infinite;vertical-align:-3px;margin-right:8px}
+  @keyframes s{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="bar">
+  <img src="assets/kochfabrik-logo.png" alt="KOCHfabrik">
+  <h1>Studio · Bildgenerator</h1>
+  <small>KOCHfabrik-Style</small>
+</div>
+<div class="wrap">
+  <p class="lead">Beschreib das Gericht oder Motiv — KOCHfabrik Studio
+     erzeugt ein Bild im KOCHfabrik-Stil (warm, editorial, Gold-Akzent).
+     Chat rein → Bild raus.</p>
+  <div class="panel">
+    <textarea id="p" placeholder="z.B. Dry-Aged Rindernacken vom Smoker mit BBQ-Glace und Röstzwiebel, angerichtet auf Schiefer"></textarea>
+    <div class="chips" id="chips"></div>
+    <div class="row">
+      <button id="go">Bild generieren</button>
+      <span id="model" style="font-size:13px;color:#9a907f"></span>
+    </div>
+  </div>
+  <div class="out" id="out"><div class="ph">Noch kein Bild — Prompt eingeben und generieren.</div></div>
+</div>
+<script>
+const EX=["Flying Fingerfood Mini-Burger Wagyu mit Cheddar",
+ "Sweet Dreams Dessertvariation: NY Cheesecake, Schoko-Brownie",
+ "BIG BBQ Buffet mit Tomahawk, Maishähnchen-Spieß, Pak Choi",
+ "Empfang: Wassermelonen-Feta-Spieß mit Minze und Limette"];
+const chips=document.getElementById('chips');
+EX.forEach(t=>{const c=document.createElement('span');c.className='chip';
+ c.textContent=t;c.onclick=()=>document.getElementById('p').value=t;
+ chips.appendChild(c);});
+fetch('/api/health').then(r=>r.json()).then(d=>{
+ document.getElementById('model').textContent=
+  'Modell: '+d.model+(d.key?'':' · ⚠ kein API-Key');}).catch(()=>{});
+const go=document.getElementById('go'),out=document.getElementById('out');
+go.onclick=async()=>{
+ const prompt=document.getElementById('p').value.trim();
+ if(!prompt){out.innerHTML='<div class="ph err">Bitte Motiv eingeben.</div>';return;}
+ go.disabled=true;const t0=Date.now();
+ out.innerHTML='<div class="ph"><span class="spin"></span>Generiere im KOCHfabrik-Stil…</div>';
+ try{
+  const r=await fetch('/api/image',{method:'POST',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({prompt})});
+  const d=await r.json();
+  if(d.image){out.innerHTML='<img src="'+d.image+'" alt="">'+
+   '<div style="margin-top:10px;font-size:13px;color:#9a907f">'+
+   ((Date.now()-t0)/1000).toFixed(1)+' s · '+d.model+'</div>';}
+  else{out.innerHTML='<div class="ph err">Fehler: '+
+   (d.error||'unbekannt')+'</div>';}
+ }catch(e){out.innerHTML='<div class="ph err">Netzwerkfehler: '+e+'</div>';}
+ go.disabled=false;
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KOCHfabrik Studio — Chat-Konzeption</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="side-logo"><a href="index.html"><img src="assets/kochfabrik-logo.png" alt="KOCHfabrik Studio"></a></div>
+    <nav class="side-nav">
+      <div class="nav-label">Arbeiten</div>
+      <a class="nav-item" href="index.html"><span class="ic">&#9632;</span> Dashboard</a>
+      <a class="nav-item" href="upload.html"><span class="ic">&#8682;</span> Angebot-Upload</a>
+      <a class="nav-item active" href="chat.html"><span class="ic">&#9993;</span> Chat-Konzeption</a>
+      <a class="nav-item" href="bildgenerator.html"><span class="ic">&#9788;</span> Bildgenerator</a>
+      <div class="nav-label">Wissen</div>
+      <a class="nav-item" href="client.html"><span class="ic">&#9906;</span> Client Research</a>
+      <a class="nav-item" href="bibliothek.html"><span class="ic">&#9783;</span> Bibliothek</a>
+    </nav>
+    <div class="side-foot"><div class="avatar">PD</div><div><div class="nm">Patrick Diehr</div><div class="rl">KOCHfabrik</div></div></div>
+  </aside>
+
+  <main class="view">
+    <div class="topbar">
+      <div><h1>Chat-Konzeption</h1><div class="sub">Event beschreiben — Deck wächst mit</div></div>
+      <a class="btn btn-primary" href="vorschau.html">Deck ansehen &rarr;</a>
+    </div>
+
+    <div class="content">
+      <div class="chat-grid">
+        <div class="r r1">
+          <div class="chat-box">
+            <div class="chat-stream" id="stream">
+              <div class="msg bot"><div class="who">Studio</div>Womit darf ich beginnen? Beschreiben Sie Anlass, Kundin und Stimmung — oder nennen Sie einfach das Menü.</div>
+              <div class="msg me">Sommerfest Lürssen Werft, 120 Gäste, draußen am Wasser. Edel-maritim, Hauptlinie BIG BBQ.</div>
+              <div class="msg bot"><div class="who">Studio</div>Verstanden. Vorschlag: 14 Slides — Titel, Anlass, BIG-BBQ-Menüfolge (3 Gänge), Live-Cooking, Getränke, Service, Investition, Referenzen. Soll „Sweet Dreams" als Dessertbühne ergänzt werden?</div>
+              <div class="msg me">Ja, Sweet Dreams als eigene Station.</div>
+              <div class="msg bot"><div class="who">Studio</div>Eingefügt — 15 Slides im Markenlayout, Speisenbilder zugeordnet. Sie können jede Slide einzeln anpassen.</div>
+            </div>
+            <div class="chat-bar">
+              <input type="text" id="ci" placeholder="Antworten oder Änderung beschreiben …" aria-label="Nachricht">
+              <button class="send" id="sb" aria-label="Senden">&rarr;</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="r r2" style="display:flex;flex-direction:column;gap:18px">
+          <div class="panel" style="padding:20px">
+            <div class="panel-h" style="margin-bottom:14px"><h2 style="font-size:1rem">Deck-Fortschritt</h2></div>
+            <div class="ptrack"><div class="pbar" style="width:88%"></div></div>
+            <p style="font-size:.84rem;color:var(--ink-soft);margin-top:10px">15 von ~17 Slides gesetzt</p>
+            <a class="btn btn-primary btn-sm" href="vorschau.html" style="width:100%;justify-content:center;margin-top:14px">Vorschau öffnen</a>
+          </div>
+          <div class="panel" style="padding:20px">
+            <div class="panel-h" style="margin-bottom:12px"><h2 style="font-size:1rem">Schnell ergänzen</h2></div>
+            <div class="chips">
+              <span class="chip">+ Veggie-Linie</span><span class="chip">+ Weinbegleitung</span>
+              <span class="chip">+ Zeitplan</span><span class="chip">+ Team vor Ort</span>
+              <span class="chip">+ Allergene</span><span class="chip">+ Referenzen</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  var ci=document.getElementById('ci'),sb=document.getElementById('sb'),st=document.getElementById('stream');
+  function add(){if(!ci.value.trim())return;var m=document.createElement('div');m.className='msg me';m.textContent=ci.value;st.appendChild(m);ci.value='';st.scrollTop=st.scrollHeight;
+    setTimeout(function(){var b=document.createElement('div');b.className='msg bot';b.innerHTML='<div class="who">Studio</div>Übernommen — das Deck wird angepasst.';st.appendChild(b);st.scrollTop=st.scrollHeight;},650);}
+  sb.addEventListener('click',add);ci.addEventListener('keydown',function(e){if(e.key==='Enter')add()});
+  document.querySelectorAll('.chip').forEach(function(c){c.addEventListener('click',function(){ci.value=c.textContent.replace('+ ','')+' ergänzen';ci.focus()})});
+</script>
+</body>
+</html>
