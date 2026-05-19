@@ -21,7 +21,7 @@ import random
 import time
 import urllib.request
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, File, Request, Response, UploadFile
 from fastapi.responses import JSONResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -494,13 +494,11 @@ def _praes_guard():
     return None
 
 
-def _assemble_md(offer_md: str):
-    """Offer-md → assemble.py → PPTX (base64-data-URL) | (JSONResponse-Fehler)."""
+def _assemble_src(src: str):
+    """Offer-Quelle (md ODER pdf) → assemble.py → PPTX (base64-data-URL)
+    | (JSONResponse-Fehler). assemble.py branched per Extension."""
     import subprocess
-    import tempfile
-    wd = tempfile.mkdtemp(prefix="praes_")
-    src, out = os.path.join(wd, "offer.md"), os.path.join(wd, "deck.pptx")
-    open(src, "w").write(offer_md)
+    out = os.path.join(os.path.dirname(src), "deck.pptx")
     try:
         p = subprocess.run(
             ["python3", os.path.join(_ENG, "assemble.py"), src,
@@ -514,6 +512,13 @@ def _assemble_md(offer_md: str):
         return JSONResponse({"error": str(e)[:260]}, status_code=502)
     return {"pptx": "data:application/vnd.openxmlformats-officedocument"
             ".presentationml.presentation;base64," + data}
+
+
+def _assemble_md(offer_md: str):
+    import tempfile
+    src = os.path.join(tempfile.mkdtemp(prefix="praes_"), "offer.md")
+    open(src, "w").write(offer_md)
+    return _assemble_src(src)
 
 
 @app.get("/api/praesentation/health")
@@ -547,6 +552,26 @@ def praes_from_angebot(r: PraesAngebotReq):
         return JSONResponse({"error": "Konvertierung: "
                              + str(e)[:200]}, status_code=502)
     return _assemble_md(md)
+
+
+@app.post("/api/praesentation/from-pdf")
+async def praes_from_pdf(file: UploadFile = File(...)):
+    """Angebots-PDF hochladen → KOCHfabrik-Deck. assemble.py parst
+    PDFs nativ (Per-Gericht-Parser + Kategorie-Lock)."""
+    g = _praes_guard()
+    if g:
+        return g
+    import tempfile
+    raw = await file.read()
+    if not raw or raw[:4] != b"%PDF":
+        return JSONResponse({"error": "Keine gültige PDF-Datei"},
+                            status_code=400)
+    if len(raw) > 25 * 1024 * 1024:
+        return JSONResponse({"error": "PDF zu groß (>25 MB)"},
+                            status_code=400)
+    src = os.path.join(tempfile.mkdtemp(prefix="praes_"), "offer.pdf")
+    open(src, "wb").write(raw)
+    return _assemble_src(src)
 
 
 @app.get("/")
