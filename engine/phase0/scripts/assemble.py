@@ -246,8 +246,11 @@ def main():
 
     # ---- alle Quell-Decks EINMAL in shared cachen (kein Extrakt) ----
     shared = tempfile.mkdtemp(prefix="asm_")
-    smap = {slugify(p): os.path.join(CORPUS_DIR, p)
-            for p in os.listdir(CORPUS_DIR) if p.lower().endswith(".pdf")}
+    # CORPUS_DIR (Nextcloud) fehlt im Container → smap nur Fallback;
+    # gemountete CACHE-Hits brauchen die Quell-PDFs nicht.
+    smap = ({slugify(p): os.path.join(CORPUS_DIR, p)
+             for p in os.listdir(CORPUS_DIR) if p.lower().endswith(".pdf")}
+            if os.path.isdir(CORPUS_DIR) else {})
     el_cache, logos, meta = {}, {}, None
 
     def load(slug, src):

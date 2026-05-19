@@ -47,9 +47,14 @@ SKIP_HEAD = {"ANGEBOT", "PERSONAL", "TECHNIK", "LOGISTIK", "PROJEKT",
 
 
 def _key():
-    for ln in open(os.path.expanduser("~/work/.env")):
-        if ln.startswith("GEMINI_API_KEY="):
-            return ln.split("=", 1)[1].strip().strip('"')
+    k = os.environ.get("GEMINI_API_KEY")             # Container/Coolify
+    if k:
+        return k
+    env = os.path.expanduser("~/work/.env")          # lokale Dev
+    if os.path.isfile(env):
+        for ln in open(env):
+            if ln.startswith("GEMINI_API_KEY="):
+                return ln.split("=", 1)[1].strip().strip('"')
     sys.exit("GEMINI_API_KEY fehlt")
 
 
