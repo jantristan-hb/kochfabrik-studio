@@ -20,17 +20,40 @@ from gen_fiktiv import MODEL, SCHEMA, _key, _extract              # noqa
 
 def beschreibung_zu_angebot(text: str) -> Angebot:
     from anthropic import Anthropic
+    import datetime
+    MON = ("Januar", "Februar", "März", "April", "Mai", "Juni", "Juli",
+           "August", "September", "Oktober", "November", "Dezember")
+    h = datetime.date.today()
+    heute = f"{h.day}. {MON[h.month - 1]} {h.year}"
     c = Anthropic(api_key=_key())
     msg = c.messages.create(
         model=MODEL, max_tokens=4000,
         messages=[{"role": "user", "content":
                    "Wandle diese Event-Beschreibung in EIN striktes "
-                   "KOCHfabrik-Angebot-JSON (nur JSON). Fehlende "
-                   "Angaben plausibel ergänzen, KOCHfabrik-typische "
-                   "Positionen/Preise, Sub-Header (is_header) + "
-                   "preisbehaftete Positionen, Zwischensumme je Block, "
-                   "Footer NICHT setzen.\n\nBeschreibung:\n" + text
-                   + "\n\nSchema:\n" + SCHEMA}])
+                   "KOCHfabrik-Angebot-JSON (nur JSON). KOCHfabrik-"
+                   "typische Positionen/Preise, Sub-Header (is_header) "
+                   "+ preisbehaftete Positionen, Zwischensumme je "
+                   "Block, Footer NICHT setzen.\n\n"
+                   f"HEUTE ist der {heute}. REGELN (strikt):\n"
+                   f"- Alle Datumswerte im deutschen Format "
+                   f"'T. Monat JJJJ' (z.B. '{heute}'), NIEMALS ISO/"
+                   f"JJJJ-MM-TT. Jahre = {h.year} oder später, nie in "
+                   f"der Vergangenheit.\n"
+                   "- Unbekannte Angaben LEER lassen (\"\"). KEINE "
+                   "Platzhalter erfinden — kein 'Max Mustermann', "
+                   "keine 'KF-JJJJ-…'-Nummern, keine Fake-Mail/-Tel. "
+                   "Nur aus der Beschreibung ableitbare Werte "
+                   "ergänzen.\n"
+                   "- FELDER: 'kunde' = Firmenname. 'adresse' = "
+                   "Postanschrift OHNE die Firma (die steht schon in "
+                   "'kunde' — NICHT wiederholen!), Format "
+                   "'[Ansprechpartner-Name, ]Straße Nr, PLZ Ort'. "
+                   "'veranstaltung.ort' = Event-LOCATION/Venue — "
+                   "NICHT die Kundenadresse/-PLZ. 'ansprechpartner' = "
+                   "KOCHfabrik-Sachbearbeiter (Name) — NICHT der "
+                   "Kunde. Kunden-PLZ/-Ort gehört AUSSCHLIESSLICH in "
+                   "'adresse'.\n\nBeschreibung:\n"
+                   + text + "\n\nSchema:\n" + SCHEMA}])
     d = json.loads(_extract("".join(b.text for b in msg.content
                                     if b.type == "text")))
     v = d.get("veranstaltung", {})

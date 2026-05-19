@@ -45,7 +45,7 @@
      "italic": false
     },
     {
-     "txt": "20099  Hamburg",
+     "txt": "{ADRESSE_ORT}",
      "size": 10.0,
      "color": "666666",
      "weight": "Regular",
@@ -237,7 +237,7 @@
    "h": 0.1111,
    "lines": [
     {
-     "txt": "jwiegers@koch-fabrik.com",
+     "txt": "{SB_EMAIL}",
      "size": 8.0,
      "color": "666666",
      "weight": "Regular",
@@ -269,7 +269,7 @@
    "h": 0.1111,
    "lines": [
     {
-     "txt": "04101-7744545",
+     "txt": "{SB_DURCHWAHL}",
      "size": 8.0,
      "color": "666666",
      "weight": "Regular",
@@ -516,14 +516,14 @@
      "italic": false
     },
     {
-     "txt": "040 28 41 08 19-0",
+     "txt": "{KONTAKT_TEL}",
      "size": 10.0,
      "color": "666666",
      "weight": "Regular",
      "italic": false
     },
     {
-     "txt": "claudia.kiesel@raumkarussell.de",
+     "txt": "{KONTAKT_EMAIL}",
      "size": 10.0,
      "color": "666666",
      "weight": "Regular",
