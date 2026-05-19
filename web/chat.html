@@ -88,12 +88,20 @@
 </div>
 <script>
 let A = {kunde:"",adresse:"",angebots_nr:"",datum:"",kundennr:"",
-  lieferdatum:"",ansprechpartner:"",
+  lieferdatum:"",ansprechpartner:"",sb_email:"",sb_durchwahl:"",
   veranstaltung:{anlass:"",datum:"",beginn:"",personen:0,ort:"",konzept:""},
   bloecke:[]};
 const $=id=>document.getElementById(id);
-const SC=[["kunde","Kunde"],["angebots_nr","Angebots-Nr."],["datum","Datum"],
-  ["kundennr","Kundennr."],["lieferdatum","Lieferdatum"],["ansprechpartner","Ansprechpartner"]];
+// Skalar-Felder im Editor — Ansprechpartner / E-Mail / Durchwahl sind
+// die KOCHfabrik-Sachbearbeiter-Felder (sb_email, sb_durchwahl im
+// Modell) und MÜSSEN editierbar sein, damit das Angebot ohne
+// hardcoded Defaults (Jule Wiegers, jwiegers@koch-fabrik.com,
+// 04101-7744545) generiert werden kann.
+const SC=[["kunde","Kunde"],["adresse","Adresse"],
+  ["angebots_nr","Angebots-Nr."],["datum","Datum"],
+  ["kundennr","Kundennr."],["lieferdatum","Lieferdatum"],
+  ["ansprechpartner","Ansprechpartner"],
+  ["sb_email","E-Mail"],["sb_durchwahl","Durchwahl"]];
 const VC=[["anlass","Anlass"],["datum","V-Datum"],["beginn","Beginn"],
   ["personen","Personen"],["ort","Ort"],["konzept","Konzept"]];
 const esc=v=>(v??"").toString().replace(/"/g,'&quot;');
