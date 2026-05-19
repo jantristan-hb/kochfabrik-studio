@@ -319,6 +319,20 @@ def parse_offer_dishes(path, offer=""):
 GOLD = "AA8339"
 
 
+def pick_frame(category, options, kunde):
+    """Deterministische, kunden-stabile Auswahl EINER freigegebenen
+    Frame-Instanz aus `options` (Liste; je Element muss eindeutig sein).
+    Gleicher (kunde,category) → immer gleich (stabil übers Deck/Reruns).
+    Verschiedene Kunden → variiert über das freigegebene Set. Seed via
+    sha256 (NICHT Python-hash — das ist pro Prozess gesalzen)."""
+    if not options:
+        return None
+    import hashlib
+    key = f"{(kunde or '').strip().lower()}|{category}".encode()
+    idx = int(hashlib.sha256(key).hexdigest(), 16) % len(options)
+    return options[idx]
+
+
 def slot_count(seq):
     """Anzahl Gericht-Name-Slots (Bold-weiß-Captions) einer Slide —
     gleiche Erkennung wie text_swap. Für kapazitäts-bewusstes Matching."""

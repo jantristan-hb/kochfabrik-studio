@@ -32,7 +32,8 @@ import psycopg2
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _deckpipe import cached_deck, slugify, CACHE              # noqa
 from compose_offer import (embed, parse_offer_dishes, text_swap,  # noqa
-                           slot_count, DSN, SPIKE, CORPUS_DIR)
+                           slot_count, pick_frame, DSN, SPIKE,
+                           CORPUS_DIR)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "data")
@@ -166,11 +167,23 @@ def main():
         print(f"  Food «{c[:24]}» → {deck[:24]}::{pg} "
               f"({nd} Gerichte)")
 
-    # ---- Frame: golden, pflicht, verbatim ----
+    # ---- Frame: pflicht, je Kategorie kunden-stabil random aus dem
+    #      freigegebenen Set (golden + Alternativen), verbatim ----
     cu.execute("SELECT deck,page,src_pdf,category,skel_pos FROM "
-               "static_slide WHERE is_golden AND inclusion='pflicht' "
-               "AND category<>'COVER' ORDER BY skel_pos")
-    frame = cu.fetchall()
+               "static_slide WHERE inclusion='pflicht' "
+               "AND category<>'COVER'")
+    by_cat = {}
+    for deck, pg, src, cat, sp in cu.fetchall():
+        by_cat.setdefault(cat, []).append((deck, int(pg), src, cat,
+                                           float(sp)))
+    frame = []
+    for cat, opts in by_cat.items():
+        opts.sort(key=lambda r: (r[0], r[1]))     # stabile Reihenfolge
+        ch = pick_frame(cat, opts, kunde)
+        frame.append(ch)
+        print(f"  Frame «{cat[:22]}» → {ch[0][:24]}::{ch[1]} "
+              f"(aus {len(opts)})")
+    frame.sort(key=lambda r: r[4])                 # skel_pos
     cx.close()
 
     # ---- alle Quell-Decks EINMAL in shared cachen (kein Extrakt) ----
