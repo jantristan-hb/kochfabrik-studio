@@ -447,7 +447,7 @@ def angebot_health():
 
 
 @app.post("/api/angebot/chat")
-def angebot_chat(r: AngebotChatReq):
+async def angebot_chat(r: AngebotChatReq, request: Request):
     if not ENGINE_OK:
         return JSONResponse(
             {"error": "Angebots-Engine in diesem Deploy nicht "
@@ -459,7 +459,28 @@ def angebot_chat(r: AngebotChatReq):
         _angebot_from_dict(upd)                 # Schema-Validierung
     except Exception as e:
         return JSONResponse({"error": str(e)[:240]}, status_code=502)
-    return {"angebot": upd}
+    # US-006: Offer sicherstellen + Chat-Turns persistieren (graceful —
+    # DB-Ausfall bricht den Chat NICHT).
+    owner = _owner(request)
+    res, persist_warn = await _persist(owner, upd)   # create-or-update
+    if res:
+        upd["angebots_nr"] = res["angebotsnummer"]
+        upd["kundennr"] = res["kundennummer"]
+        upd["_offer_id"] = res["offer_id"]
+    offer_id = ((res or {}).get("offer_id")
+                or (r.angebot or {}).get("_offer_id"))
+    if owner and offer_id:
+        try:
+            from .store import add_chat
+            await add_chat(owner, offer_id, "me", r.message)
+            await add_chat(owner, offer_id, "bot",
+                           "Angebot aktualisiert.")
+        except Exception as e:                                  # noqa
+            persist_warn = (persist_warn
+                            or f"Chat-Persistenz übersprungen: "
+                               f"{type(e).__name__}")
+    return {"angebot": upd, "offer_id": offer_id,
+            "persist_warn": persist_warn}
 
 
 async def _persist(owner, angebot):
@@ -539,14 +560,16 @@ async def angebot_get(offer_id: int, request: Request):
         if not await _db.ping():
             return JSONResponse({"error": "DB nicht verfügbar"},
                                 status_code=503)
-        from .store import get_offer
-        st = await get_offer(owner, offer_id)
+        from .store import get_offer_full
+        full = await get_offer_full(owner, offer_id)   # US-007/009
     except Exception as e:                                          # noqa
         return JSONResponse({"error": str(e)[:200]}, status_code=503)
-    if st is None:
+    if full is None:
         return JSONResponse({"error": "nicht gefunden"},
                             status_code=404)
-    return {"angebot": st}
+    # abwärtskompat: 'angebot' bleibt Top-Level (S1 chat.html);
+    # 'chat' additiv (US-007).
+    return {"angebot": full["angebot"], "chat": full["chat"]}
 
 
 def _korpus_ok():

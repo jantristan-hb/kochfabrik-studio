@@ -186,6 +186,8 @@ $('send').onclick=async()=>{
     if(r.status===401){location.href='/login.html';return;}
     const d=await r.json(); w.remove();
     if(d.angebot){A=d.angebot; A.veranstaltung=A.veranstaltung||{}; A.bloecke=A.bloecke||[];
+      if(d.offer_id){A._offer_id=d.offer_id;
+        history.replaceState(null,'','?offer='+d.offer_id);}   // US-008 reload-fest
       renderForm(); add('bot','Angebot aktualisiert — rechts prüfen/editieren, dann <b>PDF erzeugen</b>.');}
     else add('bot','<span style="color:#a8324b">'+(d.error||'Fehler')+'</span>');
   }catch(e){w.remove();add('bot','<span style="color:#a8324b">Netzwerkfehler: '+e+'</span>');}
@@ -229,7 +231,28 @@ $('editor').addEventListener('input',ev=>{
     collect(); syncTotals();
   }
 });
-renderForm(); collect(); syncTotals();
+// US-008: ?offer={id} → Editor-State + Chat-Verlauf exakt
+// rekonstruieren ("da weitermachen wo aufgehört"). Kein Param =
+// unverändert (neues Angebot).
+(async()=>{
+  const oid=new URLSearchParams(location.search).get('offer');
+  if(oid){
+    try{
+      const r=await fetch('/api/angebot/'+encodeURIComponent(oid));
+      if(r.status===401){location.href='/login.html';return;}
+      if(r.ok){
+        const d=await r.json();
+        if(d.angebot){A=d.angebot; A.veranstaltung=A.veranstaltung||{};
+          A.bloecke=A.bloecke||[];
+          A._offer_id=A._offer_id||parseInt(oid,10);}
+        (d.chat||[]).forEach(msg=>add(
+          msg.role==='me'?'me':'bot',
+          String(msg.content||'').replace(/</g,'&lt;')));
+      }
+    }catch(e){/* graceful: fällt auf leeres Angebot zurück */}
+  }
+  renderForm(); collect(); syncTotals();
+})();
 </script>
 </body>
 </html>

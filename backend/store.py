@@ -7,8 +7,12 @@ persistiert → S2 kann den Chatbot-Editor 1:1 rekonstruieren.
 from sqlalchemy import select
 
 from .db import Session
-from .models import AppUser, Customer, Offer
+from .models import AppUser, ChatMessage, Customer, Offer
 from .numbering import next_angebotsnummer, next_kundennummer
+
+
+class TenantError(PermissionError):
+    """Zugriff auf fremdes Offer (Multi-Tenant-Verletzung) — US-009."""
 
 
 def _kunde_name(angebot: dict) -> str:
@@ -93,3 +97,53 @@ async def list_offers(owner_email: str) -> list[dict]:
                 "updated": o.updated.isoformat() if o.updated else None,
             })
         return out
+
+
+async def _owned_offer(s, owner_email: str, offer_id: int):
+    """Offer laden + Owner verifizieren (US-009). Fremd → TenantError,
+    fehlt → None."""
+    o = await s.get(Offer, int(offer_id))
+    if o is None:
+        return None
+    if o.owner_email != owner_email:
+        raise TenantError(f"offer {offer_id} gehört nicht {owner_email}")
+    return o
+
+
+async def add_chat(owner_email: str, offer_id: int, role: str,
+                   content: str) -> None:
+    """US-006/009 — einen Chat-Turn offer-scoped persistieren.
+    Owner-Check vor jedem Write (kein Cross-Tenant)."""
+    if not content:
+        return
+    async with Session() as s:
+        async with s.begin():
+            o = await _owned_offer(s, owner_email, offer_id)
+            if o is None:
+                raise TenantError(f"offer {offer_id} fehlt")
+            s.add(ChatMessage(offer_id=o.id, role=str(role)[:16],
+                              content=str(content)))
+
+
+async def get_offer_full(owner_email: str,
+                         offer_id: int) -> dict | None:
+    """US-007/009 — Angebot-State + Chat-Verlauf (chronologisch),
+    strikt owner-scoped. Fremd/fehlt → None."""
+    async with Session() as s:
+        try:
+            o = await _owned_offer(s, owner_email, offer_id)
+        except TenantError:
+            return None
+        if o is None:
+            return None
+        msgs = (await s.execute(
+            select(ChatMessage)
+            .where(ChatMessage.offer_id == o.id)
+            .order_by(ChatMessage.ts.asc(),
+                      ChatMessage.id.asc()))).scalars().all()
+        return {
+            "angebot": o.state,
+            "chat": [{"role": m.role, "content": m.content,
+                      "ts": m.ts.isoformat() if m.ts else None}
+                     for m in msgs],
+        }
