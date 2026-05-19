@@ -256,7 +256,15 @@ def main():
     def load(slug, src):
         if slug in el_cache:
             return
-        s2, el, lg = cached_deck(src or smap.get(slug, ""), shared)
+        # Cache ist nach dem deck-Slug benannt; slugify ist idempotent.
+        # Direkt darüber auflösen → Nextcloud/src_pdf-unabhängig
+        # (Container hat nur den gemounteten Cache). Fallback nur wenn
+        # der Slug-Cache fehlt; unauflösbar → skip statt Crash.
+        arg = (slug if os.path.isdir(os.path.join(CACHE, slug))
+               else (src or smap.get(slug, "")))
+        if not arg:
+            return
+        s2, el, lg = cached_deck(arg, shared)
         logos.update(lg)
         el_cache[s2] = el
 
