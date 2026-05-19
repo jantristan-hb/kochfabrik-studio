@@ -77,7 +77,11 @@ async def get_offer(owner_email: str, offer_id: int) -> dict | None:
         return o.state
 
 
-async def list_offers(owner_email: str) -> list[dict]:
+async def list_offers(owner_email: str, q: str = "",
+                      status: str = "") -> list[dict]:
+    """US-014: optionale Filter q (kunde/anlass/angebotsnummer,
+    case-insensitiv) + status (exakt). Leere Filter = alles
+    (abwärtskompat zu S1)."""
     async with Session() as s:
         rows = (await s.execute(
             select(Offer, Customer)
@@ -96,6 +100,14 @@ async def list_offers(owner_email: str) -> list[dict]:
                 "status": o.status,
                 "updated": o.updated.isoformat() if o.updated else None,
             })
+        ql = (q or "").strip().lower()
+        st_f = (status or "").strip()
+        if ql:
+            out = [r for r in out if ql in (
+                f"{r['kunde']} {r['anlass']} "
+                f"{r['angebotsnummer']}").lower()]
+        if st_f:
+            out = [r for r in out if r["status"] == st_f]
         return out
 
 
@@ -147,3 +159,84 @@ async def get_offer_full(owner_email: str,
                       "ts": m.ts.isoformat() if m.ts else None}
                      for m in msgs],
         }
+
+
+async def stats(owner_email: str) -> dict:
+    """US-012 — owner-scoped Kennzahlen: #Angebote, #Kunden,
+    Volumen (Σ aller block.zwischensumme), letzte ≤5."""
+    async with Session() as s:
+        rows = (await s.execute(
+            select(Offer, Customer)
+            .join(Customer, Offer.customer_id == Customer.id)
+            .where(Offer.owner_email == owner_email)
+            .order_by(Offer.updated.desc()))).all()
+    kunden, vol, letzte = set(), 0.0, []
+    for o, c in rows:
+        kunden.add(c.kundennummer)
+        st = o.state or {}
+        for b in (st.get("bloecke") or []):
+            try:
+                vol += float(b.get("zwischensumme") or 0)
+            except (TypeError, ValueError):
+                pass
+        if len(letzte) < 5:
+            letzte.append({
+                "offer_id": o.id, "angebotsnummer": o.angebotsnummer,
+                "kunde": c.name,
+                "anlass": (st.get("veranstaltung") or {}).get("anlass", ""),
+                "status": o.status,
+                "updated": o.updated.isoformat() if o.updated else None,
+            })
+    return {"angebote": len(rows), "kunden": len(kunden),
+            "volumen": round(vol, 2), "letzte": letzte}
+
+
+async def list_customers(owner_email: str) -> list[dict]:
+    """US-013 — Kundenliste owner-scoped (mit #Angebote, letztem
+    Datum)."""
+    async with Session() as s:
+        rows = (await s.execute(
+            select(Offer, Customer)
+            .join(Customer, Offer.customer_id == Customer.id)
+            .where(Offer.owner_email == owner_email)
+            .order_by(Offer.updated.desc()))).all()
+    by: dict = {}
+    for o, c in rows:
+        e = by.setdefault(c.id, {
+            "customer_id": c.id, "kundennummer": c.kundennummer,
+            "name": c.name, "angebote": 0, "letztes": None})
+        e["angebote"] += 1
+        u = o.updated.isoformat() if o.updated else None
+        if u and (e["letztes"] is None or u > e["letztes"]):
+            e["letztes"] = u
+    return sorted(by.values(), key=lambda x: x["letztes"] or "",
+                  reverse=True)
+
+
+async def get_customer(owner_email: str,
+                       customer_id: int) -> dict | None:
+    """US-013 — Kunde + dessen Angebote, strikt owner-scoped
+    (fremd/fehlt → None)."""
+    async with Session() as s:
+        c = await s.get(Customer, int(customer_id))
+        if not c or c.owner_email != owner_email:
+            return None
+        rows = (await s.execute(
+            select(Offer)
+            .where(Offer.customer_id == c.id,
+                   Offer.owner_email == owner_email)
+            .order_by(Offer.updated.desc()))).scalars().all()
+        angebote = []
+        for o in rows:
+            st = o.state or {}
+            angebote.append({
+                "offer_id": o.id, "angebotsnummer": o.angebotsnummer,
+                "kunde": c.name, "kundennummer": c.kundennummer,
+                "anlass": (st.get("veranstaltung") or {}).get("anlass", ""),
+                "status": o.status,
+                "updated": o.updated.isoformat() if o.updated else None,
+            })
+        return {"kunde": {"customer_id": c.id,
+                          "kundennummer": c.kundennummer,
+                          "name": c.name},
+                "angebote": angebote}

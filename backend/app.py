@@ -544,10 +544,67 @@ async def angebote_list(request: Request):
             return JSONResponse({"error": "DB nicht verfügbar",
                                  "offers": []}, status_code=503)
         from .store import list_offers
-        return {"offers": await list_offers(owner)}
+        q = request.query_params.get("q", "")
+        st = request.query_params.get("status", "")
+        return {"offers": await list_offers(owner, q, st)}
     except Exception as e:                                          # noqa
         return JSONResponse({"error": str(e)[:200], "offers": []},
                             status_code=503)
+
+
+@app.get("/api/stats")
+async def api_stats(request: Request):
+    owner = _owner(request)
+    if not owner:
+        return JSONResponse({"error": "auth"}, status_code=401)
+    _empty = {"angebote": 0, "kunden": 0, "volumen": 0.0, "letzte": []}
+    try:
+        from . import db as _db
+        if not await _db.ping():
+            return JSONResponse({**_empty, "error": "DB nicht verfügbar"},
+                                status_code=503)
+        from .store import stats
+        return await stats(owner)
+    except Exception as e:                                          # noqa
+        return JSONResponse({**_empty, "error": str(e)[:200]},
+                            status_code=503)
+
+
+@app.get("/api/kunden")
+async def api_kunden(request: Request):
+    owner = _owner(request)
+    if not owner:
+        return JSONResponse({"error": "auth"}, status_code=401)
+    try:
+        from . import db as _db
+        if not await _db.ping():
+            return JSONResponse({"error": "DB nicht verfügbar",
+                                 "kunden": []}, status_code=503)
+        from .store import list_customers
+        return {"kunden": await list_customers(owner)}
+    except Exception as e:                                          # noqa
+        return JSONResponse({"error": str(e)[:200], "kunden": []},
+                            status_code=503)
+
+
+@app.get("/api/kunde/{customer_id}")
+async def api_kunde(customer_id: int, request: Request):
+    owner = _owner(request)
+    if not owner:
+        return JSONResponse({"error": "auth"}, status_code=401)
+    try:
+        from . import db as _db
+        if not await _db.ping():
+            return JSONResponse({"error": "DB nicht verfügbar"},
+                                status_code=503)
+        from .store import get_customer
+        d = await get_customer(owner, customer_id)
+    except Exception as e:                                          # noqa
+        return JSONResponse({"error": str(e)[:200]}, status_code=503)
+    if d is None:
+        return JSONResponse({"error": "nicht gefunden"},
+                            status_code=404)
+    return d
 
 
 @app.get("/api/angebot/{offer_id}")

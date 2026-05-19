@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KOCHfabrik Studio — Kunden</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .crumb{color:var(--ink-soft);font-size:.85rem;margin-bottom:12px}
+  .crumb a{color:inherit}
+  .kcard{cursor:pointer}
+  .kcard:hover .lnk{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="side-logo"><a href="index.html"><img src="assets/kochfabrik-logo.png" alt="KOCHfabrik Studio"></a></div>
+    <nav class="side-nav">
+      <div class="nav-label">Arbeiten</div>
+      <a class="nav-item" href="index.html"><span class="ic">&#9632;</span> Dashboard</a>
+      <a class="nav-item" href="chat.html"><span class="ic">&#9993;</span> Angebotsgenerator</a>
+      <a class="nav-item" href="praesentationsgenerator.html"><span class="ic">&#9707;</span> Präsentationsgenerator</a>
+      <a class="nav-item" href="bildgenerator.html"><span class="ic">&#9788;</span> Bildgenerator</a>
+      <div class="nav-label">Wissen</div>
+      <a class="nav-item active" href="kunden.html"><span class="ic">&#9787;</span> Kunden</a>
+      <a class="nav-item" href="client.html"><span class="ic">&#9906;</span> Client Research</a>
+      <a class="nav-item" href="bibliothek.html"><span class="ic">&#9783;</span> Bibliothek</a>
+    </nav>
+    <div class="side-foot"><div class="avatar">PD</div><div><div class="nm">Patrick Diehr</div><div class="rl">KOCHfabrik</div></div></div>
+  </aside>
+
+  <main class="view">
+    <div class="topbar">
+      <div><h1 id="title">Kunden</h1><div class="sub" id="sub">Kundendatenbank · alle Angebote je Kunde</div></div>
+      <a class="btn btn-primary" href="chat.html">+ Neues Angebot</a>
+    </div>
+
+    <div class="content">
+      <div id="warn"></div>
+      <div class="panel r r1">
+        <div class="panel-h"><h2 id="ph">Alle Kunden</h2><span id="cnt" style="color:var(--ink-soft);font-size:.85rem"></span></div>
+        <div id="crumb" class="crumb" style="display:none"><a href="kunden.html">&larr; Alle Kunden</a></div>
+        <table class="tbl">
+          <thead id="thead"></thead>
+          <tbody id="body"><tr><td colspan="5" style="padding:18px;color:var(--ink-soft)">Lädt …</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const fmtDate=s=>{if(!s)return '—';try{return new Date(s).toLocaleDateString('de-DE');}catch(e){return s;}};
+function warn(m){$('warn').innerHTML=m?'<div style="background:#fbe7e9;border:1px solid #e7b9c1;color:#a8324b;padding:11px 13px;border-radius:8px;margin-bottom:16px">'+esc(m)+'</div>':'';}
+
+async function listView(){
+  $('thead').innerHTML='<tr><th>Kunden-Nr.</th><th>Kunde</th><th>Angebote</th><th>Zuletzt</th><th></th></tr>';
+  try{
+    const r=await fetch('/api/kunden');
+    if(r.status===401){location.href='/login.html';return;}
+    const d=await r.json(); const ks=d.kunden||[];
+    if(!r.ok&&!ks.length)warn('Datenbank momentan nicht verfügbar ('+(d.error||'')+').');else warn('');
+    $('cnt').textContent=ks.length+' Kunde'+(ks.length===1?'':'n');
+    const tb=$('body');
+    if(!ks.length){tb.innerHTML='<tr><td colspan="5" style="padding:18px;color:var(--ink-soft)">Noch keine Kunden — leg im <a class="lnk" href="chat.html">Angebotsgenerator</a> ein Angebot an.</td></tr>';return;}
+    tb.innerHTML=ks.map(k=>`<tr class="kcard" onclick="location.href='kunden.html?kunde=${encodeURIComponent(k.customer_id)}'">
+      <td><div class="name-cell"><span class="thumb">${esc(String(k.name||'?').charAt(0))}</span>${esc(k.kundennummer||'—')}</div></td>
+      <td>${esc(k.name)}</td><td>${k.angebote||0}</td><td>${fmtDate(k.letztes)}</td>
+      <td><a class="lnk" href="kunden.html?kunde=${encodeURIComponent(k.customer_id)}">Details</a></td></tr>`).join('');
+  }catch(e){$('body').innerHTML='<tr><td colspan="5" style="padding:18px;color:#a8324b">Netzwerkfehler: '+esc(e)+'</td></tr>';}
+}
+
+async function detailView(cid){
+  $('crumb').style.display='';
+  $('thead').innerHTML='<tr><th>Angebots-Nr.</th><th>Anlass</th><th>Status</th><th>Aktualisiert</th><th></th></tr>';
+  try{
+    const r=await fetch('/api/kunde/'+encodeURIComponent(cid));
+    if(r.status===401){location.href='/login.html';return;}
+    if(r.status===404){$('title').textContent='Kunde nicht gefunden';$('body').innerHTML='<tr><td colspan="5" style="padding:18px;color:#a8324b">Dieser Kunde existiert nicht (oder gehört nicht dir).</td></tr>';return;}
+    const d=await r.json();
+    const k=d.kunde||{}, ang=d.angebote||[];
+    $('title').textContent=k.name||'Kunde';
+    $('sub').textContent='Kunden-Nr. '+(k.kundennummer||'—')+' · '+ang.length+' Angebot'+(ang.length===1?'':'e');
+    $('ph').textContent='Angebote von '+(k.name||'—'); $('cnt').textContent='';
+    const tb=$('body');
+    if(!ang.length){tb.innerHTML='<tr><td colspan="5" style="padding:18px;color:var(--ink-soft)">Keine Angebote für diesen Kunden.</td></tr>';return;}
+    tb.innerHTML=ang.map(o=>`<tr>
+      <td><div class="name-cell"><span class="thumb">${esc(String(k.name||'?').charAt(0))}</span>${esc(o.angebotsnummer||'—')}</div></td>
+      <td>${esc(o.anlass)||'—'}</td>
+      <td><span class="badge ${o.status==='final'?'done':'draft'}">${esc(o.status||'draft')}</span></td>
+      <td>${fmtDate(o.updated)}</td>
+      <td><a class="lnk" href="chat.html?offer=${encodeURIComponent(o.offer_id)}">Öffnen</a></td></tr>`).join('');
+  }catch(e){$('body').innerHTML='<tr><td colspan="5" style="padding:18px;color:#a8324b">Netzwerkfehler: '+esc(e)+'</td></tr>';}
+}
+
+const cid=new URLSearchParams(location.search).get('kunde');
+if(cid) detailView(cid); else listView();
+</script>
+</body>
+</html>

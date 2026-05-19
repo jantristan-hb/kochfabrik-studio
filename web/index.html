@@ -18,6 +18,7 @@
       <a class="nav-item" href="praesentationsgenerator.html"><span class="ic">&#9707;</span> Präsentationsgenerator</a>
       <a class="nav-item" href="bildgenerator.html"><span class="ic">&#9788;</span> Bildgenerator</a>
       <div class="nav-label">Wissen</div>
+      <a class="nav-item" href="kunden.html"><span class="ic">&#9787;</span> Kunden</a>
       <a class="nav-item" href="client.html"><span class="ic">&#9906;</span> Client Research</a>
       <a class="nav-item" href="bibliothek.html"><span class="ic">&#9783;</span> Bibliothek</a>
     </nav>
@@ -29,53 +30,70 @@
 
   <main class="view">
     <div class="topbar">
-      <div><h1>Dashboard</h1><div class="sub">Übersicht · Mittwoch, 19. Mai 2026</div></div>
+      <div><h1>Dashboard</h1><div class="sub">Übersicht · echte Daten aus deinen Angeboten</div></div>
       <div class="tb-actions">
-        <a class="btn btn-ghost" href="chat.html">Chat-Konzeption</a>
-        <a class="btn btn-primary" href="upload.html">+ Neues Deck</a>
+        <a class="btn btn-ghost" href="bibliothek.html">Bibliothek</a>
+        <a class="btn btn-primary" href="chat.html">+ Neues Angebot</a>
       </div>
     </div>
 
     <div class="content">
+      <div id="warn"></div>
       <div class="kpi-row">
-        <div class="kpi r r1"><div class="kl"><span class="dot"></span>Decks 2026</div><div class="kv">128</div><div class="kt"><b>+14</b> diesen Monat</div></div>
-        <div class="kpi r r2"><div class="kl"><span class="dot"></span>In Arbeit</div><div class="kv">3</div><div class="kt">2 warten auf Freigabe</div></div>
-        <div class="kpi r r3"><div class="kl"><span class="dot"></span>Ø Erstelldauer</div><div class="kv">6<small style="font-size:1rem"> min</small></div><div class="kt"><b>−63 %</b> vs. manuell</div></div>
-        <div class="kpi r r4"><div class="kl"><span class="dot"></span>Bilder erzeugt</div><div class="kv">412</div><div class="kt">KOCHfabrik-Stil</div></div>
+        <div class="kpi r r1"><div class="kl"><span class="dot"></span>Angebote</div><div class="kv" id="kAngebote">…</div><div class="kt">gespeichert</div></div>
+        <div class="kpi r r2"><div class="kl"><span class="dot"></span>Kunden</div><div class="kv" id="kKunden">…</div><div class="kt">in der Datenbank</div></div>
+        <div class="kpi r r3"><div class="kl"><span class="dot"></span>Volumen</div><div class="kv" id="kVolumen" style="font-size:1.6rem">…</div><div class="kt">Σ Zwischensummen netto</div></div>
+        <div class="kpi r r4"><div class="kl"><span class="dot"></span>Zuletzt</div><div class="kv" id="kLetzte">…</div><div class="kt">kürzlich bearbeitet</div></div>
       </div>
 
       <div class="panel r r5" style="margin-bottom:22px">
         <div class="panel-h"><h2>Schnellstart</h2></div>
         <div class="qs">
-          <a class="qtile" href="upload.html"><div class="qi">&#8682;</div><h3>Angebot hochladen</h3><p>PDF rein — Deck raus. Gänge &amp; Preise werden gelesen.</p><div class="arr">Upload öffnen &rarr;</div></a>
-          <a class="qtile" href="chat.html"><div class="qi">&#9993;</div><h3>Im Chat konzipieren</h3><p>Event beschreiben, Deck entsteht Slide für Slide.</p><div class="arr">Chat öffnen &rarr;</div></a>
-          <a class="qtile" href="bildgenerator.html"><div class="qi">&#9788;</div><h3>Bildgenerator</h3><p>Food, Deckblatt, Location, Ausstattung &amp; mehr — pro Use-Case ein Generator.</p><div class="arr">Kategorie wählen &rarr;</div></a>
+          <a class="qtile" href="chat.html"><div class="qi">&#9993;</div><h3>Neues Angebot</h3><p>Event im Chat beschreiben — Angebot entsteht und wird gespeichert.</p><div class="arr">Angebotsgenerator &rarr;</div></a>
+          <a class="qtile" href="kunden.html"><div class="qi">&#9787;</div><h3>Kunden</h3><p>Kundendatenbank — alle Angebote je Kunde.</p><div class="arr">Kunden öffnen &rarr;</div></a>
+          <a class="qtile" href="bibliothek.html"><div class="qi">&#9783;</div><h3>Bibliothek</h3><p>Vollständiges, durchsuchbares Angebots-Archiv.</p><div class="arr">Archiv öffnen &rarr;</div></a>
         </div>
       </div>
 
-      <div class="cols">
-        <div class="panel r r6">
-          <div class="panel-h"><h2>Zuletzt bearbeitet</h2><a href="bibliothek.html">Bibliothek &rarr;</a></div>
-          <table class="tbl">
-            <thead><tr><th>Deck</th><th>Kunde</th><th>Status</th><th>Datum</th><th></th></tr></thead>
-            <tbody>
-              <tr><td><div class="name-cell"><span class="thumb">B</span>BIG BBQ — Sommerfest</div></td><td>Pflegedienst Hamester</td><td><span class="badge done">Fertig</span></td><td>01.08.2026</td><td><a class="lnk" href="vorschau.html">Öffnen</a></td></tr>
-              <tr><td><div class="name-cell"><span class="thumb">S</span>Sweet Dreams — Gala</div></td><td>Lürssen Werft</td><td><span class="badge draft">Entwurf</span></td><td>22.06.2026</td><td><a class="lnk" href="vorschau.html">Öffnen</a></td></tr>
-              <tr><td><div class="name-cell"><span class="thumb">F</span>Fingerfood Deluxe</div></td><td>Sparkasse Bremerhaven</td><td><span class="badge draft">Entwurf</span></td><td>09.07.2026</td><td><a class="lnk" href="vorschau.html">Öffnen</a></td></tr>
-              <tr><td><div class="name-cell"><span class="thumb">B</span>BIG BBQ — Werksfest</div></td><td>Mercedes Bremen</td><td><span class="badge done">Fertig</span></td><td>15.06.2026</td><td><a class="lnk" href="vorschau.html">Öffnen</a></td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="panel r r6">
-          <div class="panel-h"><h2>Anstehende Events</h2></div>
-          <div class="step active"><span class="sd">1</span><div><div class="st">Lürssen Sommergala</div><div class="ss">22.06. · Deck-Freigabe ausstehend</div></div></div>
-          <div class="step"><span class="sd">2</span><div><div class="st">Mercedes Werksfest</div><div class="ss">15.06. · 240 Gäste · fertig</div></div></div>
-          <div class="step"><span class="sd">3</span><div><div class="st">Hamester Sommerfest</div><div class="ss">01.08. · BIG BBQ · fertig</div></div></div>
-          <a class="btn btn-ghost btn-sm" href="client.html" style="margin-top:16px;width:100%;justify-content:center">Kunden recherchieren</a>
-        </div>
+      <div class="panel r r6">
+        <div class="panel-h"><h2>Zuletzt bearbeitet</h2><a href="bibliothek.html">Alle Angebote &rarr;</a></div>
+        <table class="tbl">
+          <thead><tr><th>Angebots-Nr.</th><th>Kunde</th><th>Anlass</th><th>Status</th><th>Aktualisiert</th><th></th></tr></thead>
+          <tbody id="letzteBody">
+            <tr><td colspan="6" style="padding:18px;color:var(--ink-soft)">Lädt …</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </main>
 </div>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const fmtEUR=n=>{try{return new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(n||0);}catch(e){return (n||0)+' €';}};
+const fmtDate=s=>{if(!s)return '—';try{return new Date(s).toLocaleDateString('de-DE');}catch(e){return s;}};
+(async()=>{
+  try{
+    const r=await fetch('/api/stats');
+    if(r.status===401){location.href='/login.html';return;}
+    const d=await r.json();
+    if(!r.ok){$('warn').innerHTML='<div style="background:#fbe7e9;border:1px solid #e7b9c1;color:#a8324b;padding:11px 13px;border-radius:8px;margin-bottom:16px">Datenbank momentan nicht verfügbar — Werte werden nachgereicht ('+esc(d.error||'')+').</div>';}
+    $('kAngebote').textContent=d.angebote??0;
+    $('kKunden').textContent=d.kunden??0;
+    $('kVolumen').textContent=fmtEUR(d.volumen);
+    $('kLetzte').textContent=(d.letzte||[]).length;
+    const tb=$('letzteBody'), ls=d.letzte||[];
+    if(!ls.length){tb.innerHTML='<tr><td colspan="6" style="padding:18px;color:var(--ink-soft)">Noch keine Angebote — leg im <a class="lnk" href="chat.html">Angebotsgenerator</a> los.</td></tr>';return;}
+    tb.innerHTML=ls.map(o=>`<tr>
+      <td><div class="name-cell"><span class="thumb">${esc(String(o.kunde||'?').charAt(0))}</span>${esc(o.angebotsnummer||'—')}</div></td>
+      <td>${esc(o.kunde)}</td><td>${esc(o.anlass)||'—'}</td>
+      <td><span class="badge ${o.status==='final'?'done':'draft'}">${esc(o.status||'draft')}</span></td>
+      <td>${fmtDate(o.updated)}</td>
+      <td><a class="lnk" href="chat.html?offer=${encodeURIComponent(o.offer_id)}">Öffnen</a></td></tr>`).join('');
+  }catch(e){
+    $('letzteBody').innerHTML='<tr><td colspan="6" style="padding:18px;color:#a8324b">Netzwerkfehler: '+esc(e)+'</td></tr>';
+  }
+})();
+</script>
 </body>
 </html>

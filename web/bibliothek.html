@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>KOCHfabrik Studio — Bibliothek</title>
 <link rel="stylesheet" href="assets/style.css">
+<style>
+  .lib-bar{display:flex;gap:12px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+  .lib-bar input,.lib-bar select{border:1px solid var(--line);border-radius:8px;
+    padding:9px 12px;font:inherit;font-size:.9rem;outline:none}
+  .lib-bar input{flex:1;min-width:220px}
+  .lib-bar input:focus,.lib-bar select:focus{border-color:var(--gold,#AA8339)}
+</style>
 </head>
 <body>
 <div class="app">
@@ -17,38 +24,67 @@
       <a class="nav-item" href="praesentationsgenerator.html"><span class="ic">&#9707;</span> Präsentationsgenerator</a>
       <a class="nav-item" href="bildgenerator.html"><span class="ic">&#9788;</span> Bildgenerator</a>
       <div class="nav-label">Wissen</div>
+      <a class="nav-item" href="kunden.html"><span class="ic">&#9787;</span> Kunden</a>
       <a class="nav-item" href="client.html"><span class="ic">&#9906;</span> Client Research</a>
-      <a class="nav-item" href="bibliothek.html"><span class="ic">&#9783;</span> Bibliothek</a>
+      <a class="nav-item active" href="bibliothek.html"><span class="ic">&#9783;</span> Bibliothek</a>
     </nav>
     <div class="side-foot"><div class="avatar">PD</div><div><div class="nm">Patrick Diehr</div><div class="rl">KOCHfabrik</div></div></div>
   </aside>
 
   <main class="view">
     <div class="topbar">
-      <div><h1>Bibliothek</h1><div class="sub">128 Decks · gespeichert &amp; wiederverwendbar</div></div>
-      <a class="btn btn-primary" href="upload.html">+ Neues Deck</a>
+      <div><h1>Bibliothek</h1><div class="sub">Alle Angebote · durchsuchbares Archiv</div></div>
+      <a class="btn btn-primary" href="chat.html">+ Neues Angebot</a>
     </div>
 
     <div class="content">
+      <div id="warn"></div>
       <div class="panel r r1">
-        <div class="panel-h">
-          <h2>Alle Decks</h2>
-          <div class="chips"><span class="chip">Alle</span><span class="chip">Fertig</span><span class="chip">Entwurf</span><span class="chip">BIG BBQ</span><span class="chip">Sweet Dreams</span></div>
+        <div class="panel-h"><h2>Angebots-Archiv</h2><span id="cnt" style="color:var(--ink-soft);font-size:.85rem"></span></div>
+        <div class="lib-bar">
+          <input id="q" type="search" placeholder="Suche: Kunde, Anlass, Angebots-Nr. …" autocomplete="off">
+          <select id="status">
+            <option value="">Alle Status</option>
+            <option value="draft">Entwurf</option>
+            <option value="final">Final</option>
+          </select>
         </div>
         <table class="tbl">
-          <thead><tr><th>Deck</th><th>Kunde</th><th>Linie</th><th>Status</th><th>Datum</th><th></th></tr></thead>
-          <tbody>
-            <tr><td><div class="name-cell"><span class="thumb">B</span>BIG BBQ — Sommerfest</div></td><td>Pflegedienst Hamester</td><td>BIG BBQ</td><td><span class="badge done">Fertig</span></td><td>01.08.2026</td><td><a class="lnk" href="vorschau.html">Öffnen</a></td></tr>
-            <tr><td><div class="name-cell"><span class="thumb">S</span>Sweet Dreams — Gala</div></td><td>Lürssen Werft</td><td>Sweet Dreams</td><td><span class="badge draft">Entwurf</span></td><td>22.06.2026</td><td><a class="lnk" href="vorschau.html">Öffnen</a></td></tr>
-            <tr><td><div class="name-cell"><span class="thumb">F</span>Fingerfood Deluxe</div></td><td>Sparkasse Bremerhaven</td><td>Fingerfood</td><td><span class="badge draft">Entwurf</span></td><td>09.07.2026</td><td><a class="lnk" href="vorschau.html">Öffnen</a></td></tr>
-            <tr><td><div class="name-cell"><span class="thumb">B</span>BIG BBQ — Werksfest</div></td><td>Mercedes Bremen</td><td>BIG BBQ</td><td><span class="badge done">Fertig</span></td><td>15.06.2026</td><td><a class="lnk" href="vorschau.html">Öffnen</a></td></tr>
-            <tr><td><div class="name-cell"><span class="thumb">G</span>Greenline Veggie</div></td><td>Stadtwerke Bremerhaven</td><td>Greenline</td><td><span class="badge done">Fertig</span></td><td>28.05.2026</td><td><a class="lnk" href="vorschau.html">Öffnen</a></td></tr>
-            <tr><td><div class="name-cell"><span class="thumb">S</span>Sweet Dreams — Jubiläum</div></td><td>Volksbank Nordheide</td><td>Sweet Dreams</td><td><span class="badge done">Fertig</span></td><td>11.05.2026</td><td><a class="lnk" href="vorschau.html">Öffnen</a></td></tr>
-          </tbody>
+          <thead><tr><th>Angebots-Nr.</th><th>Kunde</th><th>Anlass</th><th>Status</th><th>Aktualisiert</th><th></th></tr></thead>
+          <tbody id="body"><tr><td colspan="6" style="padding:18px;color:var(--ink-soft)">Lädt …</td></tr></tbody>
         </table>
       </div>
     </div>
   </main>
 </div>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const fmtDate=s=>{if(!s)return '—';try{return new Date(s).toLocaleDateString('de-DE');}catch(e){return s;}};
+let t=null;
+async function load(){
+  const q=$('q').value.trim(), st=$('status').value;
+  try{
+    const r=await fetch('/api/angebote?q='+encodeURIComponent(q)+'&status='+encodeURIComponent(st));
+    if(r.status===401){location.href='/login.html';return;}
+    const d=await r.json();
+    const tb=$('body'), offers=d.offers||[];
+    if(!r.ok && !offers.length){
+      $('warn').innerHTML='<div style="background:#fbe7e9;border:1px solid #e7b9c1;color:#a8324b;padding:11px 13px;border-radius:8px;margin-bottom:16px">Datenbank momentan nicht verfügbar ('+esc(d.error||'')+').</div>';
+    } else { $('warn').innerHTML=''; }
+    $('cnt').textContent=offers.length+' Angebot'+(offers.length===1?'':'e');
+    if(!offers.length){tb.innerHTML='<tr><td colspan="6" style="padding:18px;color:var(--ink-soft)">Keine Treffer.'+(q||st?' Filter zurücksetzen.':' Leg im <a class="lnk" href="chat.html">Angebotsgenerator</a> los.')+'</td></tr>';return;}
+    tb.innerHTML=offers.map(o=>`<tr>
+      <td><div class="name-cell"><span class="thumb">${esc(String(o.kunde||'?').charAt(0))}</span>${esc(o.angebotsnummer||'—')}</div></td>
+      <td>${esc(o.kunde)}</td><td>${esc(o.anlass)||'—'}</td>
+      <td><span class="badge ${o.status==='final'?'done':'draft'}">${esc(o.status||'draft')}</span></td>
+      <td>${fmtDate(o.updated)}</td>
+      <td><a class="lnk" href="chat.html?offer=${encodeURIComponent(o.offer_id)}">Öffnen</a></td></tr>`).join('');
+  }catch(e){$('body').innerHTML='<tr><td colspan="6" style="padding:18px;color:#a8324b">Netzwerkfehler: '+esc(e)+'</td></tr>';}
+}
+$('q').addEventListener('input',()=>{clearTimeout(t);t=setTimeout(load,250);});
+$('status').addEventListener('change',load);
+load();
+</script>
 </body>
 </html>
