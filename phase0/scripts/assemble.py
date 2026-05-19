@@ -134,17 +134,43 @@ def main():
     cx = psycopg2.connect(**DSN)
     cu = cx.cursor()
 
-    # ---- Food: 1 Embed-Batch, pro Gang 1 ANN ----
-    qtext = [f"{c} — {' '.join(n + ' ' + d for n, d in ds)}"
+    # ---- Food: Kategorie HART locken (Gang-Headline → nächstes
+    #      module_label), dann ANN NUR im Modul + Kapazitäts-Tiebreak.
+    #      1 Embed-Batch (labels + headlines + headline+dishes). ----
+    import numpy as np
+    cu.execute("SELECT DISTINCT module_type, module_label FROM "
+               "menu_composition WHERE module_label IS NOT NULL "
+               "AND module_type IS NOT NULL")
+    mods = cu.fetchall()
+    labels = [m[1] for m in mods]
+    heads = [c for c, _ in courses]
+    conts = [f"{c} — {' '.join(n + ' ' + d for n, d in ds)}"
              for c, ds in courses]
-    qv = embed(qtext) if qtext else []
+    allv = embed(labels + heads + conts) if courses else []
+    nL = len(labels)
+    Ln = np.asarray(allv[:nL], float) if nL else np.zeros((0, 768))
+    Ln = Ln / (np.linalg.norm(Ln, axis=1, keepdims=True) + 1e-9)
+    Hv = list(allv[nL:nL + len(heads)])
+    Cv = list(allv[nL + len(heads):])
     picks = []                                # (pos, slug, page, dishes)
     fpos = (0.30, 0.72)
-    for i, ((c, ds), v) in enumerate(zip(courses, qv)):
-        q = "[" + ",".join(f"{x:.6f}" for x in v) + "]"
-        cu.execute("SELECT deck,page,src_pdf FROM menu_composition "
-                   "ORDER BY embedding<=>%s::vector LIMIT 8", (q,))
-        cands = cu.fetchall()
+    for i, ((c, ds), hv, cv) in enumerate(zip(courses, Hv, Cv)):
+        hvn = np.asarray(hv, float)
+        hvn = hvn / (np.linalg.norm(hvn) + 1e-9)
+        mi = int(np.argmax(Ln @ hvn)) if nL else -1
+        mt, mlabel = mods[mi] if mi >= 0 else (None, "?")
+        q = "[" + ",".join(f"{x:.6f}" for x in cv) + "]"
+        if mt is not None:
+            cu.execute("SELECT deck,page,src_pdf FROM menu_composition "
+                       "WHERE module_type=%s ORDER BY "
+                       "embedding<=>%s::vector LIMIT 8", (mt, q))
+            cands = cu.fetchall()
+        else:
+            cands = []
+        if not cands:                         # Fallback: global ANN
+            cu.execute("SELECT deck,page,src_pdf FROM menu_composition "
+                       "ORDER BY embedding<=>%s::vector LIMIT 8", (q,))
+            cands = cu.fetchall()
         nd = len(ds)
         # kapazitäts-bewusst: kleinste Slot-Zahl >= #Gerichte (sonst
         # max Slots), bei Gleichstand ANN-Rang (Reihenfolge bleibt)
@@ -164,8 +190,8 @@ def main():
         deck, pg, src = best
         p = fpos[0] + (fpos[1] - fpos[0]) * (i / max(len(courses) - 1, 1))
         picks.append((p, deck, int(pg), src, c, ds))
-        print(f"  Food «{c[:24]}» → {deck[:24]}::{pg} "
-              f"({nd} Gerichte)")
+        print(f"  Food «{c[:20]}» → {deck[:20]}::{pg} "
+              f"[mod:{mlabel[:20]}] ({nd})")
 
     # ---- Frame: pflicht, je Kategorie kunden-stabil random aus dem
     #      freigegebenen Set (golden + Alternativen), verbatim ----
