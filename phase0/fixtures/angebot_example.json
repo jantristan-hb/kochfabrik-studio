@@ -1,0 +1,60 @@
+{
+  "kunde": "RAUMKARUSSELL GmbH",
+  "adresse": "Frau Claudia Kiesel, Ernst-Merck-Straße 12-14, 20099 Hamburg",
+  "angebots_nr": "10182",
+  "datum": "15. Juli 2025",
+  "kundennr": "4502",
+  "lieferdatum": "12.09.2026",
+  "ansprechpartner": "Jule Wiegers",
+  "veranstaltung": {
+    "anlass": "Sommerfest Regio Kliniken",
+    "datum": "12. September 2026",
+    "beginn": "19:00 Uhr - 01:00 Uhr",
+    "personen": 500,
+    "ort": "Edelfettwerk, Schnackenburgallee 202, 22525 Hamburg",
+    "konzept": "Street Food"
+  },
+  "bloecke": [
+    {
+      "typ": "speisen",
+      "titel": "Speisen",
+      "positionen": [
+        {
+          "bezeichnung": "1x Live Cooking/BBQ Station im Beach & 1 Foodtruck",
+          "menge": 1,
+          "einzelpreis": 0.0,
+          "gesamt": 0.0
+        }
+      ],
+      "zwischensumme": 0.0
+    },
+    {
+      "typ": "logistik",
+      "titel": "Logistik & Mobiliar",
+      "positionen": [
+        {
+          "bezeichnung": "Mobiles Grillequipment ab 100 PAX",
+          "menge": 1,
+          "einzelpreis": 195.0,
+          "gesamt": 195.0
+        },
+        {
+          "bezeichnung": "3 vintage Gerüstbohlen für Ihr Buffet",
+          "menge": 3,
+          "einzelpreis": 39.9,
+          "gesamt": 119.7
+        }
+      ],
+      "zwischensumme": 314.7
+    }
+  ],
+  "footer": {
+    "firma": "Die KOCHfabrik GmbH",
+    "strasse": "Peiner Hag 9a",
+    "plz_ort": "25497 Prisdorf",
+    "standorte": "Planungsfabrik Hamburg · Restaurant Goldschätzchen · Speisenmacherei",
+    "bic": "GENODEF1PIN",
+    "amtsgericht": "AG Pinneberg",
+    "steuernummer": "18/298/24168"
+  }
+}
