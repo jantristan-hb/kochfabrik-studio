@@ -50,6 +50,116 @@ ON_TABLE = ("Plate the dish beautifully and place it naturally ON the "
 FREE = ("Place the dish in a fitting, realistic setting/background "
         "appropriate to the dish and its cuisine. ")
 
+# ---------------- Kategorien ----------------
+# Jede Kategorie = eigener Use-Case (dedizierte Generator-Seite).
+# `scaffold` (EN) wird serverseitig zwischen Kontext und Motiv gesetzt.
+# HINWEIS: `goldschaetzchen` + `kochfabrik` sind meine Auslegung der
+# KOCHfabrik-Begriffe — Scaffold-Text hier zentral & isoliert tunebar.
+CATS = {
+    "food": {
+        "label": "Foodbilder",
+        "hint": "Gericht eingeben — fotorealistischer Speisen-Shot.",
+        "icon": "&#9788;", "table": True, "scaffold": "",
+        "chips": [
+            "Klassisches deutsches Frühstück: frische Brötchen, "
+            "Aufschnitt, Käse, gekochtes Ei, Butter, Marmelade, Kaffee",
+            "T-Bone Steak medium rare vom Grill mit Kräuterbutter, "
+            "Rosmarin und Meersalz auf rustikalem Holzbrett",
+            "Perfektes Sashimi: Lachs, Thunfisch, Gelbschwanz, Wasabi, "
+            "eingelegter Ingwer, Sojaschälchen"]},
+    "cover": {
+        "label": "Deckblatt",
+        "hint": "Stimmungsvolles Titelbild — Platz für Text, kein "
+                "Text im Bild.",
+        "icon": "&#9635;", "table": False,
+        "scaffold": ("Compose an elegant, atmospheric TITLE/COVER "
+                     "background image for a catering offer "
+                     "presentation: cinematic depth, generous negative "
+                     "space for an overlaid headline, warm KOCHfabrik "
+                     "gold-and-natural mood. Render NO text or letters. "),
+        "chips": [
+            "Sommerfest unter freiem Himmel, lange festlich gedeckte "
+            "Tafeln im Abendlicht",
+            "Eleganter Galaabend, Kerzenlicht, Goldakzente, dunkler "
+            "edler Hintergrund",
+            "Modernes Business-Event, klare Architektur, warmes "
+            "Catering-Ambiente"]},
+    "location": {
+        "label": "Location-Fotos",
+        "hint": "Veranstaltungsort als Architektur-/Ambiente-Foto.",
+        "icon": "&#9906;", "table": False,
+        "scaffold": ("Architectural / venue photograph of the event "
+                     "LOCATION itself (interior or exterior), "
+                     "professional real-estate-quality wide shot, "
+                     "natural daylight or warm evening ambiance, no "
+                     "food in focus. "),
+        "chips": [
+            "Industrieloft mit Sichtbeton und großen Fenstern",
+            "Reetgedeckte Scheune, rustikal, festlich bestuhlt",
+            "Hafenterrasse mit Wasserblick bei Abendlicht"]},
+    "ausstattung": {
+        "label": "Ausstattungsfotos",
+        "hint": "Catering-Equipment, Buffet- & Service-Stationen.",
+        "icon": "&#9881;", "table": False,
+        "scaffold": ("Professional product/reportage photograph of "
+                     "catering EQUIPMENT and service setup: mobile "
+                     "kitchen, buffet and live-cooking stations, "
+                     "elegant serviceware and table-top styling, "
+                     "high-end and clean, no people in focus. "),
+        "chips": [
+            "Live-Cooking-Station mit Plancha und Kupfertöpfen",
+            "Elegant eingedecktes Buffet mit Holz und Schiefer",
+            "Mobile Profiküche im Eventzelt"]},
+    "goldschaetzchen": {
+        "label": "Goldschätzchen",
+        "hint": "Eventlocation Peiner Hof Prisdorf — Herrenhaus, "
+                "Reetscheune, Biergarten.",
+        "icon": "&#8962;", "table": False,
+        "scaffold": ("Architectural / venue photograph of the historic "
+                     "'Goldschätzchen' event location at Peiner Hof in "
+                     "Prisdorf near Hamburg: a 200-year-old manor house "
+                     "and a large thatched-roof barn on a rural estate "
+                     "reached via a lime-tree avenue, grand interior "
+                     "with four-metre stucco ceilings and chandeliers, "
+                     "a wide sun terrace and beer garden overlooking "
+                     "meadows and a pond. Elegant-rural, real-estate-"
+                     "quality wide shot, warm natural light, no food "
+                     "in focus. "),
+        "chips": [
+            "Reetgedeckte Scheune im Abendlicht, festlich bestuhlt",
+            "Herrenhaus-Saal mit Stuckdecke und Kronleuchter",
+            "Sonnenterrasse und Biergarten mit Wiesenblick"]},
+    "kochfabrik": {
+        "label": "KOCHfabrik-Fotos",
+        "hint": "Marke & Team — nachhaltiges Eventcatering, Streetfood-"
+                "Court, Köche.",
+        "icon": "&#10070;", "table": False,
+        "scaffold": ("Authentic brand reportage photograph of Die "
+                     "KOCHfabrik's sustainable North-German event "
+                     "catering: chefs and service team at work with "
+                     "natural movement, streetfood courts and live "
+                     "food stations built at event venues (waterfront, "
+                     "industrial-chic halls), fresh regional produce, "
+                     "warm natural light, human and emotional rather "
+                     "than corporate, documentary style, no rendered "
+                     "text or logos. "),
+        "chips": [
+            "Streetfood-Court mit mehreren Live-Stationen im "
+            "Industrieloft",
+            "Köche-Team beim Anrichten, natürliche Bewegung",
+            "Nachhaltiges ELEMENTUM-Setup, regionale Produkte, "
+            "Naturlicht"]},
+    "freitext": {
+        "label": "Freitext",
+        "hint": "Beliebiges Motiv — voller Prompt, kein Kategorie-Bias.",
+        "icon": "&#9998;", "table": False, "scaffold": "",
+        "chips": [
+            "Detailaufnahme von Kräutern und Gewürzen auf Marmor",
+            "Weinglas im Gegenlicht, unscharfer Eventhintergrund",
+            "Rustikales Brot frisch aus dem Holzofen"]},
+}
+FOOD_LIKE = ("food",)   # nur hier: Tisch / freier Speisen-Kontext sinnvoll
+
 
 # ---------------- Auth (env-getrieben) ----------------
 def _users():
@@ -115,12 +225,14 @@ def _bg_pool():
             if f.lower().endswith((".png", ".jpg", ".jpeg"))]
 
 
-def image_kochfabrik(prompt: str, table: bool = True):
+def image_kochfabrik(prompt: str, table: bool = True, cat: str = "food"):
     """Prompt → KOCHfabrik-Style-PNG (bytes). table=True: zufällige
-    Tisch-Referenz aus dem Pool (kontext-aware). Gibt (bytes, bg) zurück."""
+    Tisch-Referenz aus dem Pool (kontext-aware). `cat` wählt das
+    Kategorie-Scaffold. Gibt (bytes, bg) zurück."""
     key = _gemini_key()
     if not key:
         raise RuntimeError("GEMINI_API_KEY fehlt")
+    scaffold = CATS.get(cat, CATS["freitext"])["scaffold"]
     parts, bg = [], None
     pool = _bg_pool()
     if table and pool:
@@ -129,9 +241,12 @@ def image_kochfabrik(prompt: str, table: bool = True):
                       "data": base64.b64encode(open(bg, "rb").read())
                       .decode()}})
         ctx = ON_TABLE
-    else:
+    elif cat in FOOD_LIKE:
         ctx = FREE
-    parts.append({"text": PHOTO + ctx + "Motiv: " + prompt.strip()})
+    else:
+        ctx = ""        # Kontext trägt das Kategorie-Scaffold
+    parts.append({"text": PHOTO + ctx + scaffold
+                  + "Motiv: " + prompt.strip()})
     body = {"contents": [{"parts": parts}],
             "generationConfig": {"responseModalities": ["IMAGE"],
             "imageConfig": {"aspectRatio": IMG_ASPECT,
@@ -171,13 +286,15 @@ class Login(BaseModel):
 class ImgReq(BaseModel):
     prompt: str
     table: bool = True
+    category: str = "food"
 
 
 @app.get("/api/health")
 def health():
     return {"ok": True, "model": MODEL, "size": IMG_SIZE,
             "aspect": IMG_ASPECT, "key": bool(_gemini_key()),
-            "bg_pool": len(_bg_pool()), "users": len(_users())}
+            "bg_pool": len(_bg_pool()), "users": len(_users()),
+            "cats": len(CATS)}
 
 
 @app.post("/api/login")
@@ -197,12 +314,20 @@ def logout():
     return r
 
 
+@app.get("/api/cats")
+def api_cats():
+    return {"cats": [{"key": k, "label": v["label"], "hint": v["hint"],
+                      "icon": v["icon"], "table": v["table"],
+                      "chips": v["chips"]} for k, v in CATS.items()]}
+
+
 @app.post("/api/image")
 def api_image(r: ImgReq):
     if not r.prompt.strip():
         return JSONResponse({"error": "prompt leer"}, status_code=400)
+    cat = r.category if r.category in CATS else "food"
     try:
-        png, bg = image_kochfabrik(r.prompt, r.table)
+        png, bg = image_kochfabrik(r.prompt, r.table, cat)
     except Exception as e:
         return JSONResponse({"error": str(e)[:200]}, status_code=502)
     return {"image": "data:image/png;base64,"
