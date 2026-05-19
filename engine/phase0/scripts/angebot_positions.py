@@ -150,18 +150,50 @@ def render(el, angebot):
                 c["lines"][0]["txt"] = blk.titel or blk.typ.title()
             out.append(c)
         ry = cur_y + hoff
+        # Bezeichnung kann lang sein („Gegrilltes Striploin … &
+        # Sommerbohnen") → würde bei wrap:false in die Menge-Spalte
+        # laufen. Python-side pre-wrap auf max 2 Zeilen (Word-Break,
+        # max ~68 Zeichen pro Zeile bei box-w 3.7in × 9pt × SIZE_K)
+        # + dyn. ry-Pitch (1 Zeile → dy, 2 Zeilen → ~1.8*dy).
+        BEZ_W, BEZ_MAX = 3.7, 68
+        def _wrap_bez(t):
+            t = str(t or "").strip()
+            if len(t) <= BEZ_MAX:
+                return [t]
+            words = t.split()
+            L1, idx = "", 0
+            for i, w in enumerate(words):
+                if not L1:
+                    L1, idx = w, i + 1
+                elif len(L1) + 1 + len(w) <= BEZ_MAX:
+                    L1 += " " + w; idx = i + 1
+                else:
+                    break
+            rest = " ".join(words[idx:])
+            if not rest:
+                return [L1]
+            L2 = (rest if len(rest) <= BEZ_MAX
+                  else rest[:BEZ_MAX - 1] + "…")
+            return [L1, L2]
+
         for p in blk.positionen:
             if p.is_header:
-                out.append(_txt(X_BEZ, ry, 3.4, body_st,
+                out.append(_txt(X_BEZ, ry, BEZ_W, body_st,
                                 p.bezeichnung, weight="Bold"))
+                ry = round(ry + dy, 3)
             else:
-                out.append(_txt(X_BEZ, ry, 3.4, body_st, p.bezeichnung))
+                lns = _wrap_bez(p.bezeichnung)
+                bez_el = {"t": "text", "x": round(X_BEZ, 3),
+                          "y": round(ry, 3), "w": round(BEZ_W, 3),
+                          "h": 0.16 if len(lns) == 1 else 0.32,
+                          "lines": [_line(s, body_st) for s in lns]}
+                out.append(bez_el)
                 out.append(_txt(X_MEN, ry, 0.4, body_st, f"{p.menge:g}"))
                 out.append(_txt(X_EP, ry, 0.5, body_st,
                                 _eur(p.einzelpreis)))
                 out.append(_txt(X_GES, ry, 0.5, body_st,
                                 _eur(p.gesamt)))
-            ry = round(ry + dy, 3)
+                ry = round(ry + (dy * (1.8 if len(lns) > 1 else 1.0)), 3)
         if blk.zwischensumme:
             ry = round(ry + dy, 3)
             out.append(_txt(X_GES - 0.12, ry, 0.6, body_st,
