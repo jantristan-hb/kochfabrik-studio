@@ -239,8 +239,39 @@ def parse_offer_dishes(path, offer=""):
     """Wie parse_offer, aber pro Gang die EINZEL-Gerichte (name, desc).
     md: Leerzeile trennt Gerichte; Zeile 1 = Name, Rest = Beschreibung."""
     if not path.lower().endswith((".md", ".txt")):
-        # PDF-Fallback: ganzer Gang-Text als ein Block (grob, später feiner)
-        return [(c, [(b, "")]) for c, b in parse_offer(path, offer)]
+        # PDF: pro Gang EINZEL-Gerichte. Leerzeile/Footer/Seitenzahl =
+        # Gericht-Trenner; Zeile 1 = Name, Rest = Beschreibung; CAPS-
+        # Zeile = neuer Gang (SKIP_HEAD stoppt bei ANGEBOT/PERSONAL/…).
+        txt = subprocess.run(["pdftotext", "-layout", path, "-"],
+                              capture_output=True, text=True).stdout
+        out, course, pend, cd = [], None, [], []
+
+        def _flush():
+            if course and pend:
+                cd.append((pend[0][:120],
+                           " ".join(pend[1:])[:160]))
+        phone = re.compile(r"^\+?[\d][\d /().-]{5,}$")   # Tel/Nummern-Zeile
+        for raw in txt.splitlines():
+            s = raw.strip()
+            if not s or FOOTER.search(s) or s.isdigit() or phone.match(s):
+                _flush()
+                pend = []
+                continue
+            if HEAD.match(s) and not re.search(r"\d", s):
+                _flush()
+                pend = []
+                if course and cd:
+                    out.append((course, cd))
+                cd = []
+                course = (None if any(x in s.upper() for x in SKIP_HEAD)
+                          else s)
+                continue
+            if course:
+                pend.append(s)
+        _flush()
+        if course and cd:
+            out.append((course, cd))
+        return [(c, d) for c, d in out if d]
     lines = open(path, encoding="utf-8").read().splitlines()
     sec, take = [], False
     for ln in lines:
@@ -286,6 +317,24 @@ def parse_offer_dishes(path, offer=""):
 
 
 GOLD = "AA8339"
+
+
+def slot_count(seq):
+    """Anzahl Gericht-Name-Slots (Bold-weiß-Captions) einer Slide —
+    gleiche Erkennung wie text_swap. Für kapazitäts-bewusstes Matching."""
+    texts = [e for e in seq if e["t"] == "text" and e.get("lines")]
+    if not texts:
+        return 0
+    mx = max(max(l["size"] for l in e["lines"]) for e in texts)
+    n = 0
+    for e in texts:
+        if max(l["size"] for l in e["lines"]) >= 0.5 * mx:
+            continue
+        l0 = e["lines"][0]
+        if str(l0.get("weight", "")).lower() in ("bold", "extrabold") \
+                and l0.get("color", "") != GOLD:
+            n += 1
+    return n
 
 
 def text_swap(seq, dishes):
