@@ -2,6 +2,23 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/)
 
+## [Sprint 3] — 2026-05-19 — EPIC-001 Angebotsgenerator (Renderer + Pixel-Gate)
+
+### Hinzugefügt
+- **US-013: Positions-Repeater-Renderer** — `angebot_positions.py`:
+  per-Zeile aus Modell (Sub-Header/Zeilen/Zwischensumme), volle
+  Tabellenregion, Reflow; Gold-Header/Footer invariant.
+- **US-015: PDF-Diff-Harness** — `pdf_diff.py` (pdftoppm + PIL,
+  per-Seite Score, CLI/Exit-Code).
+- **US-017: Muster→Angebot-Parser** — `angebot_parse.py` (PDF →
+  Angebot, selbst-enthalten).
+- **US-014: End-to-End Renderer-CLI** — `angebot_render.py`
+  (Angebot-JSON → PDF via fill→positions→reconstruct→soffice).
+- **US-016: Pixel-Diff-Gate** — `angebot_gate.py` + `PIXEL-GATE.md`:
+  Round-Trip, Referenz-Self-Round-Trip max 0.1656 ≤ TOL 0.25.
+- **US-019: Render-Regression** — `test_angebot_render.py`: echtes PDF
+  → kf_classify + Pixel-Gate (schließt US-012-Proxy).
+
 ## [Sprint 2] — 2026-05-19 — EPIC-001 Angebotsgenerator (Fundament)
 
 ### Hinzugefügt

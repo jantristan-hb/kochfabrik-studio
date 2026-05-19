@@ -46,6 +46,7 @@ Kein Test-Framework — Verify = Story-Einzeiler (USER-STORIES.md).
 |--------|-------|--------|-------|
 | 1 | Engine Phase A (parametrisieren/orchestrieren/absichern + Mess-Gate) | DONE | 2026-05-18 |
 | 2 | EPIC-001 Angebotsgenerator: Template-Extraktion + Datenmodell (US-007..012) | DONE | 2026-05-19 |
+| 3 | EPIC-001 Angebotsgenerator: Renderer + Pixel-Diff-Gate (US-013..019) | DONE | 2026-05-19 |
 
 ## Sprint-Abschluss
 `/sprint-review pptxgenerator_v2 {N}` — Docs, RETRO, Integration.
