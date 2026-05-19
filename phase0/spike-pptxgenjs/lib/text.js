@@ -57,7 +57,11 @@ function emitText(slide, e, band) {
     align: "left",
     valign: "top",
     margin: 0,
-    wrap: false,                   // kein Reflow; Zeilen wie im Original
+    // Default `wrap:false` (Präsentations-Faithful — Zeilen wie im
+    // Original). Opt-in per Element `wrap:true` für Angebot-Felder
+    // wie {KONZEPT}, deren Text laufzeit-dynamisch ist und in eine
+    // breitere Box hineinwrappt.
+    wrap: e.wrap === true,
     lineSpacingMultiple: LINE_K,
   });
 }
