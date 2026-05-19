@@ -73,22 +73,33 @@ fetch('/api/health').then(r=>r.json()).then(d=>{
  document.getElementById('model').textContent=
   'Modell: '+d.model+(d.key?'':' · ⚠ kein API-Key');}).catch(()=>{});
 const go=document.getElementById('go'),out=document.getElementById('out');
+const STEPS=["Motiv wird komponiert…","Fotorealistische Texturen…",
+ "Natürliches Licht & Schärfentiefe…","Plating & Details…",
+ "Finalisiere 2K-Shot…"];
+let timer=null;
 go.onclick=async()=>{
  const prompt=document.getElementById('p').value.trim();
  if(!prompt){out.innerHTML='<div class="ph err">Bitte Motiv eingeben.</div>';return;}
  go.disabled=true;const t0=Date.now();
- out.innerHTML='<div class="ph"><span class="spin"></span>Generiere im KOCHfabrik-Stil…</div>';
+ const render=()=>{const s=((Date.now()-t0)/1000);
+  const st=STEPS[Math.min(STEPS.length-1,Math.floor(s/5))];
+  out.innerHTML='<div class="ph"><span class="spin"></span>'+st+
+   '<div style="margin-top:8px;color:#b7ad99">'+s.toFixed(0)+' s'+
+   ' · Foto-realistisch, 2K — das dauert ~15–30 s</div></div>';};
+ render();timer=setInterval(render,1000);
  try{
   const r=await fetch('/api/image',{method:'POST',
    headers:{'Content-Type':'application/json'},
    body:JSON.stringify({prompt})});
   const d=await r.json();
+  clearInterval(timer);
   if(d.image){out.innerHTML='<img src="'+d.image+'" alt="">'+
    '<div style="margin-top:10px;font-size:13px;color:#9a907f">'+
    ((Date.now()-t0)/1000).toFixed(1)+' s · '+d.model+'</div>';}
   else{out.innerHTML='<div class="ph err">Fehler: '+
    (d.error||'unbekannt')+'</div>';}
- }catch(e){out.innerHTML='<div class="ph err">Netzwerkfehler: '+e+'</div>';}
+ }catch(e){clearInterval(timer);
+  out.innerHTML='<div class="ph err">Netzwerkfehler: '+e+'</div>';}
  go.disabled=false;
 };
 </script>

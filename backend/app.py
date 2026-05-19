@@ -24,12 +24,22 @@ from pydantic import BaseModel
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WEB = os.path.join(ROOT, "web")
 MODEL = os.environ.get("KF_IMG_MODEL", "gemini-3-pro-image-preview")
+IMG_SIZE = os.environ.get("KF_IMG_SIZE", "2K")        # pro: 1K/2K/4K
+IMG_ASPECT = os.environ.get("KF_IMG_ASPECT", "16:9")  # Food = landscape
 
-# KOCHfabrik-CI-Bildstil — jedem Prompt vorangestellt
-STYLE = ("KOCHfabrik catering style: premium editorial food photography, "
-         "warm natural light, clean modern composition, subtle gold "
-         "(#AA8339) accent, bright white/cream background, high-end event "
-         "catering, appetizing, no text, no logo. Motiv: ")
+# Foto-realistischer KOCHfabrik-Stil — jedem Motiv vorangestellt.
+# Ziel: echtes Foto, KEIN KI-Look (Jan: "perfekte, realistische
+# essens shots"). Kamera/Licht/Authentizität explizit, Brand dezent.
+STYLE = (
+    "Ultra-realistic professional food photograph, shot on a full-frame "
+    "DSLR with an 85mm prime lens at f/2.8, soft natural window light, "
+    "shallow depth of field, true-to-life colours and textures, fine "
+    "surface detail, authentic hand-plated catering food, subtle natural "
+    "imperfections, light steam, editorial fine-dining quality. Context: "
+    "KOCHfabrik premium event catering — clean, modern, appetising "
+    "presentation. This is a REAL PHOTOGRAPH — not an illustration, not a "
+    "3D render, not AI art; no oversaturation, no plastic or waxy look, "
+    "no artificial perfection, no text, no logo, no watermark. Motiv: ")
 
 
 def _gemini_key():
@@ -51,7 +61,14 @@ def image_kochfabrik(prompt: str) -> bytes:
         raise RuntimeError("GEMINI_API_KEY fehlt")
     url = (f"https://generativelanguage.googleapis.com/v1beta/"
            f"models/{MODEL}:generateContent?key={key}")
-    body = {"contents": [{"parts": [{"text": STYLE + prompt.strip()}]}]}
+    body = {
+        "contents": [{"parts": [{"text": STYLE + prompt.strip()}]}],
+        "generationConfig": {
+            "responseModalities": ["IMAGE"],
+            "imageConfig": {"aspectRatio": IMG_ASPECT,
+                            "imageSize": IMG_SIZE},
+        },
+    }
     req = urllib.request.Request(url, json.dumps(body).encode(),
                                  {"Content-Type": "application/json"})
     res = json.loads(urllib.request.urlopen(req, timeout=120).read())
@@ -72,7 +89,8 @@ class ImgReq(BaseModel):
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "model": MODEL, "key": bool(_gemini_key())}
+    return {"ok": True, "model": MODEL, "size": IMG_SIZE,
+            "aspect": IMG_ASPECT, "key": bool(_gemini_key())}
 
 
 @app.post("/api/image")
