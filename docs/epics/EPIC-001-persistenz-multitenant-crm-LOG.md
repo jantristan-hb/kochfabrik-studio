@@ -40,3 +40,12 @@
 - Nutzt S1-`chat_message` (keine neuen Tabellen). Carry-Over S1 konsumiert (Alembic, pytest-CI).
 - Waves: 1=US-006/010/011 · 2=US-007/009 · 3=US-008. Sequentiell empfohlen.
 - Docs: docs/sprint-2/* committed. Status: PLAN. Nächster: /sprint-execute kochfabrik-studio 2.
+
+### /sprint-execute + review/integrate (Sprint 2, headless+sequentiell)
+- US-006..011 DONE. Branch `sprint-2-chat-history` → merged master **69a6e8a**.
+- **Live-Verify (binding gate, realer Postgres):** neuer Build „Up", migrate-Log `Schema OK` + **`Alembic gestampt auf 0001_baseline (kein Re-Create)`** (Live-DB intakt, alembic_version=['0001_baseline'], 6 Tabellen), Chat-Smoke save→me/bot→get_offer_full ok, **Tenant-Write geblockt (TenantError)** + cross-tenant get→None, `/api/health db=true`. chat.html-Restore JS-valide. ✅
+- Mode-Hinweis: „headless"-Arg → Skill-Default Agent-Teams, ABER EXECUTE.md schrieb sequentiell vor (US-006/007/009 teilen store.py/app.py) → headless+sequentiell gefahren (Pushback dokumentiert).
+- Sprint 2 Status: **DONE**.
+
+### Nächster Sprint
+- Sprint 3 (Dashboard KPIs + Bibliothek suchbares Archiv + Kunden-CRM) — letzter Funktions-Sprint (S4 OAuth „später"). Via `/sprint-plan kochfabrik-studio` in frischem Kontext fortsetzen. Begründung wie S1: per-Sprint resumierbar, Kontext nach diesem Umfang erschöpft.

@@ -7,21 +7,32 @@
 > yu2fqx0twmtqcp6zyx2e59si). Engine vendored aus pptxgenerator_v2.
 
 **Projekt:** kochfabrik-studio (FastAPI, web/, vendored engine)
-**Aktueller Sprint:** Sprint 2 **GEPLANT** (EPIC-001), Sprint 1 DONE
-**Status:** 1 Sprint done · Stack: FastAPI + PostgreSQL + SQLAlchemy2 async
+**Aktueller Sprint:** Sprint 2 **DONE** (EPIC-001) → nächster: Sprint 3
+**Status:** 2 Sprints done · Stack: FastAPI + PostgreSQL + SQLAlchemy2 async + Alembic
 
 ---
 
-## Sprint 2 — Chat-History + Exakte Wiederherstellung + Tenant-Härtung (2026-05-19) — GEPLANT
+## Sprint 2 — Chat-History + Exakte Wiederherstellung + Tenant-Härtung (2026-05-19) — **DONE**
 
 | Story | Titel | Status |
 |-------|-------|--------|
-| US-006 | Chat-Turns je Angebot persistieren | TODO |
-| US-007 | Angebot + Chat-Verlauf laden (owner-scoped) | TODO |
-| US-008 | chat.html exaktes Wiederöffnen (State + Verlauf) | TODO |
-| US-009 | Multi-Tenant-Härtung + Regression (inkl. Chat) | TODO |
-| US-010 | Echtes Alembic-Setup (Carry-Over S1) | TODO |
-| US-011 | pytest gegen Test-Postgres + CI-fähig (Carry-Over S1) | TODO |
+| US-006 | Chat-Turns je Angebot persistieren | DONE |
+| US-007 | Angebot + Chat-Verlauf laden (owner-scoped) | DONE |
+| US-008 | chat.html exaktes Wiederöffnen (State + Verlauf) | DONE |
+| US-009 | Multi-Tenant-Härtung + Regression (inkl. Chat) | DONE |
+| US-010 | Echtes Alembic-Setup (Carry-Over S1) | DONE |
+| US-011 | pytest gegen Test-Postgres + CI-fähig (Carry-Over S1) | DONE |
+
+**Live-verifiziert (master 69a6e8a, deployed):** `migrate: Alembic
+gestampt auf 0001_baseline (kein Re-Create)` — Live-DB-Schema+Daten
+intakt; `alembic_version=['0001_baseline']`; Chat-Smoke
+save→add_chat(me/bot)→get_offer_full ok; **Tenant-Write geblockt
+(TenantError)**, cross-tenant get→None; `/api/health db=true` (keine
+Regression). chat.html-Restore JS-valide + Marker (URLSearchParams/
+replaceState/offer_id).
+**Plan-vs-Reality:** 6/6 DONE. Carry-Over S1 (Alembic/pytest-CI)
+abgearbeitet. Hinweis: store.* binden zur Importzeit an DATABASE_URL
+→ CI beide Vars auf Test-PG; Binding-Gate bleibt Live-Smoke.
 
 **Nutzt (S1-Schema):** `chat_message`. Keine neuen Tabellen.
 **Carry-Over S1 → konsumiert:** Alembic (US-010), pytest-CI (US-011).
