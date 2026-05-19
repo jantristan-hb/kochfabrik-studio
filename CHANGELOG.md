@@ -2,6 +2,25 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/)
 
+## [Sprint 2] — 2026-05-19 — EPIC-001 Angebotsgenerator (Fundament)
+
+### Hinzugefügt
+- **US-007: Korpus-Inventar & Layout-Analyse** — `scan_angebote.py`
+  klassifiziert 207 PDFs → 34 Angebote, 3 Layout-Generationen,
+  Referenzwahl (GEN-2 RAUMKARUSSELL). `docs/sprint-2/LAYOUT-ANALYSE.md`.
+- **US-008: Angebots-Datenmodell** — `angebot_model.py` (dataclasses,
+  JSON-roundtrip-stabil) + Referenz-Fixture `phase0/fixtures/angebot_example.json`.
+- **US-009: Pixelgenaues Template** — `build_angebot_template.py`:
+  Faithful-Extraktion → Skalar-Tokens + Positions-Repeater-Band,
+  invariante Blöcke verbatim.
+- **US-010: Felder-Mapping** — `angebot_fill.py` setzt Modellwerte in
+  alle 15 Template-Tokens.
+- **US-011: Positionsblock-Struktur** — `Position.is_header` (preislose
+  Sub-Header), `docs/sprint-2/POSITIONSBLOCK.md`.
+- **US-012: Konformitäts-Check** — `verify_angebot.py` +
+  `test_angebot_template.py`: end-to-end Modell→Template→Render→
+  `kf_classify == 'angebot'` (7/7).
+
 ## [Unreleased]
 
 ### Hinzugefügt
