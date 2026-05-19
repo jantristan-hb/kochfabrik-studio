@@ -144,6 +144,99 @@ python3 angebot_render.py <angebot.json> -o out.pdf   # Angebot
 PPTX_PGSHIM=1 python3 assemble.py …                   # DB-frei (wie Container)
 ```
 
+## System-Dependencies (Container — Dockerfile)
+
+Engine-Pfade brauchen mehr als Python. Fehlt eins → Modul-Endpoint 502.
+
+| apt-Paket | Wofür | Symptom wenn weg |
+|-----------|-------|------------------|
+| `nodejs` | `reconstruct.js` (pptxgenjs) | reconstruct rc≠0 |
+| `libreoffice-impress` + `-core` | pptx→pdf (Angebots-PDF) | soffice pptx→pdf fehlgeschlagen |
+| `poppler-utils` | `pdftotext`/`pdfinfo`/`pdftoppm` — PDF-**Input** des Präsentationsgen. | `FileNotFoundError` aus innerem subprocess |
+| `fonts-dejavu-core` `fonts-liberation` | faithful Text-Render | falsche/fehlende Glyphen |
+
+Python (`requirements.txt`): fastapi · uvicorn · pydantic · anthropic ·
+python-pptx · **numpy** (compose_offer/pg_shim/assemble) ·
+**python-multipart** (PDF-Upload `UploadFile`).
+
+## Deploy verifizieren
+
+Push triggert NICHT — immer force-deployen, dann prüfen. Build-Zeit:
+nur `engine/`-Änderung = schnell (COPY-Layer); `requirements.txt` =
+pip-Layer neu; **`Dockerfile`-apt-Zeile = ~5–8 min** (LibreOffice).
+Coolify-Build **atomar**: Fehlbuild ⇒ alte Version bleibt live.
+
+```bash
+# Login → Cookie → Health aller Module
+python3 - <<'PY'
+import json,urllib.request as u
+B="https://kochfabrik-studio.flinkbase.com"
+r=u.urlopen(u.Request(B+"/api/login",json.dumps(
+ {"email":"<user>","password":"<pw>"}).encode(),
+ {"Content-Type":"application/json"}))
+ck=r.headers["set-cookie"].split(";")[0]
+for p in ("/api/health","/api/angebot/health","/api/praesentation/health"):
+  print(p, u.urlopen(u.Request(B+p,headers={"Cookie":ck})).read())
+PY
+```
+`praesentation/health` muss `engine:true, korpus:true` zeigen.
+**405 auf `/api/...`** = Route fehlt im laufenden Container (POST fällt
+auf StaticFiles-Mount) ⇒ neuer Build noch nicht geswappt → warten/force.
+
+## Troubleshooting (real durchlebte Failure-Modes)
+
+| Symptom | Ursache | Fix |
+|---------|---------|-----|
+| `ModuleNotFoundError: numpy` (502) | Dep fehlt im Image | `requirements.txt` ergänzen → rebuild |
+| `FileNotFoundError ~/work/.env` in `_key` | Host-Pfad im Container | `_key()` env-first (schon gefixt); API-Key als Coolify-ENV |
+| `os.listdir(CORPUS_DIR)` crash | Nextcloud fehlt im Container | CORPUS_DIR-Guard (gefixt) — Cache-Hits brauchen Quelle nicht |
+| `cover_template.elements.json` not found | Template nicht vendored | gehört in `engine/phase0/data/` → `vendor.sh` |
+| `copyfile('')` / Cache-Miss | `cached_deck(src)` slugifizierte Nextcloud-Pfad | `load()` löst über **deck-Slug** auf (gefixt) |
+| PDF-Upload 502 `subprocess FileNotFoundError` | `pdftotext` fehlt | `poppler-utils` ins Dockerfile |
+| `korpus:false`, Präsentation 503 | 4,8-GB-Cache-Volume nicht gemountet | Coolify Directory Mount (s. Deployment) |
+| `405` auf neuem Endpoint | alter Container (kein Auto-Deploy) | Coolify force-deploy, Build abwarten |
+| Studio-Modul down nach Push | — kann nicht passieren | atomarer Build; alte Version bleibt live |
+
+**Goldene Regel:** vor jedem Deploy `./vendor.sh` (fährt Container-
+Pfad-Sim `HOME=/nonexistent PPTX_PGSHIM=1` gegen vollen lokalen Cache
+— fängt genau diese Fehler VOR dem ~Minuten-Deploy-Zyklus).
+
+## Host-Zugriff / Debug
+
+```bash
+ssh -i ~/.ssh/hetzner_id root@188.245.110.5      # Coolify-Host (CAX21)
+docker ps | grep yu2fqx0                          # laufender Studio-Container
+docker exec -it <id> bash                         # rein (Engine prüfen)
+docker logs --tail=100 <id>                        # App-Logs
+ls /data/coolify/applications/yu2fqx0twmtqcp6zyx2e59si/cache | wc -l  # Cache-Mount (≈200)
+```
+Coolify-Token: `~/work/.env` → `COOLIFY_TOKEN`. SSH-Key `~/.ssh/hetzner_id`.
+
+## Benutzerverwaltung
+
+User werden **von Hand** verwaltet, Format `KF_USERS` =
+`email|salt|sha256(salt + ":" + pw)` (mehrere `;`-getrennt) als
+Coolify-ENV. Passwörter NIE in Repo/README. Neuen User: Salt+Hash
+lokal bilden, an `KF_USERS` anhängen, Coolify-ENV updaten, redeploy.
+Session = HMAC-signiertes Cookie (`KF_SESSION_SECRET`).
+
+## API-Referenz (alle Endpoints hinter Auth-Cookie)
+
+```
+POST /api/login {email,password}            → set-cookie
+POST /api/logout
+GET  /api/health                            (public) Modell/Key/cats
+GET  /api/cats                               Bildgenerator-Kategorien
+POST /api/image {prompt,table,category}     → Bild (base64)
+GET  /api/angebot/health
+POST /api/angebot/chat {message,angebot}    → Angebot-JSON (LLM-Patch)
+POST /api/angebot/pdf  {angebot}            → Angebots-PDF (base64)
+GET  /api/praesentation/health              engine+korpus
+POST /api/praesentation/generate {offer}    → Deck-PPTX (Offer-md)
+POST /api/praesentation/from-angebot {angebot} → Deck (Übernahme)
+POST /api/praesentation/from-pdf  (multipart file) → Deck (PDF-Upload)
+```
+
 ## Architektur-Prinzipien
 
 - **Graceful Degradation:** fehlt Engine/Cache → 503 mit Klartext,
