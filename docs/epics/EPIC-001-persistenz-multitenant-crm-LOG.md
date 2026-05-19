@@ -49,3 +49,11 @@
 
 ### Nächster Sprint
 - Sprint 3 (Dashboard KPIs + Bibliothek suchbares Archiv + Kunden-CRM) — letzter Funktions-Sprint (S4 OAuth „später"). Via `/sprint-plan kochfabrik-studio` in frischem Kontext fortsetzen. Begründung wie S1: per-Sprint resumierbar, Kontext nach diesem Umfang erschöpft.
+
+## Sprint 3 — 2026-05-19
+
+### /sprint-plan
+- 6 Stories US-012..017: US-012 Stats-Endpoint · US-013 Kunden-Endpoints+Store · US-014 Angebote Such-/Status-Filter · US-015 index.html Dashboard (echte KPIs) · US-016 bibliothek.html suchbares Archiv · US-017 kunden.html Kunden-CRM (neu).
+- Reine Lese-Aggregation auf S1/S2-Schema — KEINE Migration, keine neuen Tabellen. client.html unangetastet. Letzter Funktions-Sprint (S4 OAuth „später").
+- Carry-Over: keine (S1-DEFERRED Alembic/pytest in S2 erledigt). Waves: 1=US-012/013/014 (Backend, seq) · 2=US-015/016/017 (UI). Validierung grün (Refs ok, kunden.html neu, Dep-Graph azyklisch).
+- Docs: docs/sprint-3/* committed. Status: PLAN. Nächster: /sprint-execute kochfabrik-studio 3.

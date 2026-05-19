@@ -7,8 +7,27 @@
 > yu2fqx0twmtqcp6zyx2e59si). Engine vendored aus pptxgenerator_v2.
 
 **Projekt:** kochfabrik-studio (FastAPI, web/, vendored engine)
-**Aktueller Sprint:** Sprint 2 **DONE** (EPIC-001) → nächster: Sprint 3
+**Aktueller Sprint:** Sprint 3 **GEPLANT** (EPIC-001), S1+S2 DONE
 **Status:** 2 Sprints done · Stack: FastAPI + PostgreSQL + SQLAlchemy2 async + Alembic
+
+---
+
+## Sprint 3 — Dashboard + Bibliothek + Kunden-CRM (2026-05-19) — GEPLANT
+
+| Story | Titel | Status |
+|-------|-------|--------|
+| US-012 | Stats/Aggregat-Endpoint (owner-scoped) | TODO |
+| US-013 | Kunden-Endpoints + Store (1 Kunde : n Angebote) | TODO |
+| US-014 | Angebote-Liste Such-/Status-Filter | TODO |
+| US-015 | index.html Dashboard (echte KPIs) | TODO |
+| US-016 | bibliothek.html suchbares Archiv | TODO |
+| US-017 | kunden.html Kunden-CRM (Liste + Detail) | TODO |
+
+**Keine neuen Tabellen / keine Migration** (reine Lese-Aggregation auf
+S1/S2-Schema). **Neue Seite:** `web/kunden.html`. client.html bleibt
+unangetastet (anderes Feature). Letzter Funktions-Sprint (S4 OAuth
+„später"). Waves: 1=US-012/013/014 (Backend, seq) · 2=US-015/016/017
+(UI). Docs: `docs/sprint-3/*`. Nächster: `/sprint-execute kochfabrik-studio 3`.
 
 ---
 
@@ -80,7 +99,7 @@ _(Keine FAILED-Stories — Sprint 1 vollständig.)_
 
 | ID | Titel | Status | Sprints |
 |----|-------|--------|---------|
-| EPIC-001 | Persistenz, Multi-Tenant & CRM | OPEN | S1 (geplant), S2-S4 (TODO) |
+| EPIC-001 | Persistenz, Multi-Tenant & CRM | IN_PROGRESS | S1 ✅, S2 ✅, S3 geplant, S4 (später) |
 
 ## Bekannte Lücken (nicht in S1)
 - Chat-History-Restore (S2) · Dashboard/Bibliothek-UI (S3) · OAuth2 (S4)
