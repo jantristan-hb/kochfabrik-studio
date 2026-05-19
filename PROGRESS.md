@@ -1,8 +1,8 @@
 # PROGRESS.md — pptxgenerator_v2
 
 **Projekt:** pptxgenerator_v2 (KOCHfabrik PDF→PPTX-Konverter, Clean-Room)
-**Aktueller Sprint:** Sprint 3 TODO (EPIC-001 Angebotsgenerator)
-**Status:** 2 Sprints done, 12 Stories · Sprint 3 geplant (6 Stories)
+**Aktueller Sprint:** Sprint 3 IN PROGRESS — nach US-013 pausiert (Gate grün)
+**Status:** 2 Sprints done, 12 Stories · Sprint 3: 1/6 (US-013 DONE)
 **Repo:** github.com/jantristan-hb/pptxgenerator_v2 (privat)
 
 ## Compact-Recovery
@@ -52,7 +52,7 @@ Referenz GEN-2 RAUMKARUSSELL aus 34 Angebots-PDFs / 3 Generationen.
 
 | Story | Titel | Status |
 |-------|-------|--------|
-| US-013 | Positions-Repeater-Renderer | TODO |
+| US-013 | Positions-Repeater-Renderer | DONE |
 | US-014 | End-to-End Renderer-CLI (Angebot→PDF) | TODO |
 | US-015 | PDF-Diff-Harness | TODO |
 | US-016 | Pixel-Diff-Gate gegen ≥3 echte Muster | TODO |
@@ -62,6 +62,13 @@ Referenz GEN-2 RAUMKARUSSELL aus 34 Angebots-PDFs / 3 Generationen.
 **Docs:** `docs/sprint-3/{USER-STORIES,FEATURE-ARCH,EXECUTE}.md`
 **Neue Dateien:** `phase0/scripts/{angebot_positions,angebot_render,pdf_diff,angebot_parse,angebot_gate}.py`, `phase0/tests/test_angebot_render.py`, `docs/sprint-3/PIXEL-GATE.md`
 **Waves:** W1{013,015,017} W2{014} W3{016} W4{019}
+**Wiederaufnahme (Session-Schnitt 2026-05-19):** US-013 DONE — Branch
+`us-013-positions-renderer` @ `a73fec0` gepusht, NICHT gemergt; Gate
+visuell grün (KOCHfabrik-treues Demo-PDF). Offen: US-015, US-017
+(Wave 1, blockerfrei), dann US-014 (←013), US-016, US-019. Einstieg:
+`/sprint-execute pptxgenerator_v2 3` → liest `docs/sprint-3/EXECUTE.md`
+(erkennt US-013 am Branch, überspringt). `phase0/data/angebot_
+template.elements.json` ist regenerierbar (`build_angebot_template.py`).
 **Carry-Over-Abdeckung:** Positions-Rendering ✓ · Pixel-Diff-Gate ✓ ·
 echte PDF-Pipeline ✓ (schließt US-012-Proxy). **GEN-1/3-Token-
 Generalisierung bewusst → Sprint 4** (FEATURE-ARCH Non-Goal, kein
