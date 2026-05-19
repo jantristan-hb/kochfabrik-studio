@@ -57,3 +57,8 @@
 - Reine Lese-Aggregation auf S1/S2-Schema — KEINE Migration, keine neuen Tabellen. client.html unangetastet. Letzter Funktions-Sprint (S4 OAuth „später").
 - Carry-Over: keine (S1-DEFERRED Alembic/pytest in S2 erledigt). Waves: 1=US-012/013/014 (Backend, seq) · 2=US-015/016/017 (UI). Validierung grün (Refs ok, kunden.html neu, Dep-Graph azyklisch).
 - Docs: docs/sprint-3/* committed. Status: PLAN. Nächster: /sprint-execute kochfabrik-studio 3.
+
+### /sprint-execute + review/integrate (Sprint 3, headless+sequentiell)
+- US-012..017 DONE. Branch `sprint-3-dashboard-crm` → merged master **52196cd**, deployed.
+- **Live-Verify:** Backend-Smoke (stats {angebote1,kunden1,volumen1234.50}, get_customer, Tenant-Isolation→None, list_offers-Filter). **Playwright-E2E (Live-Prod, Cookie für jr@dangerously.ai gemintet):** Dashboard echte KPIs/„1.234,50 €" + Reopen-Link, Bibliothek Suche-Treffer + Empty-State, Kunden-CRM Liste→Detail→Angebot-Reopen `chat.html?offer=3`. Nur favicon-404 (benign). Smoke-Daten bereinigt, client.html unangetastet.
+- Sprint 3 Status: **DONE**. EPIC-001 funktional komplett (S1+S2+S3). Verbleibend: S4 OAuth.

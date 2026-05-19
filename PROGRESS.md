@@ -7,21 +7,28 @@
 > yu2fqx0twmtqcp6zyx2e59si). Engine vendored aus pptxgenerator_v2.
 
 **Projekt:** kochfabrik-studio (FastAPI, web/, vendored engine)
-**Aktueller Sprint:** Sprint 3 **GEPLANT** (EPIC-001), S1+S2 DONE
-**Status:** 2 Sprints done · Stack: FastAPI + PostgreSQL + SQLAlchemy2 async + Alembic
+**Aktueller Sprint:** Sprint 3 **DONE** (EPIC-001) → nur S4 OAuth offen
+**Status:** 3 Sprints done · Stack: FastAPI + PostgreSQL + SQLAlchemy2 async + Alembic
 
 ---
 
-## Sprint 3 — Dashboard + Bibliothek + Kunden-CRM (2026-05-19) — GEPLANT
+## Sprint 3 — Dashboard + Bibliothek + Kunden-CRM (2026-05-19) — **DONE**
 
 | Story | Titel | Status |
 |-------|-------|--------|
-| US-012 | Stats/Aggregat-Endpoint (owner-scoped) | TODO |
-| US-013 | Kunden-Endpoints + Store (1 Kunde : n Angebote) | TODO |
-| US-014 | Angebote-Liste Such-/Status-Filter | TODO |
-| US-015 | index.html Dashboard (echte KPIs) | TODO |
-| US-016 | bibliothek.html suchbares Archiv | TODO |
-| US-017 | kunden.html Kunden-CRM (Liste + Detail) | TODO |
+| US-012 | Stats/Aggregat-Endpoint (owner-scoped) | DONE |
+| US-013 | Kunden-Endpoints + Store (1 Kunde : n Angebote) | DONE |
+| US-014 | Angebote-Liste Such-/Status-Filter | DONE |
+| US-015 | index.html Dashboard (echte KPIs) | DONE |
+| US-016 | bibliothek.html suchbares Archiv | DONE |
+| US-017 | kunden.html Kunden-CRM (Liste + Detail) | DONE |
+
+**Live + Playwright-verifiziert (master 52196cd, deployed):** Backend-
+Smoke (stats {1,1,1234.50}, get_customer, Tenant-Isolation, Filter) +
+Playwright-E2E auf Live-Prod: Dashboard echte KPIs („1.234,50 €"),
+Bibliothek Suche-Treffer/Empty-State, Kunden-CRM Liste→Detail→Reopen
+`chat.html?offer=` (S2). Nur favicon-404 (benign). Smoke-Daten
+bereinigt. client.html unangetastet (git-diff).
 
 **Keine neuen Tabellen / keine Migration** (reine Lese-Aggregation auf
 S1/S2-Schema). **Neue Seite:** `web/kunden.html`. client.html bleibt

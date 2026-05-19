@@ -81,5 +81,5 @@ vorbereitet, aber noch nicht gebaut (manuelle User bleiben).
 |--------|-------|--------|
 | Sprint 1 | DB-Fundament + Angebot-Persistenz + Nummern | ✅ DONE (live-verifiziert, master b0c7f36) |
 | Sprint 2 | Multi-Tenant + Chat-History + Wiederherstellung | ✅ DONE (live-verifiziert, master 69a6e8a) |
-| Sprint 3 | Dashboard + Bibliothek + Kunden-CRM | ⏳ TODO |
+| Sprint 3 | Dashboard + Bibliothek + Kunden-CRM | ✅ DONE (live + Playwright, master 52196cd) |
 | Sprint 4 | OAuth2 (später) | ⏳ TODO |
