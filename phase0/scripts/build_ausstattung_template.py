@@ -42,6 +42,7 @@ BASE_PAGE = 9
 PLACEHOLDER = "{LOCATION_AUSSTATTUNG}"
 IMG_COVER = 0.50                  # >= 50% Seite = Inhaltsbild → leerer Slot
 DARKISH = ("1B0000", "000000", "1A1A1A", "0B0B0B")
+BLUE = "0070C0"                   # blaues Inhalts-Panel → raus (wie Cover)
 
 
 def build(seq, meta, body_text):
@@ -62,6 +63,8 @@ def build(seq, meta, body_text):
     for e in seq:
         if e["t"] == "image" and (e["w"] * e["h"]) / (W * H) >= IMG_COVER:
             continue                                  # Inhaltsbild → Slot
+        if e["t"] == "rect" and e.get("fill") == BLUE:
+            continue                                  # blaues Panel raus
         if e["t"] == "rect" and e.get("fill") in DARKISH \
                 and e["w"] >= 0.95 * W and e["h"] >= 0.95 * H:
             e = dict(e, fill="FFFFFF")                # Basis → weiß

@@ -30,9 +30,10 @@ import time
 import psycopg2
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _deckpipe import cached_deck, slugify                     # noqa
+from _deckpipe import cached_deck, slugify, CACHE              # noqa
 from compose_offer import (embed, parse_offer_dishes, text_swap,  # noqa
-                           DSN, SPIKE, CORPUS_DIR)
+                           slot_count, pick_frame, DSN, SPIKE,
+                           CORPUS_DIR)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "data")
@@ -142,17 +143,47 @@ def main():
     for i, ((c, ds), v) in enumerate(zip(courses, qv)):
         q = "[" + ",".join(f"{x:.6f}" for x in v) + "]"
         cu.execute("SELECT deck,page,src_pdf FROM menu_composition "
-                   "ORDER BY embedding<=>%s::vector LIMIT 1", (q,))
-        deck, pg, src = cu.fetchone()
+                   "ORDER BY embedding<=>%s::vector LIMIT 8", (q,))
+        cands = cu.fetchall()
+        nd = len(ds)
+        # kapazitäts-bewusst: kleinste Slot-Zahl >= #Gerichte (sonst
+        # max Slots), bei Gleichstand ANN-Rang (Reihenfolge bleibt)
+        best, bestkey = cands[0], None
+        for rank, (dk, pgc, sc) in enumerate(cands):
+            cp = os.path.join(CACHE, dk, "elements.json")
+            try:
+                seqc = json.load(open(cp)).get(str(int(pgc)))
+                slots = slot_count(seqc) if seqc else 0
+            except Exception:
+                slots = 0
+            fits = slots >= nd
+            key = (0 if fits else 1,
+                   slots - nd if fits else -slots, rank)
+            if bestkey is None or key < bestkey:
+                bestkey, best = key, (dk, pgc, sc)
+        deck, pg, src = best
         p = fpos[0] + (fpos[1] - fpos[0]) * (i / max(len(courses) - 1, 1))
         picks.append((p, deck, int(pg), src, c, ds))
-        print(f"  Food «{c[:24]}» → {deck[:24]}::{pg}")
+        print(f"  Food «{c[:24]}» → {deck[:24]}::{pg} "
+              f"({nd} Gerichte)")
 
-    # ---- Frame: golden, pflicht, verbatim ----
+    # ---- Frame: pflicht, je Kategorie kunden-stabil random aus dem
+    #      freigegebenen Set (golden + Alternativen), verbatim ----
     cu.execute("SELECT deck,page,src_pdf,category,skel_pos FROM "
-               "static_slide WHERE is_golden AND inclusion='pflicht' "
-               "AND category<>'COVER' ORDER BY skel_pos")
-    frame = cu.fetchall()
+               "static_slide WHERE inclusion='pflicht' "
+               "AND category<>'COVER'")
+    by_cat = {}
+    for deck, pg, src, cat, sp in cu.fetchall():
+        by_cat.setdefault(cat, []).append((deck, int(pg), src, cat,
+                                           float(sp)))
+    frame = []
+    for cat, opts in by_cat.items():
+        opts.sort(key=lambda r: (r[0], r[1]))     # stabile Reihenfolge
+        ch = pick_frame(cat, opts, kunde)
+        frame.append(ch)
+        print(f"  Frame «{cat[:22]}» → {ch[0][:24]}::{ch[1]} "
+              f"(aus {len(opts)})")
+    frame.sort(key=lambda r: r[4])                 # skel_pos
     cx.close()
 
     # ---- alle Quell-Decks EINMAL in shared cachen (kein Extrakt) ----
