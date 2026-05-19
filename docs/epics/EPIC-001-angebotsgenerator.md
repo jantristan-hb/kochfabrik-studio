@@ -1,10 +1,10 @@
 ---
 id: EPIC-001
 title: "KOCHfabrik Angebotsgenerator — Chat → pixelgenaues Angebots-PDF"
-status: OPEN
+status: IN_PROGRESS
 created: 2026-05-19
 project: pptxgenerator_v2
-sprints: []
+sprints: [2]
 ---
 
 # EPIC-001: KOCHfabrik Angebotsgenerator
