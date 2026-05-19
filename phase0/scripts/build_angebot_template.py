@@ -116,6 +116,42 @@ def main():
                 e["h"] = max(float(e.get("h") or 0), 0.36)
                 e["wrap"] = True                       # Multi-Line Reflow
 
+    # Page-Pruning: Raumkarussell-spezifische Fortsetzungs-Positions-
+    # und Totals-Seiten entfernen. Unsere Engine fittet ALLE Modell-
+    # Positionen auf page 2 (compress). Raumkarussell-Template hat
+    # darüber hinaus pages 3-5 mit Block-Inhalten (Personal/Geschirr/
+    # Projektmanagement/Totals) die VERBATIM gerendert wurden →
+    # fremde Daten in jedem Kunden-Angebot. KEEP: page 1 (Cover),
+    # page 2 (dynamische Positionen), pages mit KOCHfabrik-AGB
+    # (standardisiert, gilt für ALLE Kunden — korrekt verbatim).
+    # DROP-Marker: Positions-Tabellen-Header oder Totals-Felder.
+    def _page_txt(seq):
+        return " ".join((l.get("txt") or "")
+                        for e in seq if e.get("t") == "text"
+                        for l in (e.get("lines") or []))
+    # Marker-Cluster: Tabellen-Header braucht ALLE drei zusammen
+    # ("Menge"+"Preis netto"+"Gesamt") — sonst false-positive auf
+    # AGB-Texte (z.B. „Mengenangabe", „Gesamtbetrag" in §§).
+    POS_HDR = ("Menge", "Preis netto", "Gesamt")
+    TOTAL_MARKS = ("Nettogesamtbetrag", "Umsatzsteuer 19",
+                   "Gesamtsumme brutto")
+    keep_seqs, dropped = [], []
+    for pg in sorted((k for k in el if k != "_meta"), key=int):
+        if pg in ("1", "2"):
+            keep_seqs.append(el[pg]); continue
+        txt = _page_txt(el[pg])
+        is_pos_page = all(m in txt for m in POS_HDR)
+        is_totals_page = any(m in txt for m in TOTAL_MARKS)
+        if is_pos_page or is_totals_page:
+            dropped.append(pg); continue
+        keep_seqs.append(el[pg])
+    new_pages = {str(i + 1): seq for i, seq in enumerate(keep_seqs)}
+    new_pages["_meta"] = el.get("_meta", {})
+    el = new_pages
+    print(f"  Page-Pruning: {len(dropped)} Raumkarussell-Seiten "
+          f"entfernt ({','.join(dropped) or '-'}); verbleibend "
+          f"{len(keep_seqs)} Seiten (Cover + Positionen + AGB)")
+
     # Positions-Repeater-Band (best-effort aus den getroffenen Boxen;
     # exakte Zeilen-Vorlage = US-011, Rendering = Sprint 3)
     rep = None
