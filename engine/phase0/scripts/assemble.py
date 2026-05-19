@@ -41,11 +41,12 @@ from compose_offer import (embed, parse_offer_dishes, text_swap,  # noqa
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "data")
 COVER_TMPL = os.path.join(DATA, "cover_template.elements.json")
-AUSST_TMPL = os.path.join(DATA, "ausstattung_template.elements.json")
 PLACEHOLDER = "{EVENT_TITEL}"
-PH_AUSST = "{LOCATION_AUSSTATTUNG}"
 BECHTLE_SLUG = "12-09-2025-kf-bechtle"
-AUSST_SLUG = "er-ffnung-stetson-store"
+# AUSSTATTUNG: kein Template/Token mehr — Static Slide via static_slide
+# (category='AUSSTATTUNG', pflicht, deck 'kf-ausstattung-location') +
+# Cache-Deck phase0/data/cache/kf-ausstattung-location/. pick_frame
+# rendert sie verbatim wie CREW/PERSONAL/KONTAKT/WERTSCHÄTZUNG.
 
 
 def parse_header(path, offer=""):
@@ -269,12 +270,12 @@ def main():
         el_cache[s2] = el
 
     cov = json.load(open(COVER_TMPL))
-    aus = json.load(open(AUSST_TMPL)) if os.path.isfile(AUSST_TMPL) else None
     meta = cov.get("_meta", {"w_pt": 960, "h_pt": 540})
     # Template-Badges referenzieren ihre Basis-Deck-Assets → cachen
     load(BECHTLE_SLUG, smap.get(BECHTLE_SLUG))           # Cover
-    if aus:
-        load(AUSST_SLUG, smap.get(AUSST_SLUG))           # Ausstattung
+    # AUSSTATTUNG läuft jetzt über static_slide/pick_frame (pflicht,
+    # skel_pos 0.78) wie ALLE anderen Static Slides — kein Sonderfall-
+    # Template/Token mehr (alles an einem Ort: static_slide + Cache).
     for _, deck, pg, src, _, _ in picks:
         load(deck, src)
     for deck, pg, src, _, _ in frame:
@@ -283,9 +284,6 @@ def main():
     # ---- Slides in skel_pos-Reihenfolge bauen ----
     items = []                                # (pos, seq)
     items.append((0.0, swap_ph(cov["1"], PLACEHOLDER, title)))
-    if aus:                                   # AUSSTATTUNG (bedingt, 0.78)
-        loc = ort or "Location & Ausstattung"
-        items.append((0.78, swap_ph(aus["1"], PH_AUSST, loc)))
     for p, deck, pg, src, c, ds in picks:
         seq = el_cache.get(deck, {}).get(str(pg))
         if seq:
@@ -316,8 +314,9 @@ def main():
         print(f"(shared={shared})")
         sys.exit(1)
     print(f"\nOK → {a.o} — {len(items)} Slides "
-          f"(1 Cover + {len(picks)} Food + {len(frame)} Frame + "
-          f"{1 if aus else 0} Ausstattung) in {time.time()-t0:.1f}s")
+          f"(1 Cover + {len(picks)} Food + {len(frame)} Frame, "
+          f"AUSSTATTUNG via static_slide/pick_frame) "
+          f"in {time.time()-t0:.1f}s")
 
 
 if __name__ == "__main__":

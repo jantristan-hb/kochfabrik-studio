@@ -13,21 +13,36 @@ SRC="/home/jrudat/work/03 AKARA Solutions GmbH/kochfabrik/pptxgenerator_v2/phase
 DST="$(cd "$(dirname "$0")" && pwd)/engine/phase0"
 UUID=yu2fqx0twmtqcp6zyx2e59si
 REFSLUG=10-182-raumkarussell-gmbh-12-09-2026
+# Autorierte Static-Slide-Decks (kein Korpus, gehören INS Bundle).
+# kf-ausstattung-location = Static Slide "Ausstattung und Location"
+# (static_slide category='AUSSTATTUNG', pflicht). Achtung: data/cache/
+# ist auf dem Server ein Coolify Directory Mount → das vendorte Deck
+# wird zur Laufzeit überlagert. Authoritativ ist das Server-Volume
+# (siehe Hinweis am Ende / rsync). Vendoren = Local-Sim + Fallback.
+STATIC_DECKS=(kf-ausstattung-location)
 
 echo "==> 1/4 Scripts vendoren"
 mkdir -p "$DST/scripts" "$DST/spike-pptxgenjs" "$DST/data/cache"
+# Prune: in der Quelle gelöschte .py dürfen nicht im Bundle zurückbleiben
+# (cp aliniert nicht — sonst driftet toter Code wie ein Zombie mit).
+rm -f "$DST"/scripts/*.py
 cp "$SRC"/scripts/*.py "$DST/scripts/"
 cp -r "$SRC"/spike-pptxgenjs/{lib,node_modules,reconstruct.js,package.json} \
       "$DST/spike-pptxgenjs/"
 
-echo "==> 2/4 Templates + Referenz-Cache-Slug vendoren"
+echo "==> 2/4 Templates + Referenz-/Static-Cache-Decks vendoren"
 cp "$SRC"/data/cover_template.elements.json \
-   "$SRC"/data/ausstattung_template.elements.json \
    "$SRC"/data/angebot_template.elements.json "$DST/data/"
 rm -rf "$DST/data/cache/$REFSLUG"
 cp -r "$SRC/data/cache/$REFSLUG" "$DST/data/cache/"
+for d in "${STATIC_DECKS[@]}"; do
+  [ -d "$SRC/data/cache/$d" ] || { echo "   ❌ Static-Deck fehlt: $d"; exit 1; }
+  rm -rf "$DST/data/cache/$d"
+  cp -r "$SRC/data/cache/$d" "$DST/data/cache/"
+  echo "   static: $d"
+done
 
-echo "==> 3/4 pgbundle aus Live-DB regenerieren (Snapshot!)"
+echo "==> 3/4 pgbundle aus Live-DB regenerieren (Snapshot → SRC + DST)"
 python3 - "$SRC" "$DST" <<'PY'
 import sys, json, numpy as np, psycopg2
 src, dst = sys.argv[1], sys.argv[2]
@@ -37,22 +52,29 @@ cu = cx.cursor()
 cu.execute("SELECT deck,page,src_pdf,module_type,module_label,"
            "embedding::text FROM menu_composition")
 r = cu.fetchall()
-np.savez(dst + "/data/pgbundle.npz",
-         emb=np.array([[float(x) for x in q[5].strip("[]").split(",")]
-                        for q in r], np.float32),
-         deck=np.array([q[0] for q in r], object),
-         page=np.array([q[1] for q in r]),
-         src_pdf=np.array([q[2] for q in r], object),
-         module_type=np.array([str(q[3]) for q in r], object),
-         module_label=np.array([str(q[4]) for q in r], object))
+emb = np.array([[float(x) for x in q[5].strip("[]").split(",")]
+                for q in r], np.float32)
+deck = np.array([q[0] for q in r], object)
+page = np.array([q[1] for q in r])
+spdf = np.array([q[2] for q in r], object)
+mt = np.array([str(q[3]) for q in r], object)
+ml = np.array([str(q[4]) for q in r], object)
 cu.execute("SELECT deck,page,src_pdf,category,skel_pos,inclusion "
            "FROM static_slide")
-json.dump([dict(deck=a, page=int(b), src_pdf=c, category=d,
-                skel_pos=float(e), inclusion=f)
-           for a, b, c, d, e, f in cu.fetchall()],
-          open(dst + "/data/static_slide.json", "w"), ensure_ascii=False)
+ss = [dict(deck=a, page=int(b), src_pdf=c, category=d,
+           skel_pos=float(e), inclusion=f)
+      for a, b, c, d, e, f in cu.fetchall()]
 cx.close()
-print("   menu_composition:", len(r))
+# Quelle (pg_shim-Sim liest dirname(__file__)/../data) UND Bundle
+# (Live-Container) konsistent halten — sonst testet die Sim stale.
+for base in (src, dst):
+    np.savez(base + "/data/pgbundle.npz", emb=emb, deck=deck, page=page,
+             src_pdf=spdf, module_type=mt, module_label=ml)
+    json.dump(ss, open(base + "/data/static_slide.json", "w"),
+              ensure_ascii=False)
+print("   menu_composition:", len(r), "| static_slide:", len(ss),
+      "| AUSSTATTUNG:",
+      [s for s in ss if s["category"] == "AUSSTATTUNG"])
 PY
 
 echo "==> 4/4 Container-Pfad-Sim (Gate, gegen vollen lokalen Cache)"
@@ -64,9 +86,24 @@ printf '## Angebot — Sim GmbH (Sommerfest)\n\n| Veranstaltungsdatum | 1. Juli 
 [ -s /tmp/vendor_sim.pptx ] && echo "   ✅ Sim grün ($(stat -c%s /tmp/vendor_sim.pptx) bytes)" \
   || { echo "   ❌ Sim FEHLGESCHLAGEN — NICHT deployen"; exit 1; }
 
-echo "==> Bundle synchron. Korpus-Cache-Hinweis: bei NEUEN Korpus-Decks"
-echo "    zusätzlich rsync nach root@188.245.110.5:/data/coolify/"
-echo "    applications/$UUID/cache/ (Volume-Snapshot)."
+VOL="/data/coolify/applications/$UUID/cache"
+echo "==> Bundle synchron."
+echo "    WICHTIG: data/cache/ ist auf dem Server ein Coolify Directory"
+echo "    Mount → vendorte Cache-Decks werden zur Laufzeit ÜBERLAGERT."
+echo "    Static-/Korpus-Decks müssen aufs Host-Volume:"
+for d in "${STATIC_DECKS[@]}"; do
+  echo "      rsync -az --delete \"$SRC/data/cache/$d/\" \\"
+  echo "        root@188.245.110.5:$VOL/$d/"
+done
+if [ "${1:-}" = "--deploy" ] || [ "${2:-}" = "--push-static" ] \
+   || [ "${1:-}" = "--push-static" ]; then
+  echo "==> Static-Decks aufs Server-Volume rsyncen"
+  for d in "${STATIC_DECKS[@]}"; do
+    rsync -az --delete -e "ssh -i $HOME/.ssh/hetzner_id" \
+      "$SRC/data/cache/$d/" "root@188.245.110.5:$VOL/$d/" \
+      && echo "   ✅ $d → Volume" || { echo "   ❌ rsync $d"; exit 1; }
+  done
+fi
 
 if [ "${1:-}" = "--deploy" ]; then
   echo "==> Force-Deploy via Coolify"
