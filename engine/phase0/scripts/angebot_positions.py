@@ -14,8 +14,11 @@ Engine (extract.py/reconstruct.js) UNVERÄNDERT — nur Element-Ebene.
 import copy
 
 DY = 0.162           # Zeilen-Pitch (aus Referenz: num-Spalte h/nlines)
-HDR_OFF = 0.41       # Gold-Header-y → erste Datenzeile
-GAP = 0.34           # Abstand Zwischensumme → nächster Block
+HDR_OFF = 0.55       # Gold-Header-y → erste Datenzeile (Atem-Margin)
+GAP = 0.55           # Abstand Zwischensumme → nächster Block (Atem)
+SUBHEAD_LEAD = 0.5   # Zusatz-Luft VOR Sub-Header (× DY, ab 2. SubHd)
+ZSUM_LEAD = 2.0      # Luft zwischen letzter Position und Zwischensumme
+PAGE_RESERVE = 0.30  # Safety-Margin oberhalb Footer (in)
 
 # Pre-Wrap-Konstanten — Bezeichnungs-Spalte Word-Break vor Render
 BEZ_W, BEZ_MAX = 3.7, 68          # 3.7in × 9pt × SIZE_K ≈ 68 chars
@@ -155,49 +158,48 @@ def render(el, angebot):
             continue
         keep.append(e)
 
-    # 4) Vertikal-Budget → adaptive Kompression. Kein Footer-Overlap
-    #    ('Text ragt in den Fußraum'), Template-Folgeseiten (T&C)
-    #    bleiben unangetastet. Pitch skaliert, Floor = Lesbarkeit.
-    #    raw rechnet die ECHTE Zeilenzahl pro Position (inkl. WRAP_PITCH
-    #    bei 2-Zeilen-Bezeichnungen) — sonst unterschätzt sie den Bedarf
-    #    bei langen Speisenamen und scale wird zu optimistisch (Resultat:
-    #    Positionen ragen in Footer).
-    raw = sum(HDR_OFF + sum(_pos_lines(p) for p in b.positionen) * DY
-              + (DY + GAP if b.zwischensumme else GAP)
-              for b in angebot.bloecke) or 1.0
-    budget = (y_foot - 0.28) - h0y
-    # Floor 0.78 statt 0.55 → lesbarer Pitch (kein „Zeilen-Kleben").
-    # Bei extrem vielen Positionen lieber etwas Pitch verlieren als
-    # die Lesbarkeit aufgeben; echte Pagination ist nicht in dieser
-    # Story.
-    scale = 1.0 if raw <= budget else max(0.78, budget / raw)
-    dy, hoff, gap = DY * scale, HDR_OFF * scale, GAP * scale
+    # 4) Block-Höhe pro Block (echte Höhe, KEINE Kompression mehr —
+    #    bei Overflow wird auf neue Seite umbrochen statt zu quetschen).
+    def _blk_height(blk):
+        h = HDR_OFF
+        sub_count = 0
+        for p in blk.positionen:
+            if p.is_header:
+                if sub_count > 0:
+                    h += DY * SUBHEAD_LEAD
+                sub_count += 1
+                h += DY
+            else:
+                h += DY * _pos_lines(p)
+        if blk.zwischensumme:
+            h += DY * ZSUM_LEAD
+        return h
 
-    # 5) Je Modell-Block: geklonte Gold-Bar + Positionszeilen
-    cur_y = h0y
-    out = []
-    for blk in angebot.bloecke:
+    # 5) Einen Block bei start_y emittieren (Gold-Bar + Positionen +
+    #    Zwischensumme). Gibt (out_elements, end_y) zurück.
+    def _emit_block(blk, start_y):
+        out = []
         for rect, ddy in proto_rects:
             r = copy.deepcopy(rect)
-            r["y"] = round(cur_y + ddy, 3)
+            r["y"] = round(start_y + ddy, 3)
             out.append(r)
         for cell in proto_cells:
             c = copy.deepcopy(cell)
-            c["y"] = round(cur_y, 3)
+            c["y"] = round(start_y, 3)
             if tx is not None and round(c.get("x", 0), 3) == tx \
                     and c.get("lines"):
                 c["lines"][0]["txt"] = blk.titel or blk.typ.title()
             out.append(c)
-        ry = cur_y + hoff
-        # Bezeichnung kann lang sein („Gegrilltes Striploin … &
-        # Sommerbohnen") → würde bei wrap:false in die Menge-Spalte
-        # laufen. _wrap_bez (Modul-Ebene) bricht auf max 2 Zeilen,
-        # _pos_lines spiegelt die echte Höhe für raw/scale (Schritt 4).
+        ry = start_y + HDR_OFF
+        sub_count = 0
         for p in blk.positionen:
             if p.is_header:
+                if sub_count > 0:
+                    ry = round(ry + DY * SUBHEAD_LEAD, 3)
+                sub_count += 1
                 out.append(_txt(X_BEZ, ry, BEZ_W, body_st,
                                 p.bezeichnung, weight="Bold"))
-                ry = round(ry + dy, 3)
+                ry = round(ry + DY, 3)
             else:
                 lns = _wrap_bez(p.bezeichnung)
                 bez_el = {"t": "text", "x": round(X_BEZ, 3),
@@ -210,14 +212,70 @@ def render(el, angebot):
                                 _eur(p.einzelpreis)))
                 out.append(_txt(X_GES, ry, 0.5, body_st,
                                 _eur(p.gesamt)))
-                ry = round(ry + dy * _pos_lines(p), 3)
+                ry = round(ry + DY * _pos_lines(p), 3)
         if blk.zwischensumme:
-            ry = round(ry + dy, 3)
+            ry = round(ry + DY * ZSUM_LEAD, 3)
             out.append(_txt(X_GES - 0.12, ry, 0.6, body_st,
                             _eur(blk.zwischensumme), weight="Bold"))
-        cur_y = round(ry + gap, 3)
+        return out, ry
 
-    el[pg] = keep + out
+    # 6) Pagination: Blöcke auf Position-Seiten verteilen. Bei Overflow
+    #    neue Seite (Klon der Page-Frame: Logo/Titel/Footer/Bank-Block),
+    #    nicht quetschen. AGB-Seiten werden danach re-numbered.
+    y_avail = y_foot - PAGE_RESERVE
+    pages_blocks = [[]]                          # Liste je Page: Elemente
+    cur_y = h0y
+    for blk in angebot.bloecke:
+        bh = _blk_height(blk)
+        # Wenn nicht erster Block auf der Seite UND Block läuft in Footer:
+        # neue Seite. Einzelner Block größer als Page-Budget → läuft trotzdem
+        # (echte Multi-Page-Block-Split wäre eigener Sprint).
+        if pages_blocks[-1] and cur_y + bh > y_avail:
+            pages_blocks.append([])
+            cur_y = h0y
+        block_out, end_y = _emit_block(blk, cur_y)
+        pages_blocks[-1].extend(block_out)
+        cur_y = round(end_y + GAP, 3)
+
+    # 7) Seiten in el einbauen — keep auf Seite 1 ist Original (mit
+    #    ANGEBOT-Titel/Projekt-Zeile/Footer/Bank/Logo). Folgeseiten
+    #    klonen die SAME keep (auch Titel/Projekt — minimaler Schaden
+    #    und maximale Konsistenz; echte „nur Footer auf Folgeseiten"
+    #    wäre Style-Variante). AGB-Pages danach.
+    pg_int = int(pg)
+    # AGB-Pages (alles nach der ursprünglichen Positionsseite) puffern
+    agb_pages = []
+    for k in sorted([k for k in el if k != "_meta" and int(k) > pg_int],
+                    key=int):
+        agb_pages.append(el[k])
+        del el[k]
+
+    def _set_page_num(seq, n):
+        """Page-Number-Textbox (rechts unten, sz=5.0, rein numerisch).
+        Im Template auf x≈6.58 y≈11.32 — eindeutig über size 5.0."""
+        for e in seq:
+            if e.get("t") != "text":
+                continue
+            for ln in e.get("lines", []):
+                if ln.get("size") != 5.0:
+                    continue
+                t = (ln.get("txt") or "").strip()
+                if t.isdigit():
+                    ln["txt"] = str(n)
+                    return
+
+    el[pg] = keep + pages_blocks[0]
+    _set_page_num(el[pg], pg_int)
+    for i, page_elements in enumerate(pages_blocks[1:], start=1):
+        new_pg = str(pg_int + i)
+        new_keep = copy.deepcopy(keep)
+        el[new_pg] = new_keep + page_elements
+        _set_page_num(el[new_pg], pg_int + i)
+    offset = len(pages_blocks) - 1                 # extra Position-Seiten
+    for j, agb_seq in enumerate(agb_pages, start=1):
+        new_pg = str(pg_int + offset + j)
+        el[new_pg] = agb_seq
+        _set_page_num(agb_seq, pg_int + offset + j)
     return el
 
 
