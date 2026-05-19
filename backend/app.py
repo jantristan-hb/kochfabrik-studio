@@ -263,6 +263,82 @@ def image_kochfabrik(prompt: str, table: bool = True, cat: str = "food"):
     raise RuntimeError("Kein Bild in Gemini-Antwort")
 
 
+# ---------------- Angebotsgenerator-Engine (graceful) ----------------
+# Engine lebt in Schwester-Repo pptxgenerator_v2. Import gekapselt:
+# fehlt sie (Deploy ohne node/soffice/Asset-Bundle) → Endpoints melden
+# sauber 503 statt App-Crash. Containerisierung = Post-Epic-Ops-Item.
+import sys as _sys
+
+ENGINE_OK, ENGINE_ERR = False, ""
+try:
+    _VEND = os.path.join(ROOT, "engine", "phase0", "scripts")
+    _SIB = os.path.join(os.path.dirname(ROOT), "pptxgenerator_v2",
+                        "phase0", "scripts")
+    _ENG = _VEND if os.path.isdir(_VEND) else _SIB
+    if os.path.isdir(_ENG):
+        _sys.path.insert(0, _ENG)
+        from angebot_model import Angebot, dump as _adump          # noqa
+        from angebot_chat import beschreibung_zu_angebot as _desc2a  # noqa
+        from angebot_render import render_pdf as _render_pdf        # noqa
+        from gen_fiktiv import MODEL as _AMODEL, SCHEMA as _ASCHEMA, \
+            _key as _akey, _extract as _aextract                    # noqa
+        ENGINE_OK = True
+    else:
+        ENGINE_ERR = f"Engine-Pfad fehlt: {_ENG}"
+except Exception as _e:                                            # noqa
+    ENGINE_ERR = f"Engine-Import: {str(_e)[:160]}"
+
+
+def _angebot_from_dict(d):
+    """dict → Angebot (reuse angebot_chat-Mapping ohne LLM)."""
+    import angebot_chat as _ac
+    a = _ac.beschreibung_zu_angebot.__wrapped__ if hasattr(
+        _ac.beschreibung_zu_angebot, "__wrapped__") else None
+    # eigenes Mapping (Schema-stabil, kein LLM):
+    from angebot_model import (Veranstaltung, Positionsblock,
+                               Position, Footer)
+    v = d.get("veranstaltung", {})
+    bl = [Positionsblock(
+        typ=b.get("typ", "pos"), titel=b.get("titel", ""),
+        positionen=[Position(**{k: p[k] for k in ("bezeichnung",
+                    "menge", "einzelpreis", "gesamt", "is_header")
+                    if k in p}) for p in b.get("positionen", [])],
+        zwischensumme=b.get("zwischensumme", 0.0))
+        for b in d.get("bloecke", [])]
+    return Angebot(
+        kunde=d.get("kunde", ""), adresse=d.get("adresse", ""),
+        angebots_nr=d.get("angebots_nr", ""), datum=d.get("datum", ""),
+        kundennr=d.get("kundennr", ""),
+        lieferdatum=d.get("lieferdatum", ""),
+        ansprechpartner=d.get("ansprechpartner", ""),
+        veranstaltung=Veranstaltung(
+            anlass=v.get("anlass", ""), datum=v.get("datum", ""),
+            beginn=v.get("beginn", ""),
+            personen=int(v.get("personen", 0) or 0),
+            ort=v.get("ort", ""), konzept=v.get("konzept", "")),
+        bloecke=bl, footer=Footer())
+
+
+def _chat_patch(angebot_dict, message):
+    """Aktuelles Angebot + Chat-Nachricht → aktualisiertes Angebot-dict
+    (LLM patcht das ganze JSON). Leeres Angebot → Neu-Generierung."""
+    from anthropic import Anthropic
+    c = Anthropic(api_key=_akey())
+    cur = json.dumps(angebot_dict or {}, ensure_ascii=False)
+    msg = c.messages.create(
+        model=_AMODEL, max_tokens=4000,
+        messages=[{"role": "user", "content":
+                   "Du bearbeitest ein KOCHfabrik-Angebot. AKTUELLES "
+                   "JSON:\n" + cur + "\n\nÄNDERUNGSWUNSCH:\n" + message
+                   + "\n\nGib das VOLLSTÄNDIGE aktualisierte Angebot "
+                   "als striktes kompaktes JSON zurück (nur JSON, keine "
+                   "Fences, keine trailing commas, Footer NICHT setzen). "
+                   "Fehlende Angaben plausibel ergänzen. Schema:\n"
+                   + _ASCHEMA}])
+    return json.loads(_aextract("".join(
+        b.text for b in msg.content if b.type == "text")))
+
+
 app = FastAPI(title="KOCHfabrik Studio")
 PUBLIC = ("/login.html", "/api/login", "/api/health", "/favicon.ico")
 
@@ -333,6 +409,55 @@ def api_image(r: ImgReq):
     return {"image": "data:image/png;base64,"
             + base64.b64encode(png).decode(), "model": MODEL,
             "bg": os.path.basename(bg) if bg else None}
+
+
+class AngebotChatReq(BaseModel):
+    message: str
+    angebot: dict | None = None
+
+
+class AngebotPdfReq(BaseModel):
+    angebot: dict
+
+
+@app.get("/api/angebot/health")
+def angebot_health():
+    return {"engine": ENGINE_OK, "error": ENGINE_ERR,
+            "model": _AMODEL if ENGINE_OK else None}
+
+
+@app.post("/api/angebot/chat")
+def angebot_chat(r: AngebotChatReq):
+    if not ENGINE_OK:
+        return JSONResponse(
+            {"error": "Angebots-Engine in diesem Deploy nicht "
+             "verfügbar: " + (ENGINE_ERR or "")}, status_code=503)
+    if not r.message.strip():
+        return JSONResponse({"error": "leer"}, status_code=400)
+    try:
+        upd = _chat_patch(r.angebot, r.message)
+        _angebot_from_dict(upd)                 # Schema-Validierung
+    except Exception as e:
+        return JSONResponse({"error": str(e)[:240]}, status_code=502)
+    return {"angebot": upd}
+
+
+@app.post("/api/angebot/pdf")
+def angebot_pdf(r: AngebotPdfReq):
+    if not ENGINE_OK:
+        return JSONResponse(
+            {"error": "Angebots-Engine in diesem Deploy nicht "
+             "verfügbar: " + (ENGINE_ERR or "")}, status_code=503)
+    import tempfile
+    try:
+        a = _angebot_from_dict(r.angebot)
+        out = os.path.join(tempfile.mkdtemp(prefix="stud_ang_"),
+                           "angebot.pdf")
+        _render_pdf(a, out)
+        data = base64.b64encode(open(out, "rb").read()).decode()
+    except Exception as e:
+        return JSONResponse({"error": str(e)[:240]}, status_code=502)
+    return {"pdf": "data:application/pdf;base64," + data}
 
 
 @app.get("/")

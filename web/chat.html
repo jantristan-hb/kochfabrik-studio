@@ -3,8 +3,43 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>KOCHfabrik Studio — Chat-Konzeption</title>
+<title>KOCHfabrik Studio — Angebotsgenerator</title>
 <link rel="stylesheet" href="assets/style.css">
+<style>
+  .ag{display:grid;grid-template-columns:380px 1fr;gap:22px;align-items:start}
+  .chatcol{display:flex;flex-direction:column;height:74vh}
+  .stream{flex:1;overflow:auto;padding:16px;background:var(--panel);
+    border:1px solid var(--line);border-radius:var(--radius);
+    display:flex;flex-direction:column;gap:12px}
+  .m{max-width:88%;padding:11px 14px;border-radius:12px;font-size:.9rem;line-height:1.5}
+  .m.bot{background:var(--gold-tint-2);border:1px solid var(--line-2);align-self:flex-start;border-bottom-left-radius:4px}
+  .m.me{background:var(--gold);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+  .m .who{font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;font-weight:800;opacity:.7;margin-bottom:4px}
+  .cbar{display:flex;gap:9px;margin-top:12px}
+  .cbar textarea{flex:1;border:1px solid var(--line);border-radius:var(--radius-s);
+    padding:11px 13px;font:inherit;font-size:.9rem;resize:none;height:54px;outline:none}
+  .cbar textarea:focus{border-color:var(--gold)}
+  .ed{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:20px;max-height:74vh;overflow:auto}
+  .ed h3{font-size:.84rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin:18px 0 10px}
+  .ed h3:first-child{margin-top:0}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .f label{display:block;font-size:.7rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+  .f input{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;font-size:.86rem;outline:none}
+  .f input:focus{border-color:var(--gold)}
+  .blk{border:1px solid var(--line-2);border-radius:10px;padding:12px;margin-top:10px;background:var(--gold-tint-2)}
+  .blk-h{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+  .blk-h input{flex:1;font-weight:700}
+  table.pos{width:100%;border-collapse:collapse;font-size:.82rem}
+  table.pos th{text-align:left;color:var(--ink-soft);font-size:.66rem;text-transform:uppercase;padding:4px}
+  table.pos td{padding:2px}
+  table.pos input{width:100%;border:1px solid var(--line);border-radius:6px;padding:5px 6px;font:inherit;font-size:.82rem}
+  .mini{background:none;border:1px solid var(--line);border-radius:6px;padding:4px 9px;font-size:.78rem;cursor:pointer;color:var(--gold-deep)}
+  .mini:hover{border-color:var(--gold)}
+  .spin{display:inline-block;width:15px;height:15px;border:2px solid var(--gold);
+    border-top-color:transparent;border-radius:50%;animation:s .8s linear infinite;vertical-align:-2px;margin-right:6px}
+  @keyframes s{to{transform:rotate(360deg)}}
+  .warn{background:#fbe7e9;border:1px solid #e7b9c1;color:#a8324b;padding:10px 13px;border-radius:8px;font-size:.85rem;margin-bottom:12px}
+</style>
 </head>
 <body>
 <div class="app">
@@ -14,66 +49,135 @@
       <div class="nav-label">Arbeiten</div>
       <a class="nav-item" href="index.html"><span class="ic">&#9632;</span> Dashboard</a>
       <a class="nav-item" href="upload.html"><span class="ic">&#8682;</span> Angebot-Upload</a>
-      <a class="nav-item active" href="chat.html"><span class="ic">&#9993;</span> Chat-Konzeption</a>
+      <a class="nav-item active" href="chat.html"><span class="ic">&#9993;</span> Angebotsgenerator</a>
       <a class="nav-item" href="bildgenerator.html"><span class="ic">&#9788;</span> Bildgenerator</a>
       <div class="nav-label">Wissen</div>
       <a class="nav-item" href="client.html"><span class="ic">&#9906;</span> Client Research</a>
       <a class="nav-item" href="bibliothek.html"><span class="ic">&#9783;</span> Bibliothek</a>
     </nav>
-    <div class="side-foot"><div class="avatar">PD</div><div><div class="nm">Patrick Diehr</div><div class="rl">KOCHfabrik</div></div></div>
+    <div class="side-foot">
+      <div class="avatar">PD</div>
+      <div><div class="nm">Patrick Diehr</div><div class="rl">KOCHfabrik</div></div>
+    </div>
   </aside>
-
   <main class="view">
     <div class="topbar">
-      <div><h1>Chat-Konzeption</h1><div class="sub">Event beschreiben — Deck wächst mit</div></div>
-      <a class="btn btn-primary" href="vorschau.html">Deck ansehen &rarr;</a>
+      <div><h1>Angebotsgenerator</h1><div class="sub">Per Chat konzipieren · von Hand editieren · jederzeit PDF</div></div>
+      <div class="tb-actions">
+        <button class="btn btn-primary" id="pdf">PDF erzeugen</button>
+        <a class="btn btn-ghost btn-sm" href="#" id="logout">Abmelden</a>
+      </div>
     </div>
-
     <div class="content">
-      <div class="chat-grid">
-        <div class="r r1">
-          <div class="chat-box">
-            <div class="chat-stream" id="stream">
-              <div class="msg bot"><div class="who">Studio</div>Womit darf ich beginnen? Beschreiben Sie Anlass, Kundin und Stimmung — oder nennen Sie einfach das Menü.</div>
-              <div class="msg me">Sommerfest Lürssen Werft, 120 Gäste, draußen am Wasser. Edel-maritim, Hauptlinie BIG BBQ.</div>
-              <div class="msg bot"><div class="who">Studio</div>Verstanden. Vorschlag: 14 Slides — Titel, Anlass, BIG-BBQ-Menüfolge (3 Gänge), Live-Cooking, Getränke, Service, Investition, Referenzen. Soll „Sweet Dreams" als Dessertbühne ergänzt werden?</div>
-              <div class="msg me">Ja, Sweet Dreams als eigene Station.</div>
-              <div class="msg bot"><div class="who">Studio</div>Eingefügt — 15 Slides im Markenlayout, Speisenbilder zugeordnet. Sie können jede Slide einzeln anpassen.</div>
-            </div>
-            <div class="chat-bar">
-              <input type="text" id="ci" placeholder="Antworten oder Änderung beschreiben …" aria-label="Nachricht">
-              <button class="send" id="sb" aria-label="Senden">&rarr;</button>
-            </div>
+      <div id="enginewarn"></div>
+      <div class="ag">
+        <div class="chatcol">
+          <div class="stream" id="stream">
+            <div class="m bot"><div class="who">KOCHfabrik</div>Beschreib das Event (Anlass, Gäste, Ort, Konzept …) — ich baue das Angebot. Rechts kannst du alles von Hand ändern und jederzeit ein PDF erzeugen.</div>
+          </div>
+          <div class="cbar">
+            <textarea id="msg" placeholder="z.B. Sommerfest, 120 Gäste, Hamburg, Street Food, 5. Juli 2026"></textarea>
+            <button class="btn btn-primary" id="send">Senden</button>
           </div>
         </div>
-
-        <div class="r r2" style="display:flex;flex-direction:column;gap:18px">
-          <div class="panel" style="padding:20px">
-            <div class="panel-h" style="margin-bottom:14px"><h2 style="font-size:1rem">Deck-Fortschritt</h2></div>
-            <div class="ptrack"><div class="pbar" style="width:88%"></div></div>
-            <p style="font-size:.84rem;color:var(--ink-soft);margin-top:10px">15 von ~17 Slides gesetzt</p>
-            <a class="btn btn-primary btn-sm" href="vorschau.html" style="width:100%;justify-content:center;margin-top:14px">Vorschau öffnen</a>
-          </div>
-          <div class="panel" style="padding:20px">
-            <div class="panel-h" style="margin-bottom:12px"><h2 style="font-size:1rem">Schnell ergänzen</h2></div>
-            <div class="chips">
-              <span class="chip">+ Veggie-Linie</span><span class="chip">+ Weinbegleitung</span>
-              <span class="chip">+ Zeitplan</span><span class="chip">+ Team vor Ort</span>
-              <span class="chip">+ Allergene</span><span class="chip">+ Referenzen</span>
-            </div>
-          </div>
-        </div>
+        <div class="ed" id="editor"></div>
       </div>
     </div>
   </main>
 </div>
-
 <script>
-  var ci=document.getElementById('ci'),sb=document.getElementById('sb'),st=document.getElementById('stream');
-  function add(){if(!ci.value.trim())return;var m=document.createElement('div');m.className='msg me';m.textContent=ci.value;st.appendChild(m);ci.value='';st.scrollTop=st.scrollHeight;
-    setTimeout(function(){var b=document.createElement('div');b.className='msg bot';b.innerHTML='<div class="who">Studio</div>Übernommen — das Deck wird angepasst.';st.appendChild(b);st.scrollTop=st.scrollHeight;},650);}
-  sb.addEventListener('click',add);ci.addEventListener('keydown',function(e){if(e.key==='Enter')add()});
-  document.querySelectorAll('.chip').forEach(function(c){c.addEventListener('click',function(){ci.value=c.textContent.replace('+ ','')+' ergänzen';ci.focus()})});
+let A = {kunde:"",adresse:"",angebots_nr:"",datum:"",kundennr:"",
+  lieferdatum:"",ansprechpartner:"",
+  veranstaltung:{anlass:"",datum:"",beginn:"",personen:0,ort:"",konzept:""},
+  bloecke:[]};
+const $=id=>document.getElementById(id);
+const SC=[["kunde","Kunde"],["angebots_nr","Angebots-Nr."],["datum","Datum"],
+  ["kundennr","Kundennr."],["lieferdatum","Lieferdatum"],["ansprechpartner","Ansprechpartner"]];
+const VC=[["anlass","Anlass"],["datum","V-Datum"],["beginn","Beginn"],
+  ["personen","Personen"],["ort","Ort"],["konzept","Konzept"]];
+const esc=v=>(v??"").toString().replace(/"/g,'&quot;');
+
+function fld(l,k,val){return `<div class="f"><label>${l}</label><input data-k="${k}" value="${esc(val)}"></div>`;}
+function renderForm(){
+  let h='<h3>Kopf</h3><div class="grid2">';
+  SC.forEach(([k,l])=>h+=fld(l,'s|'+k,A[k]));
+  h+='</div><h3>Veranstaltung</h3><div class="grid2">';
+  VC.forEach(([k,l])=>h+=fld(l,'v|'+k,A.veranstaltung[k]));
+  h+='</div><h3>Positionsblöcke</h3>';
+  (A.bloecke||[]).forEach((b,bi)=>{
+    h+=`<div class="blk"><div class="blk-h"><input data-k="bt|${bi}" value="${esc(b.titel)}" placeholder="Block-Titel">
+      <button class="mini" data-delblk="${bi}">Block −</button></div>
+      <table class="pos"><thead><tr><th>Bezeichnung</th><th style="width:46px">Mng</th><th style="width:72px">EP</th><th style="width:72px">Ges</th><th style="width:30px">H</th><th></th></tr></thead><tbody>`;
+    (b.positionen||[]).forEach((p,pi)=>{
+      h+=`<tr><td><input data-k="p|${bi}|${pi}|bezeichnung" value="${esc(p.bezeichnung)}"></td>
+        <td><input data-k="p|${bi}|${pi}|menge" value="${esc(p.menge)}"></td>
+        <td><input data-k="p|${bi}|${pi}|einzelpreis" value="${esc(p.einzelpreis)}"></td>
+        <td><input data-k="p|${bi}|${pi}|gesamt" value="${esc(p.gesamt)}"></td>
+        <td style="text-align:center"><input type="checkbox" data-h="${bi}|${pi}" ${p.is_header?'checked':''}></td>
+        <td><button class="mini" data-delp="${bi}|${pi}">−</button></td></tr>`;
+    });
+    h+=`</tbody></table><div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+      <button class="mini" data-addp="${bi}">+ Position</button>
+      <span style="margin-left:auto;font-size:.8rem;color:var(--ink-soft)">Σ <input data-k="bs|${bi}" value="${esc(b.zwischensumme??0)}" style="width:80px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;font:inherit;font-size:.8rem"></span></div></div>`;
+  });
+  h+='<button class="mini" id="addblk" style="margin-top:12px">+ Block</button>';
+  $('editor').innerHTML=h; bind();
+}
+function collect(){
+  document.querySelectorAll('#editor input[data-k]').forEach(e=>{
+    const t=e.dataset.k.split('|');
+    if(t[0]==='s')A[t[1]]=e.value;
+    else if(t[0]==='v')A.veranstaltung[t[1]]=t[1]==='personen'?(parseInt(e.value)||0):e.value;
+    else if(t[0]==='bt')A.bloecke[+t[1]].titel=e.value;
+    else if(t[0]==='bs')A.bloecke[+t[1]].zwischensumme=parseFloat(e.value)||0;
+    else if(t[0]==='p'){let v=e.value;if(t[3]!=='bezeichnung')v=parseFloat(v)||0;A.bloecke[+t[1]].positionen[+t[2]][t[3]]=v;}
+  });
+  document.querySelectorAll('#editor input[data-h]').forEach(e=>{
+    const[bi,pi]=e.dataset.h.split('|');A.bloecke[+bi].positionen[+pi].is_header=e.checked;});
+}
+function bind(){
+  $('addblk').onclick=()=>{collect();A.bloecke.push({typ:'pos',titel:'Neuer Block',positionen:[],zwischensumme:0});renderForm();};
+  document.querySelectorAll('[data-delblk]').forEach(b=>b.onclick=()=>{collect();A.bloecke.splice(+b.dataset.delblk,1);renderForm();});
+  document.querySelectorAll('[data-addp]').forEach(b=>b.onclick=()=>{collect();A.bloecke[+b.dataset.addp].positionen.push({bezeichnung:'',menge:1,einzelpreis:0,gesamt:0,is_header:false});renderForm();});
+  document.querySelectorAll('[data-delp]').forEach(b=>b.onclick=()=>{collect();const[bi,pi]=b.dataset.delp.split('|');A.bloecke[+bi].positionen.splice(+pi,1);renderForm();});
+}
+function add(role,txt){const d=document.createElement('div');d.className='m '+(role==='me'?'me':'bot');
+  d.innerHTML=`<div class="who">${role==='me'?'Du':'KOCHfabrik'}</div>`+txt;
+  $('stream').appendChild(d);$('stream').scrollTop=$('stream').scrollHeight;return d;}
+
+fetch('/api/angebot/health').then(r=>r.json()).then(d=>{
+  if(!d.engine)$('enginewarn').innerHTML='<div class="warn">Angebots-Engine in diesem Deploy noch nicht aktiv ('+(d.error||'')+'). Editor funktioniert; Chat-Konzeption + PDF folgen mit der Engine-Containerisierung.</div>';
+}).catch(()=>{});
+
+$('send').onclick=async()=>{
+  const m=$('msg').value.trim(); if(!m)return;
+  collect(); add('me',m.replace(/</g,'&lt;')); $('msg').value='';
+  const w=add('bot','<span class="spin"></span>denkt …');
+  try{
+    const r=await fetch('/api/angebot/chat',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({message:m,angebot:A})});
+    if(r.status===401){location.href='/login.html';return;}
+    const d=await r.json(); w.remove();
+    if(d.angebot){A=d.angebot; A.veranstaltung=A.veranstaltung||{}; A.bloecke=A.bloecke||[];
+      renderForm(); add('bot','Angebot aktualisiert — rechts prüfen/editieren, dann <b>PDF erzeugen</b>.');}
+    else add('bot','<span style="color:#a8324b">'+(d.error||'Fehler')+'</span>');
+  }catch(e){w.remove();add('bot','<span style="color:#a8324b">Netzwerkfehler: '+e+'</span>');}
+};
+$('pdf').onclick=async()=>{
+  collect(); const b=$('pdf'),o=b.textContent; b.disabled=true; b.textContent='PDF …';
+  try{
+    const r=await fetch('/api/angebot/pdf',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({angebot:A})});
+    if(r.status===401){location.href='/login.html';return;}
+    const d=await r.json();
+    if(d.pdf){const a=document.createElement('a');a.href=d.pdf;a.download='angebot.pdf';a.click();
+      window.open(d.pdf,'_blank'); add('bot','PDF erzeugt — Download + Tab geöffnet.');}
+    else add('bot','<span style="color:#a8324b">PDF-Fehler: '+(d.error||'?')+'</span>');
+  }catch(e){add('bot','<span style="color:#a8324b">Netzwerkfehler: '+e+'</span>');}
+  b.disabled=false;b.textContent=o;
+};
+$('logout').onclick=async e=>{e.preventDefault();await fetch('/api/logout',{method:'POST'});location.href='/login.html';};
+renderForm();
 </script>
 </body>
 </html>
