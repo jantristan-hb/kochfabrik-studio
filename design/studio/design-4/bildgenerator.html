@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KOCHfabrik Studio — Bildküche</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="hin">
+    <a class="brand" href="index.html"><img src="assets/kochfabrik-logo.png" alt="KOCHfabrik Studio"></a>
+    <nav class="main">
+      <a href="index.html">Küche</a>
+      <a href="upload.html">Angebot</a>
+      <a href="chat.html">Gespräch</a>
+      <a href="bildgenerator.html" class="active">Bildküche</a>
+      <a href="client.html">Recherche</a>
+      <a href="bibliothek.html">Sammlung</a>
+    </nav>
+    <div class="acct" title="Patrick Diehr">PD</div>
+  </div>
+</header>
+
+<main>
+  <section class="block">
+    <div class="wrap">
+      <div class="sec-h">
+        <div><div class="sm">Speisen in Szene gesetzt</div><h2>Die Bildküche</h2></div>
+        <a href="vorschau.html">Auswahl ins Deck &rarr;</a>
+      </div>
+      <div class="gen-grid">
+        <div class="card r r1">
+          <div class="field"><label>Gericht</label><input type="text" value="Pulled-Beef-Brisket, Maiscreme, Röstzwiebel" id="dish"></div>
+          <div class="field"><label>Linie</label><select><option>BIG BBQ</option><option>Sweet Dreams</option><option>Fingerfood Deluxe</option><option>Greenline Veggie</option></select></div>
+          <div class="field"><label>Anrichtung</label><select><option>Schiefer, rustikal-edel</option><option>Porzellan, puristisch</option><option>Holzbrett, Live-Station</option></select></div>
+          <div class="field"><label>Stimmung</label><input type="text" value="warmes Licht, Eventcatering"></div>
+          <button class="btn btn-gold" id="gen" style="width:100%;justify-content:center">Bilder anrichten</button>
+        </div>
+        <div class="r r2">
+          <div class="gallery">
+            <div class="shot" onclick="sel(this)"><span class="pk">&#10003;</span><span class="cap">Schiefer · nah</span></div>
+            <div class="shot" onclick="sel(this)"><span class="pk">&#10003;</span><span class="cap">Live-Station · Holz</span></div>
+            <div class="shot" onclick="sel(this)"><span class="pk">&#10003;</span><span class="cap">Porzellan · pur</span></div>
+            <div class="shot" onclick="sel(this)"><span class="pk">&#10003;</span><span class="cap">Buffet · weit</span></div>
+          </div>
+          <div style="display:flex;gap:14px;margin-top:24px;flex-wrap:wrap;align-items:center">
+            <a class="btn btn-gold" href="vorschau.html">Ins Deck übernehmen</a>
+            <button class="btn btn-ghost" id="gen2">Neue Varianten</button>
+            <span style="font-size:.86rem;color:var(--ink-soft)" id="cnt">2 ausgewählt</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site">
+  <div class="wrap"><div class="fin">
+    <span>KOCHfabrik Studio — by Patrick Diehr</span>
+    <div class="fb"><a href="index.html">Küche</a><a href="bibliothek.html">Sammlung</a><a href="client.html">Recherche</a></div>
+  </div></div>
+</footer>
+
+<script>
+  document.querySelectorAll('.shot')[0].classList.add('sel');
+  document.querySelectorAll('.shot')[2].classList.add('sel');
+  function cnt(){var n=document.querySelectorAll('.shot.sel').length;document.getElementById('cnt').textContent=n+' ausgewählt'}
+  function sel(el){el.classList.toggle('sel');cnt()}
+  function flash(b){var o=b.textContent;b.textContent='Richte an …';b.disabled=true;setTimeout(function(){b.textContent=o;b.disabled=false},1100)}
+  document.getElementById('gen').addEventListener('click',function(){flash(this)});
+  document.getElementById('gen2').addEventListener('click',function(){flash(this)});
+</script>
+</body>
+</html>

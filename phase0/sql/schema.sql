@@ -53,3 +53,19 @@ CREATE INDEX menu_module_idx   ON menu_composition(module_type);
 -- ANN: Cosine; bei 1010 Zeilen exakt schnell, hnsw für Produktiv-Wachstum
 CREATE INDEX menu_embed_idx ON menu_composition
   USING hnsw (embedding vector_cosine_ops);
+
+-- ── ADDITIV (nicht von den DROPs oben betroffen) ──────────────────
+-- static_slide = die am häufigsten generierten/kopierten Static-
+-- Visual-Slides (Rahmen-Skelett). Assembler fügt is_golden verbatim
+-- ein. tier A = byte-identisch; tier B = Layout fix, Fotos
+-- event-spezifisch (golden = gekürtes Foto-Set, Rest is_golden=false).
+-- Loader: phase0/scripts/db_load_static.py (idempotent).
+CREATE TABLE IF NOT EXISTS static_slide (
+  id SERIAL PRIMARY KEY, category TEXT NOT NULL, rank INT,
+  cnt INT NOT NULL, tier CHAR(1) NOT NULL, skel_pos REAL,
+  inclusion TEXT, deck TEXT NOT NULL, src_pdf TEXT NOT NULL,
+  page INT NOT NULL, full_text TEXT, is_golden BOOLEAN DEFAULT TRUE,
+  created TIMESTAMPTZ DEFAULT now(), UNIQUE (deck, page));
+CREATE INDEX IF NOT EXISTS static_cat_idx    ON static_slide(category);
+CREATE INDEX IF NOT EXISTS static_golden_idx ON static_slide(is_golden);
+CREATE INDEX IF NOT EXISTS static_pos_idx    ON static_slide(skel_pos);
