@@ -3,6 +3,43 @@
 > Stand 2026-05-18. Engine (faithful PDF→editierbares PPTX) = **Sprint 1
 > integriert** (`main`). Phase D = die Generierungs-Brücke.
 
+## ✅ STAND 2026-05-19 — DATENBANK FERTIG + END-TO-END LÄUFT
+
+**Die Datenbank ist fertig und produktiv nutzbar bewiesen.**
+
+- **`menu_composition`**: 1010 kuratierte Food-Slides, alle embedded
+  (`vector(768)`, pgvector hnsw), 296 Module. Ground-Truth = Jans
+  Hand-Kuration.
+- **`static_slide`**: 16 Zeilen / 6 Kategorien, skel_pos-geordnet,
+  kohärent — COVER(T/0.0) · CREW(B/0.10) · PERSONAL(B/0.76) ·
+  AUSSTATTUNG(T/0.78) · WERTSCHÄTZUNG(B/0.89) · KONTAKT(B/1.00),
+  je golden + freigegebene Alternativen. Gegroundet auf Jans Kuration
+  (`category_samples.pptx`) — keine Korpus-Artefakte.
+- **2 Templates** (tier T, `phase0/data/`): `cover_template` +
+  `ausstattung_template` (Text-Platzhalter + leerer Bild-Slot für
+  späteres Bildgenerator-Projekt).
+- **Element-Cache** `phase0/data/cache/` (199 Decks) warm.
+
+**`assemble.py` = hocheffizienter End-to-End-Assembler — verifiziert:**
+Risk.Ident-Angebot → **9 Slides in 0,7 s** im exakten kanonischen
+Skelett (Cover→Crew→Food→Personal→Ausstattung→Wertschätzung→Kontakt).
+1 Embed-Batch, DB-ANN, nur Cache-Reads, 1 reconstruct. Doku:
+**`docs/ASSEMBLER-WORKFLOW.md`** (prominent, vollständig).
+Beispiel-Output: `phase0/data/assembled_risk_ident.pptx`.
+
+**Doku prominent in `docs/`:** ASSEMBLER-WORKFLOW · PRESENTATION-
+BLUEPRINT · REPORT-structure · INFO-TOP20-METHOD. Golden-Datasets je
+Kategorie zum Versand: `docs/samples/Golden_*.pptx` + `Food_Sample.pptx`.
+
+**Nächste Ausbaustufen (optional, kein Blocker):** Food-Modul-
+Sortierung im Block · Ausstattung-Text feiner aus „Event Ausstattung"
+· Bildgenerator-Projekt (Hero/Ausstattung-Bilder) · Frontend Design 2
+anbinden · phase0/data Snapshots aufräumen (5,5 G).
+
+---
+
+> _(Historie unten — Stand vor 2026-05-19)_
+
 ## ⏯️ Resume — exakter Arbeitsstand (2026-05-18, Cold-Start ZUERST lesen)
 
 ### Repo / Doku-Querverweise (alles hier verlinkt)

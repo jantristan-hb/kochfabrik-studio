@@ -9,3 +9,4 @@ convert-report.json
 __pycache__/
 *.pyc
 phase0/data/
+docs/samples/
