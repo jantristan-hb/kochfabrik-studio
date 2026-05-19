@@ -455,6 +455,12 @@ def _chat_patch(angebot_dict, message):
 
 
 app = FastAPI(title="KOCHfabrik Studio")
+
+# EPIC-002: Präsentationsgenerator v2 (parallel zum alten /api/praesentation/*).
+# Sprint-9-Refactor entfernt diese Zeile + das Modul, fertig.
+from backend.praesentation_v2 import router as _praes_v2_router  # noqa: E402
+app.include_router(_praes_v2_router)
+
 PUBLIC = ("/login.html", "/api/login", "/api/health", "/favicon.ico",
           "/api/oauth/providers")
 _PUBLIC_PREFIX = ("/assets/", "/api/oauth/")     # oauth login/callback
