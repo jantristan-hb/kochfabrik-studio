@@ -35,7 +35,7 @@ kochfabrik-studio/
 │                         pgbundle.npz (DB-Snapshot), static_slide.json,
 │                         cache/<ref-slug>/  (1 Referenz-Slug; Voll-Cache
 │                                             = Server-Volume, s. Deploy)
-├── Dockerfile            python:3.12-slim + nodejs + LibreOffice + COPY engine
+├── Dockerfile            python:3.12-slim + nodejs + LibreOffice + poppler-utils + COPY engine
 ├── requirements.txt      fastapi uvicorn pydantic anthropic python-pptx numpy
 ├── vendor.sh             ⭐ Ein-Befehl Engine-Sync (s.u.)
 └── README.md             dieses Dokument

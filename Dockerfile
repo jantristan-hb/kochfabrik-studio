@@ -1,9 +1,10 @@
 FROM python:3.12-slim
 
-# Angebotsgenerator-Engine-Runtime: node (reconstruct.js) +
-# LibreOffice headless (pptx→pdf) + Schriften für faithful Render.
+# Engine-Runtime: node (reconstruct.js) + LibreOffice headless
+# (pptx→pdf) + poppler-utils (pdftotext/pdfinfo/pdftoppm — PDF-Input
+# des Präsentationsgenerators) + Schriften für faithful Render.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      nodejs libreoffice-impress libreoffice-core \
+      nodejs libreoffice-impress libreoffice-core poppler-utils \
       fonts-dejavu-core fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
 
