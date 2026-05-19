@@ -79,6 +79,59 @@ vollen lokalen Cache — schlägt der fehl, **NICHT deployen**.
    Korpus-Decks → zusätzlich rsync, sonst rendert der
    Präsentationsgenerator alte/fehlende Decks.
 
+### Static Slide ändern/hinzufügen → bereitstellen
+
+Static Slides (Cover · CREW · PERSONAL · KONTAKT · WERTSCHÄTZUNG ·
+**AUSSTATTUNG/Location**) sind **kein Template/Token** mehr, sondern
+alle derselbe Mechanismus, alles an einem Ort:
+
+- **`static_slide`-Row** in der Live-DB `pptxgen-pg`
+  (`localhost:5434`, db `pptxgen`) — Spalten u.a. `category`,
+  `deck`, `page`, `skel_pos`, `inclusion`, `tier`, `is_golden`.
+  UNIQUE(`deck`,`page`). `inclusion='pflicht'` ⇒ `assemble.py`
+  `pick_frame` zieht sie deterministisch (kunden-stabil) und rendert
+  das zugehörige Cache-Deck **verbatim**.
+- **Cache-Deck** `pptxgenerator_v2/phase0/data/cache/<slug>/`:
+  `elements.json` (`{"1":[…],"_meta":{"w_pt":960,"h_pt":540,
+  "deck":"<slug>"}}`), `assets/<bild>`, `logos.json` (`{}` reicht →
+  `resolve(src)=src`). Bild-`src` = `"<slug>/assets/<datei>"`.
+  Text: `reconstruct` rendert mit **`wrap:false`** (kein Reflow →
+  Zeilen manuell brechen) und **eff. Größe = `size · 0.78`** (SIZE_K).
+  Canvas 13,333 × 7,5 in. Foto als `.jpg` (klein halten, ~≤500 KB).
+
+**Bereitstellen (end-to-end, genau dieser Ablauf):**
+
+```
+1. Cache-Deck bauen in pptxgenerator_v2/phase0/data/cache/<slug>/
+   (data/ ist gitignored → lebt nur lokal + DB + Server-Volume)
+2. static_slide-Row in pptxgen-pg setzen/ändern, z.B.:
+   UPDATE static_slide SET deck='<slug>',page=1,inclusion='pflicht',
+     tier='T',is_golden=true,skel_pos=0.78 WHERE category='…';
+   (DB-Creds aus ~/work/.env — nie im Repo)
+3. vendor.sh: STATIC_DECKS=(<slug> …) eintragen (autoriertes Deck,
+   KEIN Korpus — gehört INS Bundle + aufs Volume)
+4. ./vendor.sh           # regeneriert pgbundle.npz + static_slide.json
+                         # in SRC *und* DST (Sim testete sonst stale),
+                         # vendort Cache-Deck, Container-Pfad-Sim-GATE
+5. ./vendor.sh --push-static   # rsync Static-Decks aufs Server-Volume
+   # PFLICHT: data/cache ist Coolify Directory Mount → das vendorte
+   # Deck wird zur Laufzeit ÜBERLAGERT; authoritativ ist das Volume
+6. git add engine vendor.sh && git commit && git push   # master
+7. ./vendor.sh --deploy        # ODER Coolify force-deploy (s.u.)
+8. Verify am Server (auth-frei, autoritativ):
+   ssh -i ~/.ssh/hetzner_id root@188.245.110.5
+   CID=$(docker ps -q --filter name=<APP-UUID>)
+   docker exec $CID python3 -c "import json;print([x for x in \
+     json.load(open('/app/engine/phase0/data/static_slide.json')) \
+     if x['category']=='<CAT>'])"
+   docker exec $CID ls /app/engine/phase0/data/cache/<slug>/assets/
+```
+
+> **Secrets:** DB-Creds (`pptxgen-pg`), `COOLIFY_TOKEN`,
+> `GEMINI_API_KEY`/`ANTHROPIC_API_KEY`, SSH-Key-Pfad — **alle in
+> `~/work/.env`** (bzw. `~/.ssh/hetzner_id`). Nie ins Repo/README,
+> nie hardcoden. Prod-Runtime liest sie als Coolify-ENV (s.u.).
+
 ---
 
 ## Deployment (Coolify)
@@ -216,7 +269,8 @@ Coolify-Token: `~/work/.env` → `COOLIFY_TOKEN`. SSH-Key `~/.ssh/hetzner_id`.
 
 User werden **von Hand** verwaltet, Format `KF_USERS` =
 `email|salt|sha256(salt + ":" + pw)` (mehrere `;`-getrennt) als
-Coolify-ENV. Passwörter NIE in Repo/README. Neuen User: Salt+Hash
+Coolify-ENV. Passwörter/Secrets NIE in Repo/README — Single Source ist
+`~/work/.env` (lokal) bzw. Coolify-ENV (Prod). Neuen User: Salt+Hash
 lokal bilden, an `KF_USERS` anhängen, Coolify-ENV updaten, redeploy.
 Session = HMAC-signiertes Cookie (`KF_SESSION_SECRET`).
 
