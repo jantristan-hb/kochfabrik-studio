@@ -17,6 +17,37 @@ DY = 0.162           # Zeilen-Pitch (aus Referenz: num-Spalte h/nlines)
 HDR_OFF = 0.41       # Gold-Header-y → erste Datenzeile
 GAP = 0.34           # Abstand Zwischensumme → nächster Block
 
+# Pre-Wrap-Konstanten — Bezeichnungs-Spalte Word-Break vor Render
+BEZ_W, BEZ_MAX = 3.7, 68          # 3.7in × 9pt × SIZE_K ≈ 68 chars
+WRAP_PITCH = 1.7                  # Pitch-Multiplikator bei 2-Zeilen-Wrap
+
+
+def _wrap_bez(t):
+    """Word-Break der Bezeichnung auf max. 2 Zeilen (BEZ_MAX chars)."""
+    t = str(t or "").strip()
+    if len(t) <= BEZ_MAX:
+        return [t]
+    words, L1, idx = t.split(), "", 0
+    for i, w in enumerate(words):
+        if not L1:
+            L1, idx = w, i + 1
+        elif len(L1) + 1 + len(w) <= BEZ_MAX:
+            L1 += " " + w; idx = i + 1
+        else:
+            break
+    rest = " ".join(words[idx:])
+    if not rest:
+        return [L1]
+    L2 = rest if len(rest) <= BEZ_MAX else rest[:BEZ_MAX - 1] + "…"
+    return [L1, L2]
+
+
+def _pos_lines(p):
+    """Tatsächliche Zeilen-Höhe einer Position (1 oder WRAP_PITCH)."""
+    if p.is_header:
+        return 1.0
+    return WRAP_PITCH if len(_wrap_bez(p.bezeichnung)) > 1 else 1.0
+
 
 def _eur(v):
     return f"{v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
@@ -127,11 +158,19 @@ def render(el, angebot):
     # 4) Vertikal-Budget → adaptive Kompression. Kein Footer-Overlap
     #    ('Text ragt in den Fußraum'), Template-Folgeseiten (T&C)
     #    bleiben unangetastet. Pitch skaliert, Floor = Lesbarkeit.
-    n_lines = [sum(1 for _ in b.positionen) for b in angebot.bloecke]
-    raw = sum(HDR_OFF + n * DY + (DY + GAP if b.zwischensumme else GAP)
-              for b, n in zip(angebot.bloecke, n_lines)) or 1.0
+    #    raw rechnet die ECHTE Zeilenzahl pro Position (inkl. WRAP_PITCH
+    #    bei 2-Zeilen-Bezeichnungen) — sonst unterschätzt sie den Bedarf
+    #    bei langen Speisenamen und scale wird zu optimistisch (Resultat:
+    #    Positionen ragen in Footer).
+    raw = sum(HDR_OFF + sum(_pos_lines(p) for p in b.positionen) * DY
+              + (DY + GAP if b.zwischensumme else GAP)
+              for b in angebot.bloecke) or 1.0
     budget = (y_foot - 0.28) - h0y
-    scale = 1.0 if raw <= budget else max(0.55, budget / raw)
+    # Floor 0.78 statt 0.55 → lesbarer Pitch (kein „Zeilen-Kleben").
+    # Bei extrem vielen Positionen lieber etwas Pitch verlieren als
+    # die Lesbarkeit aufgeben; echte Pagination ist nicht in dieser
+    # Story.
+    scale = 1.0 if raw <= budget else max(0.78, budget / raw)
     dy, hoff, gap = DY * scale, HDR_OFF * scale, GAP * scale
 
     # 5) Je Modell-Block: geklonte Gold-Bar + Positionszeilen
@@ -152,30 +191,8 @@ def render(el, angebot):
         ry = cur_y + hoff
         # Bezeichnung kann lang sein („Gegrilltes Striploin … &
         # Sommerbohnen") → würde bei wrap:false in die Menge-Spalte
-        # laufen. Python-side pre-wrap auf max 2 Zeilen (Word-Break,
-        # max ~68 Zeichen pro Zeile bei box-w 3.7in × 9pt × SIZE_K)
-        # + dyn. ry-Pitch (1 Zeile → dy, 2 Zeilen → ~1.8*dy).
-        BEZ_W, BEZ_MAX = 3.7, 68
-        def _wrap_bez(t):
-            t = str(t or "").strip()
-            if len(t) <= BEZ_MAX:
-                return [t]
-            words = t.split()
-            L1, idx = "", 0
-            for i, w in enumerate(words):
-                if not L1:
-                    L1, idx = w, i + 1
-                elif len(L1) + 1 + len(w) <= BEZ_MAX:
-                    L1 += " " + w; idx = i + 1
-                else:
-                    break
-            rest = " ".join(words[idx:])
-            if not rest:
-                return [L1]
-            L2 = (rest if len(rest) <= BEZ_MAX
-                  else rest[:BEZ_MAX - 1] + "…")
-            return [L1, L2]
-
+        # laufen. _wrap_bez (Modul-Ebene) bricht auf max 2 Zeilen,
+        # _pos_lines spiegelt die echte Höhe für raw/scale (Schritt 4).
         for p in blk.positionen:
             if p.is_header:
                 out.append(_txt(X_BEZ, ry, BEZ_W, body_st,
@@ -193,7 +210,7 @@ def render(el, angebot):
                                 _eur(p.einzelpreis)))
                 out.append(_txt(X_GES, ry, 0.5, body_st,
                                 _eur(p.gesamt)))
-                ry = round(ry + (dy * (1.8 if len(lns) > 1 else 1.0)), 3)
+                ry = round(ry + dy * _pos_lines(p), 3)
         if blk.zwischensumme:
             ry = round(ry + dy, 3)
             out.append(_txt(X_GES - 0.12, ry, 0.6, body_st,
