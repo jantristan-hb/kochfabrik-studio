@@ -7,8 +7,27 @@
 > yu2fqx0twmtqcp6zyx2e59si). Engine vendored aus pptxgenerator_v2.
 
 **Projekt:** kochfabrik-studio (FastAPI, web/, vendored engine)
-**Aktueller Sprint:** Sprint 3 **DONE** (EPIC-001) → nur S4 OAuth offen
-**Status:** 3 Sprints done · Stack: FastAPI + PostgreSQL + SQLAlchemy2 async + Alembic
+**Aktueller Sprint:** Sprint 4 **DONE** — **EPIC-001 funktional komplett**
+**Status:** 4 Sprints done · Stack: FastAPI + PostgreSQL + SQLAlchemy2 async + Alembic + OAuth2-ready
+
+---
+
+## Sprint 4 — OAuth2 (Microsoft/Google) — **DONE**
+
+| Story | Titel | Status |
+|-------|-------|--------|
+| US-018 | OAuth-Provider-Konfiguration (env-gated) | DONE |
+| US-019 | OAuth-Routes (login/callback) + Auto-Registrierung | DONE |
+| US-020 | valid_cookie um DB-User erweitern (ZERO-REGRESSION) | DONE |
+| US-021 | login.html Provider-Buttons (konditional) | DONE |
+
+**Live-verifiziert (master 6784307):** Binding-Gate Graceful-Fallback:
+`providers()={}` ohne ENV, `/api/oauth/google/login`→404, **KF_USERS-
+Cookie weiter gültig** (`valid_cookie=True`, Short-Circuit), `/api/stats`
+mit Cookie funktioniert (S3 intakt). **Playwright login.html:** 0
+OAuth-Buttons (providers leer), Passwort-Login unverändert → **Zero-
+Regression bestätigt.** Externe Abhängigkeit: Live-OAuth-Roundtrip
+braucht vom User registrierte Azure/Google-Apps + `KF_OAUTH_*`-ENV.
 
 ---
 

@@ -2,6 +2,30 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/)
 
+## [Sprint 4] — 2026-05-19 — EPIC-001 OAuth2 (Microsoft/Google) — **EPIC DONE**
+
+### Hinzugefügt
+- **US-018:** `backend/oauth.py` — stdlib-only, env-gated Provider-
+  Config (Google + Microsoft). Ohne ENV `providers()={}`.
+- **US-019:** `/api/oauth/providers`, `/api/oauth/{p}/login`,
+  `/api/oauth/{p}/callback` — Authorization-Code-Flow, state-Cookie
+  (CSRF), Auto-Registrierung in `app_user`, setzt identische
+  `kf_sess`-Session wie Passwort-Login. PUBLIC erweitert.
+- **US-021:** `login.html` Provider-Buttons (konditional, nur wenn
+  aktiv); `?err=oauth` zeigt Hinweis.
+- `store.ensure_user` (graceful) für OAuth-Auto-Registrierung.
+
+### Geändert (ZERO-REGRESSION-Kern)
+- **US-020:** `valid_cookie` erweitert — KF_USERS-Pfad bleibt
+  ERSTER Short-Circuit (kein DB-Hit, bitidentisch). DB-Check
+  `_db_user_ok` (psycopg2, TTL 60s, 2s-Timeout) NUR für Nicht-
+  KF_USERS-User, **exception-safe** → False bei jedem Fehler.
+
+### Externe Abhängigkeit
+- Live-OAuth-Roundtrip braucht User-seitig registrierte Azure-AD- +
+  Google-OAuth-Apps + Coolify-ENV `KF_OAUTH_*`. Bis dahin: OAuth
+  inaktiv, Passwort-Login unverändert.
+
 ## [Sprint 3] — 2026-05-19 — EPIC-001 Dashboard + Bibliothek + Kunden-CRM
 
 ### Hinzugefügt

@@ -62,3 +62,23 @@
 - US-012..017 DONE. Branch `sprint-3-dashboard-crm` → merged master **52196cd**, deployed.
 - **Live-Verify:** Backend-Smoke (stats {angebote1,kunden1,volumen1234.50}, get_customer, Tenant-Isolation→None, list_offers-Filter). **Playwright-E2E (Live-Prod, Cookie für jr@dangerously.ai gemintet):** Dashboard echte KPIs/„1.234,50 €" + Reopen-Link, Bibliothek Suche-Treffer + Empty-State, Kunden-CRM Liste→Detail→Angebot-Reopen `chat.html?offer=3`. Nur favicon-404 (benign). Smoke-Daten bereinigt, client.html unangetastet.
 - Sprint 3 Status: **DONE**. EPIC-001 funktional komplett (S1+S2+S3). Verbleibend: S4 OAuth.
+
+## Sprint 4 — 2026-05-19 (EPIC-Abschluss)
+
+### /sprint-plan + /sprint-execute + integrate (headless+sequentiell)
+- 4 Stories US-018..021 DONE. Branch `sprint-4-oauth` → merged master **6784307**, deployed.
+- **Binding-Gate live-verifiziert (Zero-Regression):**
+  - `providers()=={}` ohne ENV (env-gated, korrekt inaktiv)
+  - `/api/oauth/google/login` → HTTP 404 (Provider inaktiv)
+  - `valid_cookie(KF_USERS-User)` = **True** (Short-Circuit, kein DB-Hit, bitidentisch zu vor S4)
+  - `/api/stats` mit KF_USERS-Cookie liefert {} — S3-Funktionalität intakt
+  - **Playwright login.html:** 0 OAuth-Buttons (providers leer), Passwort-Input + Login-Button vorhanden → exakt heutiges Verhalten
+- Externe Abhängigkeit dokumentiert: Live-OAuth-Roundtrip braucht vom User registrierte Azure-AD + Google-OAuth-Apps + Coolify-ENV (`KF_OAUTH_GOOGLE_ID/_SECRET`, `KF_OAUTH_MS_ID/_SECRET/_TENANT`, `KF_OAUTH_REDIRECT_BASE`). Bis dahin: Code ready, OAuth inaktiv, kein Schaden.
+
+### EPIC-001 — DONE (S1 ✅ S2 ✅ S3 ✅ S4 ✅)
+Persistenz, Multi-Tenant & CRM für den Angebotsgenerator funktional komplett:
+DB-Fundament (Postgres `kf-studio-pg`) + atomare Nummern (`100001-A` /
+`KF-{Jahr}-{n}`) + Chat-History + exaktes Wiederöffnen + Dashboard +
+Bibliothek + Kunden-CRM + OAuth2 (env-gated, zero-regression).
+Headless durchgezogen, je Sprint live gegen den realen Postgres
+verifiziert, sequentiell + integrate-gated, atomare Coolify-Builds.
