@@ -2,6 +2,27 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/)
 
+## [Sprint 3] — 2026-05-19 — EPIC-001 Dashboard + Bibliothek + Kunden-CRM
+
+### Hinzugefügt
+- **US-012:** `store.stats` + `GET /api/stats` — owner-scoped KPIs
+  (Angebote, Kunden, Volumen Σ Zwischensummen, letzte 5).
+- **US-013:** `store.list_customers`/`get_customer` + `GET /api/kunden`,
+  `GET /api/kunde/{id}` (1 Kunde : n Angebote, owner-scoped, 404 fremd).
+- **US-016:** `bibliothek.html` — durchsuchbares/filterbares
+  Angebots-Archiv (q + Status, debounced).
+- **US-017:** `web/kunden.html` (neu) — Kunden-CRM Liste + Detail;
+  Nav-Link „Kunden" in Dashboard + Bibliothek.
+
+### Geändert
+- **US-014:** `list_offers(q, status)` + `/api/angebote?q=&status=`
+  (additiv, abwärtskompatibel).
+- **US-015:** `index.html` zeigt echte KPIs + zuletzt bearbeitete
+  Angebote (Platzhalter-Daten entfernt); Listen-Zeilen öffnen
+  `chat.html?offer={id}` (S2 exaktes Wiederöffnen).
+- Reine Lese-Aggregation: keine Migration, keine neuen Tabellen.
+  `client.html` unangetastet.
+
 ## [Sprint 2] — 2026-05-19 — EPIC-001 Chat-History + Restore + Tenant-Härtung
 
 ### Hinzugefügt
