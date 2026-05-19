@@ -2,6 +2,25 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/)
 
+## [Sprint 5] — 2026-05-19 — EPIC-001 Angebotsgenerator-Frontend (AK3, **EPIC-001 DONE**)
+
+### Hinzugefügt
+- **US-026: Angebotsgenerator in KOCHfabrik Studio** — `web/chat.html`
+  (Chatbot + editierbares Formular/Positionen + PDF jederzeit, Design-2),
+  `/api/angebot/{health,chat,pdf}` mit graceful Engine-Degradation,
+  Engine als ~9 MB Bundle vendored, Dockerfile nodejs+LibreOffice,
+  Coolify-Deploy. `angebot_chat.py` (Engine-CLI Beschreibung→JSON→PDF).
+  → **EPIC-001 abgeschlossen (AK1–4).**
+
+## [Sprint 4] — 2026-05-19 — EPIC-001 Fiktiv-Korpus (AK2)
+
+### Hinzugefügt
+- **US-020: Fiktiv-Event-Generator** — `gen_fiktiv.py` (Anthropic
+  **Batch API**, N realistische Angebot-JSONs, Schema-validiert).
+- **US-021: Korpus-Batch-Renderer** — `build_korpus.py` (JSONs → PDFs).
+- **US-024: Korpus-Konformitäts-Gate** — `korpus_gate.py` +
+  `docs/sprint-4/KORPUS-GATE.md`: **20/20 PDFs kf_classify=='angebot'**.
+
 ## [Sprint 3] — 2026-05-19 — EPIC-001 Angebotsgenerator (Renderer + Pixel-Gate)
 
 ### Hinzugefügt
