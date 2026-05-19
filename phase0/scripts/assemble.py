@@ -128,8 +128,16 @@ def main():
     ort = parse_location(a.offer, a.sec)
     title = re.sub(r"\s+", " ", f"{kunde} {datum}").strip().upper()
     courses = parse_offer_dishes(a.offer, a.sec)         # [(name,[dishes])]
+    derived = False
+    if not courses and a.offer.lower().endswith(".pdf"):
+        from kf_classify import derive_courses
+        dc = derive_courses(a.offer)
+        if dc:
+            courses, derived = dc, True
+    src_note = (" (aus Event-Kontext abgeleitet: "
+                + ", ".join(h for h, _ in courses) + ")") if derived else ""
     print(f"Angebot: Kunde='{kunde}' Datum='{datum}' Ort='{ort[:40]}' | "
-          f"{len(courses)} Gänge → Titel '{title}'")
+          f"{len(courses)} Gänge{src_note} → Titel '{title}'")
 
     cx = psycopg2.connect(**DSN)
     cu = cx.cursor()
@@ -192,8 +200,9 @@ def main():
             except Exception:
                 slots = 0
             fits = slots >= nd
-            key = (0 if fits else 1,
-                   slots - nd if fits else -slots, rank)
+            key = ((rank,) if nd == 0 else          # abgeleitet: bester ANN
+                   (0 if fits else 1,
+                    slots - nd if fits else -slots, rank))
             if bestkey is None or key < bestkey:
                 bestkey, best = key, (dk, pgc, sc)
         deck, pg, src = best
@@ -255,7 +264,10 @@ def main():
     for p, deck, pg, src, c, ds in picks:
         seq = el_cache.get(deck, {}).get(str(pg))
         if seq:
-            items.append((p, text_swap([dict(e) for e in seq], ds)))
+            # abgeleiteter Gang (ds leer) → Korpus-Slide verbatim
+            # (enthält bereits echte passende KOCHfabrik-Gerichte)
+            items.append((p, text_swap([dict(e) for e in seq], ds)
+                          if ds else seq))
     for deck, pg, src, cat, sp in frame:
         seq = el_cache.get(deck, {}).get(str(pg))
         if seq:

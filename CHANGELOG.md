@@ -4,6 +4,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/)
 
 ## [Unreleased]
 
+### Hinzugefügt
+- **Robuste KOCHfabrik-PDF-Pipeline** (`kf_classify.py`) — Identify
+  (invariante Letterhead/Domain-Signatur, empirisch 33/33) ·
+  deterministischer Footer-Strip · Classify (angebot/menue/kontext) ·
+  Label-basierte Event-Extraktion · Ableitung von Gang-Headlines aus
+  Cateringkonzept/Anlass/Empfang, wenn das PDF kein Menü listet. Die
+  abgeleiteten Headlines laufen durch den bestehenden Kategorie-Lock →
+  der 1010-Korpus liefert echte passende KOCHfabrik-Speisen. Robustheit
+  durch sichere Dokument-Klassifikation statt fragilem Inhalts-Parsen.
+  Regression: `tests/test_kf_classify.py`.
+
 ### Behoben
 - **assemble.py crasht bei 0 erkannten Gängen** — kaufmännische
   Angebots-PDFs ohne Speisen (z.B. INBOUND/RAUMKARUSSELL/HOWDENRE)
