@@ -374,10 +374,41 @@ def _angebot_from_dict(d):
         bloecke=bl, footer=Footer())
 
 
+def _today_de() -> str:
+    import datetime
+    M = ("Januar", "Februar", "März", "April", "Mai", "Juni", "Juli",
+         "August", "September", "Oktober", "November", "Dezember")
+    h = datetime.date.today()
+    return f"{h.day}. {M[h.month - 1]} {h.year}"
+
+
+def _ensure_correct_dates(d: dict) -> dict:
+    """Server-seitig zwingend richtige Daten:
+    - 'datum' (Angebots-Erstellung) = HEUTE (Server-Zeit), immer.
+    - 'lieferdatum' default = veranstaltung.datum (Lieferung am Event-
+      Tag), falls leer + v_datum gesetzt.
+    - 'veranstaltung.datum' bleibt unverändert (Chatbot/Kunde vorgibt).
+    LLM-Output egal — diese Felder werden post-mortem gerade gezogen."""
+    if not isinstance(d, dict):
+        return d
+    d["datum"] = _today_de()
+    v = d.get("veranstaltung") or {}
+    if not d.get("lieferdatum") and v.get("datum"):
+        d["lieferdatum"] = v["datum"]
+    return d
+
+
 def _chat_patch(angebot_dict, message):
     """Aktuelles Angebot + Chat-Nachricht → aktualisiertes Angebot-dict
-    (LLM patcht das ganze JSON). Leeres Angebot → Neu-Generierung."""
+    (LLM patcht das ganze JSON). Leeres Angebot → Neu-Generierung.
+    Heute-Anker + DE-Format + Anti-Fabrikation + Feld-Disambiguierung
+    (analog beschreibung_zu_angebot)."""
+    import datetime
     from anthropic import Anthropic
+    MON = ("Januar", "Februar", "März", "April", "Mai", "Juni", "Juli",
+           "August", "September", "Oktober", "November", "Dezember")
+    h = datetime.date.today()
+    heute = f"{h.day}. {MON[h.month - 1]} {h.year}"
     c = Anthropic(api_key=_akey())
     cur = json.dumps(angebot_dict or {}, ensure_ascii=False)
     msg = c.messages.create(
@@ -386,10 +417,30 @@ def _chat_patch(angebot_dict, message):
                    "Du bearbeitest ein KOCHfabrik-Angebot. AKTUELLES "
                    "JSON:\n" + cur + "\n\nÄNDERUNGSWUNSCH:\n" + message
                    + "\n\nGib das VOLLSTÄNDIGE aktualisierte Angebot "
-                   "als striktes kompaktes JSON zurück (nur JSON, keine "
-                   "Fences, keine trailing commas, Footer NICHT setzen). "
-                   "Fehlende Angaben plausibel ergänzen. Schema:\n"
-                   + _ASCHEMA}])
+                   "als striktes kompaktes JSON zurück (nur JSON, "
+                   "keine Fences, keine trailing commas, Footer "
+                   "NICHT setzen).\n\n"
+                   f"HEUTE ist der {heute}. REGELN (strikt):\n"
+                   f"- Erstellungsdatum 'datum' = {heute} wenn leer "
+                   f"oder nicht plausibel.\n"
+                   f"- Alle Datumswerte im deutschen Format "
+                   f"'T. Monat JJJJ' (z.B. '{heute}'), NIEMALS ISO/"
+                   f"JJJJ-MM-TT. Jahre = {h.year} oder später, nie "
+                   f"in der Vergangenheit. Fehlt im Datum das Jahr "
+                   f"(z.B. 'am 18. Juni'), ergänze IMMER {h.year} "
+                   f"(bzw. {h.year + 1} falls dieses Jahr vorbei).\n"
+                   "- Unbekannte Angaben LEER lassen (\"\"). KEINE "
+                   "Platzhalter erfinden — kein 'Max Mustermann', "
+                   "keine 'KF-2025-…'-Nummern, keine Fake-Mail/-Tel. "
+                   "Nur aus der Beschreibung ableitbare Werte "
+                   "ergänzen.\n"
+                   "- FELDER: 'kunde' = Firmenname. 'adresse' = "
+                   "Postanschrift OHNE die Firma (Format "
+                   "'[Ansprechpartner-Name, ]Straße Nr, PLZ Ort'). "
+                   "'veranstaltung.ort' = Event-LOCATION, NICHT die "
+                   "Kundenadresse/-PLZ. 'ansprechpartner' = KOCH"
+                   "fabrik-Sachbearbeiter (Name), NICHT der Kunde.\n\n"
+                   "Schema:\n" + _ASCHEMA}])
     return json.loads(_aextract("".join(
         b.text for b in msg.content if b.type == "text")))
 
@@ -499,6 +550,7 @@ async def angebot_chat(r: AngebotChatReq, request: Request):
         return JSONResponse({"error": "leer"}, status_code=400)
     try:
         upd = _chat_patch(r.angebot, r.message)
+        _ensure_correct_dates(upd)              # datum=heute, lieferdatum=v
         _angebot_from_dict(upd)                 # Schema-Validierung
     except Exception as e:
         return JSONResponse({"error": str(e)[:240]}, status_code=502)
@@ -546,7 +598,7 @@ async def angebot_pdf(r: AngebotPdfReq, request: Request):
             {"error": "Angebots-Engine in diesem Deploy nicht "
              "verfügbar: " + (ENGINE_ERR or "")}, status_code=503)
     import tempfile
-    ang = dict(r.angebot)
+    ang = _ensure_correct_dates(dict(r.angebot))      # datum=heute
     res, warn = await _persist(_owner(request), ang)
     if res:                       # zugewiesene Nummern ins PDF mergen
         ang["angebots_nr"] = res["angebotsnummer"]
