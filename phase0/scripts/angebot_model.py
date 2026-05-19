@@ -21,6 +21,8 @@ class Position:
     menge: float = 1
     einzelpreis: float = 0.0
     gesamt: float = 0.0
+    is_header: bool = False        # preislose Sub-Header-Zeile, z.B.
+    #                                "1x Live Cooking/BBQ Station …"
 
 
 @dataclass
@@ -116,7 +118,8 @@ def example() -> Angebot:
                 typ="speisen", titel="Speisen",
                 positionen=[
                     Position("1x Live Cooking/BBQ Station im Beach & "
-                             "1 Foodtruck", 1, 0.0, 0.0)],
+                             "1 Foodtruck", 1, 0.0, 0.0,
+                             is_header=True)],
                 zwischensumme=0.0),
             Positionsblock(
                 typ="logistik", titel="Logistik & Mobiliar",

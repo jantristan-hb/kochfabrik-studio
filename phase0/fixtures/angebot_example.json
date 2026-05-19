@@ -23,7 +23,8 @@
           "bezeichnung": "1x Live Cooking/BBQ Station im Beach & 1 Foodtruck",
           "menge": 1,
           "einzelpreis": 0.0,
-          "gesamt": 0.0
+          "gesamt": 0.0,
+          "is_header": true
         }
       ],
       "zwischensumme": 0.0
@@ -36,13 +37,15 @@
           "bezeichnung": "Mobiles Grillequipment ab 100 PAX",
           "menge": 1,
           "einzelpreis": 195.0,
-          "gesamt": 195.0
+          "gesamt": 195.0,
+          "is_header": false
         },
         {
           "bezeichnung": "3 vintage Gerüstbohlen für Ihr Buffet",
           "menge": 3,
           "einzelpreis": 39.9,
-          "gesamt": 119.7
+          "gesamt": 119.7,
+          "is_header": false
         }
       ],
       "zwischensumme": 314.7
