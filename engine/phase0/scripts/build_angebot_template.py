@@ -99,6 +99,23 @@ def main():
                     pos_boxes.append((pg, e.get("x", 0), e.get("y", 0),
                                       e.get("w", 0), e.get("h", 0)))
 
+    # Geometrie-Override: {KONZEPT}-Box war 0.747in (Raumkarussell-
+    # extrahiert, kurzes "Street Food"). Konzepte sind in der Praxis
+    # länger ("Sommerliches Gartenfest mit 3-Gang-Menü + Dessert-
+    # Station …") → bis kurz vor rechten Rand aufweiten, h für ggf.
+    # 2-Zeiler. Andere Werte bleiben unverändert (typisch kurz).
+    for pg, seq in el.items():
+        if pg == "_meta" or not isinstance(seq, list):
+            continue
+        for e in seq:
+            if e.get("t") != "text":
+                continue
+            if any("{KONZEPT}" in (l.get("txt") or "")
+                   for l in e.get("lines", [])):
+                e["w"] = 4.6                           # 3.11 → ~7.71
+                e["h"] = max(float(e.get("h") or 0), 0.36)
+                e["wrap"] = True                       # Multi-Line Reflow
+
     # Positions-Repeater-Band (best-effort aus den getroffenen Boxen;
     # exakte Zeilen-Vorlage = US-011, Rendering = Sprint 3)
     rep = None

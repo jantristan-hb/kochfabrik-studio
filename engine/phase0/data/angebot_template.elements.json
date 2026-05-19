@@ -473,8 +473,8 @@
    "t": "text",
    "x": 3.1104,
    "y": 6.2794,
-   "w": 0.7471,
-   "h": 0.1389,
+   "w": 4.6,
+   "h": 0.36,
    "lines": [
     {
      "txt": "{KONZEPT}",
@@ -483,7 +483,8 @@
      "weight": "Regular",
      "italic": false
     }
-   ]
+   ],
+   "wrap": true
   },
   {
    "t": "text",
