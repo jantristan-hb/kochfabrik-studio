@@ -4,7 +4,7 @@ title: "KOCHfabrik Angebotsgenerator — Chat → pixelgenaues Angebots-PDF"
 status: IN_PROGRESS
 created: 2026-05-19
 project: pptxgenerator_v2
-sprints: [2]
+sprints: [2, 3]
 ---
 
 # EPIC-001: KOCHfabrik Angebotsgenerator
@@ -73,6 +73,6 @@ Präsentationsgenerator auf (Tag `freeze/praesentationsgenerator-
 | Sprint | Scope | Status |
 |--------|-------|--------|
 | Sprint 2 | Template-Extraktion + Datenmodell | ✅ DONE (6/6, 2026-05-19) |
-| Sprint 3 | Renderer + Pixel-Diff-Gate | ⏳ TODO |
+| Sprint 3 | Renderer + Pixel-Diff-Gate | 🔨 IN_PROGRESS (geplant 2026-05-19) |
 | Sprint 4 | Fiktiv-Korpus-Generator (20–30 PDFs) | ⏳ TODO |
 | Sprint 5 | Angebotsgenerator-Chat-Flow | ⏳ TODO |
