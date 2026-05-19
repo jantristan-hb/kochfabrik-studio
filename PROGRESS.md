@@ -7,8 +7,28 @@
 > yu2fqx0twmtqcp6zyx2e59si). Engine vendored aus pptxgenerator_v2.
 
 **Projekt:** kochfabrik-studio (FastAPI, web/, vendored engine)
-**Aktueller Sprint:** Sprint 1 **DONE** (EPIC-001) → nächster: Sprint 2
+**Aktueller Sprint:** Sprint 2 **GEPLANT** (EPIC-001), Sprint 1 DONE
 **Status:** 1 Sprint done · Stack: FastAPI + PostgreSQL + SQLAlchemy2 async
+
+---
+
+## Sprint 2 — Chat-History + Exakte Wiederherstellung + Tenant-Härtung (2026-05-19) — GEPLANT
+
+| Story | Titel | Status |
+|-------|-------|--------|
+| US-006 | Chat-Turns je Angebot persistieren | TODO |
+| US-007 | Angebot + Chat-Verlauf laden (owner-scoped) | TODO |
+| US-008 | chat.html exaktes Wiederöffnen (State + Verlauf) | TODO |
+| US-009 | Multi-Tenant-Härtung + Regression (inkl. Chat) | TODO |
+| US-010 | Echtes Alembic-Setup (Carry-Over S1) | TODO |
+| US-011 | pytest gegen Test-Postgres + CI-fähig (Carry-Over S1) | TODO |
+
+**Nutzt (S1-Schema):** `chat_message`. Keine neuen Tabellen.
+**Carry-Over S1 → konsumiert:** Alembic (US-010), pytest-CI (US-011).
+**Docs:** `docs/sprint-2/{USER-STORIES,FEATURE-ARCH,FEATURE-IMPL,
+FEATURE-SHEET-CHAT-HISTORY-RESTORE,BDD,TEST,EXECUTE}.md`. Waves:
+1=US-006/010/011 · 2=US-007/009 · 3=US-008. Sequentiell (geteilte
+app.py/store.py). Nächster Schritt: `/sprint-execute kochfabrik-studio 2`.
 
 ---
 

@@ -32,3 +32,11 @@
 
 ### Nächster Sprint
 - Sprint 2 (Chat-History + Multi-Tenant-Scoping + Restore) — via `/sprint-plan kochfabrik-studio` in frischem Kontext fortsetzen (Loop ist per-Sprint resumierbar; PROGRESS+LOG tragen den State). Begründung: 3-Sprint-Prod-Epic nicht sicher in einem erschöpften Kontext one-shot-bar; Epic-Design ist genau dafür sequenziell+integrate-gated.
+
+## Sprint 2 — 2026-05-19
+
+### /sprint-plan
+- 6 Stories US-006..011: US-006 Chat-Turns persistieren · US-007 Angebot+Chat laden (owner-scoped) · US-008 chat.html exaktes Wiederöffnen · US-009 Multi-Tenant-Härtung+Regression · US-010 echtes Alembic (Carry-Over S1) · US-011 pytest gegen Test-PG (Carry-Over S1)
+- Nutzt S1-`chat_message` (keine neuen Tabellen). Carry-Over S1 konsumiert (Alembic, pytest-CI).
+- Waves: 1=US-006/010/011 · 2=US-007/009 · 3=US-008. Sequentiell empfohlen.
+- Docs: docs/sprint-2/* committed. Status: PLAN. Nächster: /sprint-execute kochfabrik-studio 2.
