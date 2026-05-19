@@ -51,3 +51,15 @@
 - Phase-B-Gate coarse (Slide-1-Diff, keine Per-Slide-Vision) → echte
   Pixel-Fidelity nicht garantiert, nur „keine groben Defekte".
 - Phase C noch nicht geplant (erst nach diesem Sprint, Scope ≈ M).
+
+## Freeze
+
+- **`freeze/praesentationsgenerator-2026-05-19`** @ `6d218bc` —
+  Präsentationsgenerator v1 eingefroren. Bericht:
+  `docs/FREEZE-praesentationsgenerator-2026-05-19.md`.
+
+## Epics
+
+| ID | Titel | Status | Sprints |
+|----|-------|--------|---------|
+| EPIC-001 | KOCHfabrik Angebotsgenerator (Chat → pixelgenaues Angebots-PDF) | OPEN | Sprint 2–5 (geplant) |
