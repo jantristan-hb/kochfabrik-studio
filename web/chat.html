@@ -65,6 +65,7 @@
       <div><h1>Angebotsgenerator</h1><div class="sub">Per Chat konzipieren · von Hand editieren · jederzeit PDF</div></div>
       <div class="tb-actions">
         <button class="btn btn-primary" id="pdf">PDF erzeugen</button>
+        <button class="btn btn-ghost" id="praes">→ Präsentation</button>
         <a class="btn btn-ghost btn-sm" href="#" id="logout">Abmelden</a>
       </div>
     </div>
@@ -173,6 +174,21 @@ $('pdf').onclick=async()=>{
     if(d.pdf){const a=document.createElement('a');a.href=d.pdf;a.download='angebot.pdf';a.click();
       window.open(d.pdf,'_blank'); add('bot','PDF erzeugt — Download + Tab geöffnet.');}
     else add('bot','<span style="color:#a8324b">PDF-Fehler: '+(d.error||'?')+'</span>');
+  }catch(e){add('bot','<span style="color:#a8324b">Netzwerkfehler: '+e+'</span>');}
+  b.disabled=false;b.textContent=o;
+};
+$('praes').onclick=async()=>{
+  collect(); const b=$('praes'),o=b.textContent; b.disabled=true; b.textContent='Präsentation …';
+  add('bot','<span class="spin"></span>Erzeuge KOCHfabrik-Deck aus dem Angebot … (~15–60 s)');
+  try{
+    const r=await fetch('/api/praesentation/from-angebot',{method:'POST',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({angebot:A})});
+    if(r.status===401){location.href='/login.html';return;}
+    const d=await r.json();
+    if(d.pptx){const fn='kochfabrik_deck_'+Date.now()+'.pptx';
+      const a=document.createElement('a');a.href=d.pptx;a.download=fn;a.click();
+      add('bot','Präsentation erzeugt ✅ — PPTX heruntergeladen (aus dem aktuellen Angebot, kein Hand-Paste).');}
+    else add('bot','<span style="color:#a8324b">Präsentation-Fehler: '+(d.error||'?')+'</span>');
   }catch(e){add('bot','<span style="color:#a8324b">Netzwerkfehler: '+e+'</span>');}
   b.disabled=false;b.textContent=o;
 };

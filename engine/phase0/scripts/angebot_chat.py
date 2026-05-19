@@ -75,5 +75,32 @@ def main():
           f"Kunde={ang.kunde!r} Anlass={ang.veranstaltung.anlass!r}")
 
 
+def angebot_to_offer_md(d: dict) -> str:
+    """Angebot-dict → Offer-md, das assemble.parse_offer_dishes/
+    parse_header/parse_location konsumiert (Übergabe Angebots- →
+    Präsentationsgenerator, statt Hand-Paste). Pro Positionsblock ein
+    `### {Titel}`-Gang; Positionsbezeichnung = Gericht-Zeile,
+    Leerzeile trennt. Kategorie-Lock matcht die Gänge gegen den Korpus.
+    """
+    v = d.get("veranstaltung", {}) or {}
+    kunde = (d.get("kunde") or "Kunde").strip()
+    anlass = (v.get("anlass") or "Angebot").strip()
+    out = [f"## Angebot — {kunde} ({anlass})", "",
+           f"| Veranstaltungsdatum | {v.get('datum','')} |",
+           f"| Veranstaltungsort | {v.get('ort','')} |", ""]
+    for b in d.get("bloecke", []) or []:
+        titel = (b.get("titel") or b.get("typ") or "MENÜ").strip()
+        pos = [p for p in (b.get("positionen") or [])
+               if str(p.get("bezeichnung", "")).strip()]
+        if not pos:
+            continue
+        out.append(f"### {titel}")
+        out.append("")
+        for p in pos:                       # je Gericht: Name + Leerzeile
+            out.append(str(p["bezeichnung"]).strip())
+            out.append("")
+    return "\n".join(out) + "\n"
+
+
 if __name__ == "__main__":
     main()
