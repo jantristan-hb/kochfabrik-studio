@@ -1,3 +1,22 @@
+## Sprint 5 — EPIC-002 v2 Backend-Skelett (2026-05-20) — **DONE**
+
+| Story | Titel | Status |
+|-------|-------|--------|
+| US-022 | praesentation_v2 APIRouter + Health/Suggestions/Slide/Render-Stub | DONE |
+| US-023 | Models PraesV2Slide/PraesV2OfferSlide + Migration 0002 (idempotent) | DONE |
+| US-024 | praesentation_v2_store: suggestions/set/get/clear/seed_default | DONE |
+| US-025 | 19 pytest-Tests (Kategorien/Router/HTTP/Migration-File) | DONE |
+
+**Live-verifiziert (master 7df66f1):** /api/praesentation_v2/health
+gerouted (401 auth = Middleware-Schutz aktiv = Route erkannt), DB-Tabellen
+`praes_v2_slide` + `praes_v2_offer_slide` per create_all angelegt. /api/
+angebot/health bit-identisch (kein Regression). 66 Backend-Tests grün.
+**Tech-Debt erkannt:** alembic.ini fehlt im Container — alembic upgrade
+head läuft seit Sprint 1 graceful auf rc=255. Funktional kein Schaden
+(create_all macht idempotent), aber Versionstracking ist drift.
+
+---
+
 # PROGRESS.md — kochfabrik-studio
 
 ## Compact-Recovery

@@ -75,7 +75,7 @@ Refactor (alten Code rausschneiden) erst wenn alles entspannt läuft.
 
 | Sprint | Scope | Status |
 |--------|-------|--------|
-| Sprint 5 | Backend-Skelett v2 + additive DB-Migration | ⏳ TODO |
+| Sprint 5 | Backend-Skelett v2 + additive DB-Migration | ✅ DONE (master 7df66f1) |
 | Sprint 6 | Frontend Drei-Spalten-Editor + DB-Vorschläge | ⏳ TODO |
 | Sprint 7 | Realtime-Preview-Cache + Kohärenz-Layer | ⏳ TODO |
 | Sprint 8 | Frontend-Switch (v2 = Default) | ⏳ TODO |
