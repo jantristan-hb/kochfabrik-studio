@@ -192,15 +192,56 @@ def make_cookie(email):
     return base64.urlsafe_b64encode(f"{raw}|{sig}".encode()).decode()
 
 
+_DBU_CACHE: dict = {}                       # email -> (expires, bool)
+
+
+def _db_user_ok(email: str) -> bool:
+    """US-020 — OAuth-User über app_user (DB) akzeptieren. NUR für
+    Nicht-KF_USERS aufgerufen (Short-Circuit davor). psycopg2 sync,
+    TTL-Cache 60s, 2s-Timeout, EXCEPTION-SAFE: jeder Fehler → False
+    (nie Raise, nie Lockout bestehender KF_USERS-User)."""
+    e = (email or "").strip().lower()
+    if not e:
+        return False
+    c = _DBU_CACHE.get(e)
+    if c and c[0] > time.time():
+        return c[1]
+    ok = False
+    try:
+        import psycopg2
+        u = os.environ.get("DATABASE_URL", "").strip()
+        for p in ("postgres://", "postgresql://",
+                  "postgresql+asyncpg://", "postgresql+psycopg2://"):
+            if u.startswith(p):
+                u = "postgresql://" + u[len(p):]
+                break
+        if u:
+            cx = psycopg2.connect(u, connect_timeout=2)
+            try:
+                cur = cx.cursor()
+                cur.execute("SELECT 1 FROM app_user WHERE email=%s",
+                            (e,))
+                ok = cur.fetchone() is not None
+            finally:
+                cx.close()
+    except Exception:
+        ok = False                          # safe: nie Raise/Lockout
+    _DBU_CACHE[e] = (time.time() + 60, ok)
+    return ok
+
+
 def valid_cookie(tok):
     try:
         raw = base64.urlsafe_b64decode(tok.encode()).decode()
         email, exp, sig = raw.rsplit("|", 2)
         good = hmac.new(_secret().encode(), f"{email}|{exp}".encode(),
                         hashlib.sha256).hexdigest()[:32]
-        return (hmac.compare_digest(sig, good)
-                and int(exp) > time.time()
-                and email in _users())
+        if not (hmac.compare_digest(sig, good)
+                and int(exp) > time.time()):
+            return False
+        if email in _users():               # KF_USERS — unverändert
+            return True
+        return _db_user_ok(email)            # nur OAuth-User (US-020)
     except Exception:
         return False
 
@@ -354,13 +395,15 @@ def _chat_patch(angebot_dict, message):
 
 
 app = FastAPI(title="KOCHfabrik Studio")
-PUBLIC = ("/login.html", "/api/login", "/api/health", "/favicon.ico")
+PUBLIC = ("/login.html", "/api/login", "/api/health", "/favicon.ico",
+          "/api/oauth/providers")
+_PUBLIC_PREFIX = ("/assets/", "/api/oauth/")     # oauth login/callback
 
 
 @app.middleware("http")
 async def auth_gate(request: Request, call_next):
     path = request.url.path
-    if (path in PUBLIC or path.startswith("/assets/")
+    if (path in PUBLIC or path.startswith(_PUBLIC_PREFIX)
             or valid_cookie(request.cookies.get(COOKIE, ""))):
         return await call_next(request)
     if path.startswith("/api/"):
@@ -740,6 +783,65 @@ async def praes_from_pdf(file: UploadFile = File(...)):
     src = os.path.join(tempfile.mkdtemp(prefix="praes_"), "offer.pdf")
     open(src, "wb").write(raw)
     return _assemble_src(src)
+
+
+# ---------------- OAuth2 (US-019, env-gated, zero-regression) -----
+@app.get("/api/oauth/providers")
+def oauth_providers():
+    from . import oauth as _o
+    return {"providers": sorted(_o.providers().keys())}
+
+
+@app.get("/api/oauth/{provider}/login")
+def oauth_login(provider: str, request: Request):
+    import secrets
+    from . import oauth as _o
+    if provider not in _o.providers():
+        return JSONResponse({"error": "provider inaktiv"},
+                            status_code=404)
+    state = secrets.token_urlsafe(24)
+    redir = _o.redirect_uri(provider, request)
+    url = _o.auth_url(provider, state, redir)
+    if not url:
+        return JSONResponse({"error": "config"}, status_code=500)
+    r = RedirectResponse(url, status_code=302)
+    r.set_cookie("kf_oauth_state", state, max_age=600, httponly=True,
+                 samesite="lax", secure=True)
+    r.set_cookie("kf_oauth_redir", redir, max_age=600, httponly=True,
+                 samesite="lax", secure=True)
+    return r
+
+
+@app.get("/api/oauth/{provider}/callback")
+async def oauth_callback(provider: str, request: Request):
+    from . import oauth as _o
+    if provider not in _o.providers():
+        return RedirectResponse("/login.html?err=oauth", status_code=302)
+    qs = request.query_params
+    code = qs.get("code", "")
+    state = qs.get("state", "")
+    state_c = request.cookies.get("kf_oauth_state", "")
+    if not code or not state or not state_c or state != state_c:
+        return RedirectResponse("/login.html?err=oauth", status_code=302)
+    redir = (request.cookies.get("kf_oauth_redir", "")
+             or _o.redirect_uri(provider, request))
+    try:
+        email = _o.exchange(provider, code, redir)
+    except Exception:                                               # noqa
+        email = None
+    if not email:
+        return RedirectResponse("/login.html?err=oauth", status_code=302)
+    try:
+        from .store import ensure_user
+        await ensure_user(email)
+    except Exception:                                               # noqa
+        pass
+    r = RedirectResponse("/", status_code=302)
+    r.set_cookie(COOKIE, make_cookie(email),
+                 max_age=SESSION_DAYS * 86400,
+                 httponly=True, samesite="lax", secure=True)
+    r.delete_cookie("kf_oauth_state"); r.delete_cookie("kf_oauth_redir")
+    return r
 
 
 @app.get("/")

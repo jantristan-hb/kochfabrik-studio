@@ -240,3 +240,18 @@ async def get_customer(owner_email: str,
                           "kundennummer": c.kundennummer,
                           "name": c.name},
                 "angebote": angebote}
+
+
+async def ensure_user(email: str) -> bool:
+    """US-019 — app_user-Row für OAuth-Login sicherstellen.
+    Graceful: DB-Fehler → False (kein Raise)."""
+    e = (email or "").strip().lower()
+    if not e:
+        return False
+    try:
+        async with Session() as s:
+            async with s.begin():
+                await _ensure_user(s, e)
+        return True
+    except Exception:                                           # noqa
+        return False
