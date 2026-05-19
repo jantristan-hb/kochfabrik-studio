@@ -27,7 +27,10 @@ import sys
 import tempfile
 import time
 
-import psycopg2
+try:
+    import psycopg2
+except Exception:                       # Container ohne DB-Treiber
+    psycopg2 = None
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _deckpipe import cached_deck, slugify, CACHE              # noqa
@@ -139,7 +142,18 @@ def main():
     print(f"Angebot: Kunde='{kunde}' Datum='{datum}' Ort='{ort[:40]}' | "
           f"{len(courses)} Gänge{src_note} → Titel '{title}'")
 
-    cx = psycopg2.connect(**DSN)
+    # DB: echtes Postgres falls verfügbar, sonst vendored pg_shim
+    # (DB-frei, originaltreue ANN aus numpy-Bundle). Studio-Container:
+    # PPTX_PGSHIM=1 erzwingt Shim (kein Postgres-Connect-Timeout).
+    if os.environ.get("PPTX_PGSHIM") == "1" or psycopg2 is None:
+        import pg_shim
+        cx = pg_shim.connect()
+    else:
+        try:
+            cx = psycopg2.connect(**DSN)
+        except Exception:
+            import pg_shim
+            cx = pg_shim.connect()
     cu = cx.cursor()
 
     # ---- Food: Kategorie HART locken (Gang-Headline → nächstes

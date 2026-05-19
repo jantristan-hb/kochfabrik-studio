@@ -460,6 +460,63 @@ def angebot_pdf(r: AngebotPdfReq):
     return {"pdf": "data:application/pdf;base64," + data}
 
 
+def _korpus_ok():
+    """Präsentationsgenerator braucht den Multi-Deck-Korpus-Cache
+    (~4.8 GB, NICHT vendorbar). Vorhanden = >5 Deck-Dirs im Cache."""
+    if not ENGINE_OK:
+        return False
+    cdir = os.path.join(os.path.dirname(_ENG), "data", "cache")
+    try:
+        return sum(os.path.isdir(os.path.join(cdir, d))
+                   for d in os.listdir(cdir)) > 5
+    except Exception:
+        return False
+
+
+class PraesReq(BaseModel):
+    offer: str                                  # Angebotstext (md/Plain)
+
+
+@app.get("/api/praesentation/health")
+def praes_health():
+    return {"engine": ENGINE_OK, "korpus": _korpus_ok(),
+            "error": ENGINE_ERR}
+
+
+@app.post("/api/praesentation/generate")
+def praes_generate(r: PraesReq):
+    if not ENGINE_OK:
+        return JSONResponse({"error": "Engine nicht verfügbar: "
+                             + (ENGINE_ERR or "")}, status_code=503)
+    if not _korpus_ok():
+        return JSONResponse(
+            {"error": "Korpus-Cache (~4,8 GB, 166 Decks) in diesem "
+             "Deploy nicht gemountet — Infra-Schritt (Coolify-Volume). "
+             "Modul ist verdrahtet; greift sobald der Cache da ist."},
+            status_code=503)
+    if not r.offer.strip():
+        return JSONResponse({"error": "leer"}, status_code=400)
+    import subprocess
+    import tempfile
+    wd = tempfile.mkdtemp(prefix="praes_")
+    src = os.path.join(wd, "offer.md")
+    out = os.path.join(wd, "deck.pptx")
+    open(src, "w").write(r.offer)
+    env = dict(os.environ, PPTX_PGSHIM="1")
+    try:
+        p = subprocess.run(
+            ["python3", os.path.join(_ENG, "assemble.py"), src,
+             "-o", out], cwd=_ENG, env=env, capture_output=True,
+            text=True, timeout=240)
+        if not os.path.isfile(out):
+            raise RuntimeError((p.stderr or p.stdout or "")[-260:])
+        data = base64.b64encode(open(out, "rb").read()).decode()
+    except Exception as e:
+        return JSONResponse({"error": str(e)[:260]}, status_code=502)
+    return {"pptx": "data:application/vnd.openxmlformats-officedocument"
+            ".presentationml.presentation;base64," + data}
+
+
 @app.get("/")
 def index():
     return FileResponse(os.path.join(WEB, "index.html"))

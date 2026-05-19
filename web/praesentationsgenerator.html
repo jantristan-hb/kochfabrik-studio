@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KOCHfabrik Studio — Präsentationsgenerator</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .pg{display:grid;grid-template-columns:1fr 360px;gap:22px;align-items:start}
+  .pg textarea{width:100%;height:62vh;border:1px solid var(--line);
+    border-radius:var(--radius);padding:16px;font:inherit;font-size:.9rem;
+    resize:none;outline:none;line-height:1.5}
+  .pg textarea:focus{border-color:var(--gold)}
+  .side2{display:flex;flex-direction:column;gap:14px}
+  .out{background:var(--panel);border:1px solid var(--line);
+    border-radius:var(--radius);padding:18px;font-size:.88rem;min-height:120px}
+  .spin{display:inline-block;width:16px;height:16px;border:2px solid var(--gold);
+    border-top-color:transparent;border-radius:50%;animation:s .8s linear infinite;vertical-align:-2px;margin-right:6px}
+  @keyframes s{to{transform:rotate(360deg)}}
+  .warn{background:#fbe7e9;border:1px solid #e7b9c1;color:#a8324b;padding:11px 13px;border-radius:8px;font-size:.85rem;margin-bottom:12px}
+  .dl{display:inline-block;margin-top:12px;background:var(--gold);color:#fff;
+    text-decoration:none;border-radius:var(--radius-s);padding:11px 22px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="side-logo"><a href="index.html"><img src="assets/kochfabrik-logo.png" alt="KOCHfabrik Studio"></a></div>
+    <nav class="side-nav">
+      <div class="nav-label">Arbeiten</div>
+      <a class="nav-item" href="index.html"><span class="ic">&#9632;</span> Dashboard</a>
+      <a class="nav-item" href="chat.html"><span class="ic">&#9993;</span> Angebotsgenerator</a>
+      <a class="nav-item active" href="praesentationsgenerator.html"><span class="ic">&#9707;</span> Präsentationsgenerator</a>
+      <a class="nav-item" href="bildgenerator.html"><span class="ic">&#9788;</span> Bildgenerator</a>
+      <div class="nav-label">Wissen</div>
+      <a class="nav-item" href="client.html"><span class="ic">&#9906;</span> Client Research</a>
+      <a class="nav-item" href="bibliothek.html"><span class="ic">&#9783;</span> Bibliothek</a>
+    </nav>
+    <div class="side-foot">
+      <div class="avatar">PD</div>
+      <div><div class="nm">Patrick Diehr</div><div class="rl">KOCHfabrik</div></div>
+    </div>
+  </aside>
+  <main class="view">
+    <div class="topbar">
+      <div><h1>Präsentationsgenerator</h1><div class="sub">Angebot rein → kanonisches KOCHfabrik-Deck (Cover · Food · Frames · Kontakt)</div></div>
+      <div class="tb-actions">
+        <button class="btn btn-primary" id="go">Deck erzeugen</button>
+        <a class="btn btn-ghost btn-sm" href="#" id="logout">Abmelden</a>
+      </div>
+    </div>
+    <div class="content">
+      <div id="warn"></div>
+      <div class="pg">
+        <textarea id="offer" placeholder="Angebotstext einfügen — Markdown-Struktur (## Angebot — Kunde (Anlass), | Veranstaltungsdatum | … |, ### GANG, Gericht / Zutaten). Oder kaufmännisches Angebot: Felder werden erkannt, Gänge ggf. abgeleitet."></textarea>
+        <div class="side2">
+          <div class="out" id="out">Angebot links einfügen, dann <b>Deck erzeugen</b>. Der Generator matcht Gänge gegen den KOCHfabrik-Korpus (Kategorie-Lock) und baut ein editierbares PPTX im kanonischen Skelett.</div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+fetch('/api/praesentation/health').then(r=>r.json()).then(d=>{
+  if(!d.engine) $('warn').innerHTML='<div class="warn">Engine nicht verfügbar ('+(d.error||'')+').</div>';
+  else if(!d.korpus) $('warn').innerHTML='<div class="warn">Korpus-Cache (~4,8 GB, 166 Decks) in diesem Deploy noch nicht gemountet — Modul ist verdrahtet, Deck-Erzeugung greift sobald der Cache als Coolify-Volume da ist. (Postgres-Abhängigkeit ist bereits via pg_shim gelöst.)</div>';
+}).catch(()=>{});
+$('go').onclick=async()=>{
+  const o=$('offer').value.trim(); if(!o){$('out').textContent='Bitte Angebotstext einfügen.';return;}
+  const b=$('go'),lbl=b.textContent; b.disabled=true; b.textContent='erzeuge …';
+  $('out').innerHTML='<span class="spin"></span>Matcht Gänge, baut Deck … (~15–60 s)';
+  try{
+    const r=await fetch('/api/praesentation/generate',{method:'POST',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({offer:o})});
+    if(r.status===401){location.href='/login.html';return;}
+    const d=await r.json();
+    if(d.pptx){const fn='kochfabrik_deck_'+Date.now()+'.pptx';
+      $('out').innerHTML='Deck erzeugt ✅<br><a class="dl" href="'+d.pptx+'" download="'+fn+'">&#11015; PPTX herunterladen</a>';
+      const a=document.createElement('a');a.href=d.pptx;a.download=fn;a.click();}
+    else $('out').innerHTML='<span style="color:#a8324b">'+(d.error||'Fehler')+'</span>';
+  }catch(e){$('out').innerHTML='<span style="color:#a8324b">Netzwerkfehler: '+e+'</span>';}
+  b.disabled=false;b.textContent=lbl;
+};
+$('logout').onclick=async e=>{e.preventDefault();await fetch('/api/logout',{method:'POST'});location.href='/login.html';};
+</script>
+</body>
+</html>
