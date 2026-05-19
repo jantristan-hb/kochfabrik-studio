@@ -197,8 +197,9 @@ $('pdf').onclick=async()=>{
       body:JSON.stringify({angebot:A})});
     if(r.status===401){location.href='/login.html';return;}
     const d=await r.json();
-    if(d.pdf){const a=document.createElement('a');a.href=d.pdf;a.download='angebot.pdf';a.click();
-      window.open(d.pdf,'_blank'); add('bot','PDF erzeugt — Download + Tab geöffnet.');}
+    if(d.pdf){const a=document.createElement('a');a.href=d.pdf;a.download='angebot.pdf';
+      document.body.appendChild(a);a.click();a.remove();
+      add('bot','PDF erzeugt — Download gestartet (gleicher Tab).');}
     else add('bot','<span style="color:#a8324b">PDF-Fehler: '+(d.error||'?')+'</span>');
   }catch(e){add('bot','<span style="color:#a8324b">Netzwerkfehler: '+e+'</span>');}
   b.disabled=false;b.textContent=o;
