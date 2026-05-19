@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KOCHfabrik Studio — Chat</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="bar">
+  <div class="bar-1">
+    <a class="brand" href="index.html"><img src="assets/kochfabrik-logo.png" alt="KOCHfabrik Studio"></a>
+    <div class="cmd">&#9906; Deck, Kunde oder Befehl … <span class="k">⌘K</span></div>
+    <a class="btn btn-primary btn-new" href="upload.html">+ Neues Deck <span class="kbd">N</span></a>
+    <div class="who"><span class="av">PD</span><span class="nm">P. Diehr</span></div>
+  </div>
+  <div class="tabs">
+    <a class="tab" href="index.html"><span class="ic">&#9632;</span> Übersicht</a>
+    <a class="tab" href="upload.html"><span class="ic">&#8682;</span> Upload</a>
+    <a class="tab active" href="chat.html"><span class="ic">&#9993;</span> Chat</a>
+    <a class="tab" href="bildgenerator.html"><span class="ic">&#9788;</span> Bilder</a>
+    <a class="tab" href="client.html"><span class="ic">&#9906;</span> Research</a>
+    <a class="tab" href="bibliothek.html"><span class="ic">&#9783;</span> Bibliothek</a>
+  </div>
+</div>
+
+<main class="main">
+  <div class="pg-h">
+    <div><div class="crumb">studio / chat-konzeption</div><h1>Deck im Dialog</h1></div>
+    <div class="acts"><a class="btn btn-primary btn-sm" href="vorschau.html">Deck ansehen &rarr;</a></div>
+  </div>
+
+  <div class="chat-grid">
+    <div class="panel r r1">
+      <div class="panel-h"><h2>Konzeptgespräch — Sommergala Lürssen</h2><span class="mono">15 slides</span></div>
+      <div class="chat-box">
+        <div class="chat-stream" id="stream">
+          <div class="msg bot"><div class="w">studio</div>Womit darf ich beginnen? Anlass, Kundin, Stimmung — oder einfach das Menü.</div>
+          <div class="msg me">Sommerfest Lürssen Werft, 120 Gäste, draußen am Wasser. Edel-maritim, Hauptlinie BIG BBQ.</div>
+          <div class="msg bot"><div class="w">studio</div>Verstanden. Vorschlag: 14 Slides — Titel, Anlass, BIG-BBQ-Menüfolge, Live-Cooking, Getränke, Service, Investition, Referenzen. „Sweet Dreams" als Dessertbühne ergänzen?</div>
+          <div class="msg me">Ja, Sweet Dreams als eigene Station.</div>
+          <div class="msg bot"><div class="w">studio</div>Eingefügt — 15 Slides, Markenlayout, Speisenbilder zugeordnet. Bereit zur Vorschau.</div>
+        </div>
+        <div class="chat-bar">
+          <input type="text" id="ci" placeholder="Antworten oder Änderung beschreiben …" aria-label="Nachricht">
+          <button class="send" id="sb" aria-label="Senden">&rarr;</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="r r2" style="display:flex;flex-direction:column;gap:18px">
+      <div class="panel">
+        <div class="panel-h"><h2>Fortschritt</h2></div>
+        <div class="panel-b">
+          <div class="track"><div class="bar2" style="width:88%"></div></div>
+          <p class="mono" style="margin-top:9px">15 / ~17 slides</p>
+          <a class="btn btn-primary btn-sm" href="vorschau.html" style="width:100%;justify-content:center;margin-top:12px">Vorschau</a>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-h"><h2>Ergänzen</h2></div>
+        <div class="panel-b"><div class="chips">
+          <span class="chip">+veggie</span><span class="chip">+wein</span><span class="chip">+zeitplan</span>
+          <span class="chip">+team</span><span class="chip">+allergene</span><span class="chip">+referenzen</span>
+        </div></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  var ci=document.getElementById('ci'),sb=document.getElementById('sb'),st=document.getElementById('stream');
+  function add(){if(!ci.value.trim())return;var m=document.createElement('div');m.className='msg me';m.textContent=ci.value;st.appendChild(m);ci.value='';st.scrollTop=st.scrollHeight;
+    setTimeout(function(){var b=document.createElement('div');b.className='msg bot';b.innerHTML='<div class="w">studio</div>Übernommen — Deck wird angepasst.';st.appendChild(b);st.scrollTop=st.scrollHeight;},600);}
+  sb.addEventListener('click',add);ci.addEventListener('keydown',function(e){if(e.key==='Enter')add()});
+  document.querySelectorAll('.chip').forEach(function(c){c.addEventListener('click',function(){ci.value=c.textContent.replace('+','')+' ergänzen';ci.focus()})});
+</script>
+</body>
+</html>

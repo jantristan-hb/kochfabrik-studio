@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KOCHfabrik Studio — Upload</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="bar">
+  <div class="bar-1">
+    <a class="brand" href="index.html"><img src="assets/kochfabrik-logo.png" alt="KOCHfabrik Studio"></a>
+    <div class="cmd">&#9906; Deck, Kunde oder Befehl … <span class="k">⌘K</span></div>
+    <a class="btn btn-primary btn-new" href="upload.html">+ Neues Deck <span class="kbd">N</span></a>
+    <div class="who"><span class="av">PD</span><span class="nm">P. Diehr</span></div>
+  </div>
+  <div class="tabs">
+    <a class="tab" href="index.html"><span class="ic">&#9632;</span> Übersicht</a>
+    <a class="tab active" href="upload.html"><span class="ic">&#8682;</span> Upload</a>
+    <a class="tab" href="chat.html"><span class="ic">&#9993;</span> Chat</a>
+    <a class="tab" href="bildgenerator.html"><span class="ic">&#9788;</span> Bilder</a>
+    <a class="tab" href="client.html"><span class="ic">&#9906;</span> Research</a>
+    <a class="tab" href="bibliothek.html"><span class="ic">&#9783;</span> Bibliothek</a>
+  </div>
+</div>
+
+<main class="main">
+  <div class="pg-h">
+    <div><div class="crumb">studio / upload · schritt 1/3</div><h1>Angebot &rarr; Deck</h1></div>
+    <div class="acts"><a class="btn btn-ghost btn-sm" href="chat.html">Lieber per Chat</a></div>
+  </div>
+
+  <div class="cols">
+    <div>
+      <div class="panel r r1" id="dzpanel">
+        <div class="panel-h"><h2>Quelle</h2><span class="mono">PDF · max 25 MB</span></div>
+        <div class="panel-b">
+          <div class="dz" id="dz">
+            <div class="ic">&#8682;</div>
+            <div class="t">Angebots-PDF ablegen oder klicken</div>
+            <div class="s">Gänge, Preise &amp; Eventdaten werden automatisch geparst</div>
+            <button class="btn btn-primary" id="pick">Datei auswählen</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel r r2" id="prog" style="display:none">
+        <div class="panel-h"><h2>Angebot_BIG-BBQ_Hamester.pdf</h2><span class="bdg draft" id="pb">PARSING</span></div>
+        <div class="panel-b">
+          <div class="track" style="margin-bottom:16px"><div class="bar2" id="bar" style="width:8%"></div></div>
+          <div class="fstep done"><span class="d">&#10003;</span><div><div class="t">Dokument gelesen</div><div class="s">4 Seiten, Layout erkannt</div></div></div>
+          <div class="fstep active" id="s2"><span class="d">2</span><div><div class="t">Gänge &amp; Preise extrahiert</div><div class="s">BIG BBQ · 6 Komponenten · 48 Gäste · 4.320 € netto</div></div></div>
+          <div class="fstep" id="s3"><span class="d">3</span><div><div class="t">Speisenbilder zugeordnet</div><div class="s">KOCHfabrik-Bildwelt</div></div></div>
+          <div class="fstep" id="s4"><span class="d">4</span><div><div class="t">Deck gesetzt (14 Slides, PPTX)</div><div class="s">Markenlayout</div></div></div>
+          <div class="log" id="log" style="margin-top:16px">&gt; parse ok · 4 pages<br>&gt; menu: <b>BIG BBQ</b> · 6 items · 48 pax</div>
+          <a class="btn btn-primary" id="go" href="vorschau.html" style="display:none;margin-top:16px">Deck-Vorschau &rarr;</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel r r3">
+      <div class="panel-h"><h2>Parser-Felder</h2></div>
+      <div class="src"><span class="f">G</span><div><div class="t">Menüfolge &amp; Gänge</div><div class="d">BIG BBQ, Sweet Dreams, Beilagen</div></div></div>
+      <div class="src"><span class="f">€</span><div><div class="t">Preise &amp; Kalkulation</div><div class="d">pro Person, Pauschalen, Optionen</div></div></div>
+      <div class="src"><span class="f">i</span><div><div class="t">Eventdaten</div><div class="d">Datum, Ort, Personenzahl, Anlass</div></div></div>
+      <div class="src"><span class="f">K</span><div><div class="t">Kundenbezug</div><div class="d">Verknüpft mit Research</div></div></div>
+    </div>
+  </div>
+</main>
+
+<script>
+  var dz=document.getElementById('dz'),pick=document.getElementById('pick');
+  function run(){
+    document.getElementById('dzpanel').style.display='none';
+    document.getElementById('prog').style.display='block';
+    var p=8,bar=document.getElementById('bar'),log=document.getElementById('log');
+    var t=setInterval(function(){
+      p+=7;if(p>100)p=100;bar.style.width=p+'%';
+      if(p>=34){var s=document.getElementById('s2');s.className='fstep done';s.querySelector('.d').innerHTML='&#10003;';log.innerHTML+='<br>&gt; pricing: <b>4.320 €</b> netto'}
+      if(p>=58){var s=document.getElementById('s3');s.className='fstep active';s.querySelector('.d').textContent='3';log.innerHTML+='<br>&gt; images matched: <b>11</b>'}
+      if(p>=80){var s=document.getElementById('s3');s.className='fstep done';s.querySelector('.d').innerHTML='&#10003;';document.getElementById('s4').className='fstep active';log.innerHTML+='<br>&gt; layout: brand template'}
+      if(p>=100){clearInterval(t);var s4=document.getElementById('s4');s4.className='fstep done';s4.querySelector('.d').innerHTML='&#10003;';document.getElementById('go').style.display='inline-flex';var b=document.getElementById('pb');b.textContent='FERTIG';b.className='bdg done';log.innerHTML+='<br>&gt; deck: <b>14 slides</b> · ready'}
+    },420);
+  }
+  dz.addEventListener('click',run);pick.addEventListener('click',function(e){e.stopPropagation();run()});
+  dz.addEventListener('dragover',function(e){e.preventDefault();dz.style.borderColor='#AA8339'});
+  dz.addEventListener('drop',function(e){e.preventDefault();run()});
+</script>
+</body>
+</html>

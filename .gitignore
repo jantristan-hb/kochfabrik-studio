@@ -6,3 +6,6 @@ phase0/cache/
 *.log
 *.out
 convert-report.json
+__pycache__/
+*.pyc
+phase0/data/

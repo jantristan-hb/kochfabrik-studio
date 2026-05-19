@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KOCHfabrik Studio — Angebot servieren</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="hin">
+    <a class="brand" href="index.html"><img src="assets/kochfabrik-logo.png" alt="KOCHfabrik Studio"></a>
+    <nav class="main">
+      <a href="index.html">Küche</a>
+      <a href="upload.html" class="active">Angebot</a>
+      <a href="chat.html">Gespräch</a>
+      <a href="bildgenerator.html">Bildküche</a>
+      <a href="client.html">Recherche</a>
+      <a href="bibliothek.html">Sammlung</a>
+    </nav>
+    <div class="acct" title="Patrick Diehr">PD</div>
+  </div>
+</header>
+
+<main>
+  <section class="block">
+    <div class="wrap">
+      <div class="sec-h">
+        <div><div class="sm">Schritt 1 von 3 · die Zutat</div><h2>Das Angebot servieren</h2></div>
+      </div>
+      <div class="chat-shell">
+        <div>
+          <div id="dzwrap" class="r r1">
+            <div class="dropzone" id="dz">
+              <div class="dz-ic">&#8682;</div>
+              <div class="dz-t">Angebots-PDF hierher ziehen</div>
+              <div class="dz-s">bis 25 MB · Gänge, Preise und Eventdaten werden gelesen</div>
+              <button class="btn btn-gold" id="pick">Datei auswählen</button>
+            </div>
+          </div>
+          <div id="prog" class="card r r2" style="display:none">
+            <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+              <div style="width:44px;height:56px;border-radius:8px;background:var(--cream-2);display:grid;place-items:center;font-weight:800;color:var(--gold-deep);font-size:.78rem">PDF</div>
+              <div><div style="font-family:var(--serif);font-size:1.15rem">Angebot_BIG-BBQ_Hamester.pdf</div><div style="font-size:.85rem;color:var(--ink-soft)">3,2 MB · 4 Seiten</div></div>
+            </div>
+            <div class="track"><div class="bar" id="bar" style="width:8%"></div></div>
+            <div class="fstep done"><span class="d">&#10003;</span><div><div class="t">Dokument gelesen</div><div class="s">4 Seiten erkannt</div></div></div>
+            <div class="fstep active" id="s2"><span class="d">2</span><div><div class="t">Gänge &amp; Preise extrahiert</div><div class="s">BIG BBQ · 6 Komponenten · 48 Gäste</div></div></div>
+            <div class="fstep" id="s3"><span class="d">3</span><div><div class="t">Speisenbilder zugeordnet</div><div class="s">KOCHfabrik-Bildwelt</div></div></div>
+            <div class="fstep" id="s4"><span class="d">4</span><div><div class="t">Deck angerichtet</div><div class="s">14 Slides, Markenlayout</div></div></div>
+            <a class="btn btn-gold" id="go" href="vorschau.html" style="display:none;margin-top:22px">Deck ansehen &rarr;</a>
+          </div>
+        </div>
+        <aside class="aside r r3">
+          <h4>Was gelesen wird</h4>
+          <div class="src"><span class="f">G</span><div><div class="t">Menüfolge &amp; Gänge</div><div class="d">BIG BBQ, Sweet Dreams</div></div></div>
+          <div class="src"><span class="f">€</span><div><div class="t">Preise &amp; Kalkulation</div><div class="d">pro Person, Pauschalen</div></div></div>
+          <div class="src"><span class="f">i</span><div><div class="t">Eventdaten</div><div class="d">Datum, Ort, Gästezahl</div></div></div>
+          <p style="font-size:.86rem;color:var(--ink-soft);margin-top:16px">Kein Angebot? <a href="chat.html" style="color:var(--gold-deep);font-weight:800">Im Gespräch &rarr;</a></p>
+        </aside>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site">
+  <div class="wrap"><div class="fin">
+    <span>KOCHfabrik Studio — by Patrick Diehr</span>
+    <div class="fb"><a href="index.html">Küche</a><a href="bibliothek.html">Sammlung</a><a href="client.html">Recherche</a></div>
+  </div></div>
+</footer>
+
+<script>
+  var dz=document.getElementById('dz'),pick=document.getElementById('pick');
+  function run(){
+    document.getElementById('dzwrap').style.display='none';
+    document.getElementById('prog').style.display='block';
+    var p=8,bar=document.getElementById('bar');
+    var t=setInterval(function(){
+      p+=7;if(p>100)p=100;bar.style.width=p+'%';
+      if(p>=34){var s=document.getElementById('s2');s.className='fstep done';s.querySelector('.d').innerHTML='&#10003;'}
+      if(p>=58){var s=document.getElementById('s3');s.className='fstep active';s.querySelector('.d').textContent='3'}
+      if(p>=80){var s=document.getElementById('s3');s.className='fstep done';s.querySelector('.d').innerHTML='&#10003;';document.getElementById('s4').className='fstep active'}
+      if(p>=100){clearInterval(t);var s4=document.getElementById('s4');s4.className='fstep done';s4.querySelector('.d').innerHTML='&#10003;';document.getElementById('go').style.display='inline-flex'}
+    },420);
+  }
+  dz.addEventListener('click',run);pick.addEventListener('click',function(e){e.stopPropagation();run()});
+  dz.addEventListener('dragover',function(e){e.preventDefault();dz.style.borderColor='#AA8339'});
+  dz.addEventListener('drop',function(e){e.preventDefault();run()});
+</script>
+</body>
+</html>

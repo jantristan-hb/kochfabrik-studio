@@ -29,6 +29,8 @@ pres.layout = "KF";
 let R = 0, I = 0, T = 0, P = 0, SKIP = 0;
 for (const pno of Object.keys(el).sort((a, b) => +a - +b)) {
   const s = pres.addSlide();
+  const _note = (meta.notes || {})[pno];   // optional: unsichtbare Slide-ID
+  if (_note) { try { s.addNotes(String(_note)); } catch (_) { /* noop */ } }
   try {
     const seq = el[pno];
     const frames = [];

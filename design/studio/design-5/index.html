@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KOCHfabrik Studio — Workspace</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="bar">
+  <div class="bar-1">
+    <a class="brand" href="index.html"><img src="assets/kochfabrik-logo.png" alt="KOCHfabrik Studio"></a>
+    <div class="cmd">&#9906; Deck, Kunde oder Befehl … <span class="k">⌘K</span></div>
+    <a class="btn btn-primary btn-new" href="upload.html">+ Neues Deck <span class="kbd">N</span></a>
+    <div class="who"><span class="av">PD</span><span class="nm">P. Diehr</span></div>
+  </div>
+  <div class="tabs">
+    <a class="tab active" href="index.html"><span class="ic">&#9632;</span> Übersicht</a>
+    <a class="tab" href="upload.html"><span class="ic">&#8682;</span> Upload</a>
+    <a class="tab" href="chat.html"><span class="ic">&#9993;</span> Chat</a>
+    <a class="tab" href="bildgenerator.html"><span class="ic">&#9788;</span> Bilder</a>
+    <a class="tab" href="client.html"><span class="ic">&#9906;</span> Research</a>
+    <a class="tab" href="bibliothek.html"><span class="ic">&#9783;</span> Bibliothek</a>
+  </div>
+</div>
+
+<main class="main">
+  <div class="pg-h">
+    <div><div class="crumb">studio / übersicht</div><h1>Workspace</h1></div>
+    <div class="acts"><a class="btn btn-ghost btn-sm" href="chat.html">Chat-Konzeption</a><a class="btn btn-primary btn-sm" href="upload.html">Angebot hochladen</a></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat r r1"><div class="l">Decks 2026</div><div class="v">128</div><div class="d">+14 / Monat</div></div>
+    <div class="stat r r2"><div class="l">In Arbeit</div><div class="v">3</div><div class="d" style="color:var(--gold-deep)">2 Freigaben offen</div></div>
+    <div class="stat r r3"><div class="l">Ø Erstelldauer</div><div class="v">6<small> min</small></div><div class="d">−63 % vs. manuell</div></div>
+    <div class="stat r r4"><div class="l">Bilder erzeugt</div><div class="v">412</div><div class="d">KOCHfabrik-Stil</div></div>
+    <div class="stat r r5"><div class="l">PPTX exportiert</div><div class="v">119</div><div class="d">editierbar</div></div>
+  </div>
+
+  <div class="cols">
+    <div class="panel r r3">
+      <div class="panel-h">
+        <h2>Decks</h2>
+        <div class="r"><a class="lnk" href="bibliothek.html">Alle 128 &rarr;</a></div>
+      </div>
+      <div class="toolbar">
+        <div class="seg"><button class="on">Alle</button><button>Fertig</button><button>Entwurf</button></div>
+        <div class="search">&#9906; <input type="text" placeholder="filtern …" aria-label="Filter"></div>
+      </div>
+      <table class="tbl">
+        <thead><tr><th>Deck</th><th>Kunde</th><th>Slides</th><th>Status</th><th>Datum</th><th></th></tr></thead>
+        <tbody>
+          <tr><td><div class="nm"><span class="th">B</span>BIG BBQ — Sommerfest</div></td><td>Pflegedienst Hamester</td><td class="mono">14</td><td><span class="bdg done">FERTIG</span></td><td class="mono">01.08.26</td><td><a class="lnk" href="vorschau.html">Öffnen</a></td></tr>
+          <tr><td><div class="nm"><span class="th">S</span>Sweet Dreams — Gala</div></td><td>Lürssen Werft</td><td class="mono">18</td><td><span class="bdg draft">ENTWURF</span></td><td class="mono">22.06.26</td><td><a class="lnk" href="vorschau.html">Öffnen</a></td></tr>
+          <tr><td><div class="nm"><span class="th">F</span>Fingerfood Deluxe</div></td><td>Sparkasse Bremerhaven</td><td class="mono">11</td><td><span class="bdg draft">ENTWURF</span></td><td class="mono">09.07.26</td><td><a class="lnk" href="vorschau.html">Öffnen</a></td></tr>
+          <tr><td><div class="nm"><span class="th">B</span>BIG BBQ — Werksfest</div></td><td>Mercedes Bremen</td><td class="mono">16</td><td><span class="bdg done">FERTIG</span></td><td class="mono">15.06.26</td><td><a class="lnk" href="vorschau.html">Öffnen</a></td></tr>
+          <tr><td><div class="nm"><span class="th">G</span>Greenline Veggie</div></td><td>Stadtwerke Bremerhaven</td><td class="mono">12</td><td><span class="bdg done">FERTIG</span></td><td class="mono">28.05.26</td><td><a class="lnk" href="vorschau.html">Öffnen</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="r r4" style="display:flex;flex-direction:column;gap:18px">
+      <div class="panel">
+        <div class="panel-h"><h2>Schnellstart</h2></div>
+        <div class="panel-b" style="display:flex;flex-direction:column;gap:9px">
+          <a class="btn btn-ghost" href="upload.html" style="justify-content:space-between">&#8682;&nbsp; Angebot hochladen <span class="kbd">U</span></a>
+          <a class="btn btn-ghost" href="chat.html" style="justify-content:space-between">&#9993;&nbsp; Im Chat konzipieren <span class="kbd">C</span></a>
+          <a class="btn btn-ghost" href="bildgenerator.html" style="justify-content:space-between">&#9788;&nbsp; Speisenbilder <span class="kbd">B</span></a>
+          <a class="btn btn-ghost" href="client.html" style="justify-content:space-between">&#9906;&nbsp; Client Research <span class="kbd">R</span></a>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-h"><h2>Anstehend</h2></div>
+        <div class="panel-b">
+          <div class="fstep active"><span class="d">1</span><div><div class="t">Lürssen Sommergala</div><div class="s">22.06. · Freigabe offen</div></div></div>
+          <div class="fstep"><span class="d">2</span><div><div class="t">Mercedes Werksfest</div><div class="s">15.06. · 240 Gäste</div></div></div>
+          <div class="fstep"><span class="d">3</span><div><div class="t">Hamester Sommerfest</div><div class="s">01.08. · fertig</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+</body>
+</html>

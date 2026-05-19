@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KOCHfabrik Studio — Bildgenerator</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="side-logo"><a href="index.html"><img src="assets/kochfabrik-logo.png" alt="KOCHfabrik Studio"></a></div>
+    <nav class="side-nav">
+      <div class="nav-label">Arbeiten</div>
+      <a class="nav-item" href="index.html"><span class="ic">&#9632;</span> Dashboard</a>
+      <a class="nav-item" href="upload.html"><span class="ic">&#8682;</span> Angebot-Upload</a>
+      <a class="nav-item" href="chat.html"><span class="ic">&#9993;</span> Chat-Konzeption</a>
+      <a class="nav-item active" href="bildgenerator.html"><span class="ic">&#9788;</span> Bildgenerator</a>
+      <div class="nav-label">Wissen</div>
+      <a class="nav-item" href="client.html"><span class="ic">&#9906;</span> Client Research</a>
+      <a class="nav-item" href="bibliothek.html"><span class="ic">&#9783;</span> Bibliothek</a>
+    </nav>
+    <div class="side-foot"><div class="avatar">PD</div><div><div class="nm">Patrick Diehr</div><div class="rl">KOCHfabrik</div></div></div>
+  </aside>
+
+  <main class="view">
+    <div class="topbar">
+      <div><h1>Bildgenerator</h1><div class="sub">Speisenbilder im KOCHfabrik-Stil</div></div>
+      <a class="btn btn-primary" href="vorschau.html">Auswahl ins Deck &rarr;</a>
+    </div>
+
+    <div class="content">
+      <div class="gen-grid">
+        <div class="panel r r1">
+          <div class="panel-h"><h2>Briefing</h2></div>
+          <div class="field"><label>Gericht</label><input type="text" value="Pulled-Beef-Brisket, Maiscreme, Röstzwiebel" id="dish"></div>
+          <div class="field"><label>Linie</label><select><option>BIG BBQ</option><option>Sweet Dreams</option><option>Fingerfood Deluxe</option><option>Greenline Veggie</option></select></div>
+          <div class="field"><label>Anrichtung</label><select><option>Schiefer, rustikal-edel</option><option>Porzellan, puristisch</option><option>Holzbrett, Live-Station</option></select></div>
+          <div class="field"><label>Stimmung</label><input type="text" value="warmes Licht, Eventcatering"></div>
+          <button class="btn btn-primary" id="gen" style="width:100%;justify-content:center">Bilder erzeugen</button>
+        </div>
+
+        <div class="panel r r2">
+          <div class="panel-h"><h2>Vorschläge</h2><span style="font-size:.84rem;color:var(--ink-soft)" id="cnt">2 ausgewählt</span></div>
+          <div class="gallery">
+            <div class="shot" onclick="sel(this)"><span class="pk">&#10003;</span><span class="cap">Schiefer · Nahaufnahme</span></div>
+            <div class="shot" onclick="sel(this)"><span class="pk">&#10003;</span><span class="cap">Live-Station · Holz</span></div>
+            <div class="shot" onclick="sel(this)"><span class="pk">&#10003;</span><span class="cap">Porzellan · puristisch</span></div>
+            <div class="shot" onclick="sel(this)"><span class="pk">&#10003;</span><span class="cap">Buffet · Übersicht</span></div>
+          </div>
+          <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap">
+            <a class="btn btn-primary" href="vorschau.html">Ins Deck übernehmen</a>
+            <button class="btn btn-ghost" id="gen2">Neue Varianten</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  document.querySelectorAll('.shot')[0].classList.add('sel');
+  document.querySelectorAll('.shot')[2].classList.add('sel');
+  function cnt(){var n=document.querySelectorAll('.shot.sel').length;document.getElementById('cnt').textContent=n+' ausgewählt'}
+  function sel(el){el.classList.toggle('sel');cnt()}
+  function flash(b){var o=b.textContent;b.textContent='Erzeuge …';b.disabled=true;setTimeout(function(){b.textContent=o;b.disabled=false},1100)}
+  document.getElementById('gen').addEventListener('click',function(){flash(this)});
+  document.getElementById('gen2').addEventListener('click',function(){flash(this)});
+</script>
+</body>
+</html>
