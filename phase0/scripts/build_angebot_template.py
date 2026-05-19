@@ -39,7 +39,14 @@ def token_map():
         (a.kunde, "{KUNDE}"),
         ("Frau Claudia Kiesel", "{ADRESSE_NAME}"),
         ("Ernst-Merck-Straße 12-14", "{ADRESSE_STRASSE}"),
+        # PDF-Extraktion liefert doppeltes Leerzeichen (PLZ␣␣Ort) —
+        # beide Schreibweisen, sonst bleibt der Ort hartkodiert.
+        ("20099  Hamburg", "{ADRESSE_ORT}"),
         ("20099 Hamburg", "{ADRESSE_ORT}"),
+        (a.sb_email, "{SB_EMAIL}"),
+        (a.sb_durchwahl, "{SB_DURCHWAHL}"),
+        (a.kontakt_tel, "{KONTAKT_TEL}"),
+        (a.kontakt_email, "{KONTAKT_EMAIL}"),
         (a.veranstaltung.ort, "{ORT}"),
         ("Edelfettwerk , Schnackenburgallee 202, 22525 Hamburg", "{ORT}"),
         (a.veranstaltung.anlass, "{ANLASS}"),

@@ -65,7 +65,11 @@ class Angebot:
     datum: str = ""
     kundennr: str = ""
     lieferdatum: str = ""
-    ansprechpartner: str = ""           # KOCHfabrik-Seite
+    ansprechpartner: str = ""           # KOCHfabrik-Sachbearbeiter (Name)
+    sb_email: str = ""                  # KOCHfabrik-Sachbearbeiter E-Mail
+    sb_durchwahl: str = ""              # KOCHfabrik-Sachbearbeiter Durchwahl
+    kontakt_tel: str = ""               # Kunden-Ansprechpartner Telefon
+    kontakt_email: str = ""             # Kunden-Ansprechpartner E-Mail
     veranstaltung: Veranstaltung = field(default_factory=Veranstaltung)
     bloecke: list[Positionsblock] = field(default_factory=list)
     footer: Footer = field(default_factory=Footer)
@@ -106,6 +110,10 @@ def example() -> Angebot:
         kundennr="4502",
         lieferdatum="12.09.2026",
         ansprechpartner="Jule Wiegers",
+        sb_email="jwiegers@koch-fabrik.com",
+        sb_durchwahl="04101-7744545",
+        kontakt_tel="040 28 41 08 19-0",
+        kontakt_email="claudia.kiesel@raumkarussell.de",
         veranstaltung=Veranstaltung(
             anlass="Sommerfest Regio Kliniken",
             datum="12. September 2026",

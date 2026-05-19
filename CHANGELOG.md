@@ -2,6 +2,26 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/)
 
+## [Unreleased]
+
+### Behoben — Angebotsgenerator Qualitäts-Pass (angebot (4).pdf-Review)
+- **Cluster 2 — Datenfluss/Wurzel:** `beschreibung_zu_angebot`-Prompt
+  injiziert jetzt das heutige Datum (dynamisch) + erzwingt deutsches
+  Datumsformat (kein ISO/2025-Default mehr), verbietet erfundene
+  Platzhalter ('Max Mustermann', 'KF-2025-…') und disambiguiert die
+  Felder (Kunden-PLZ leakt nicht mehr in `veranstaltung.ort`/
+  `ansprechpartner`; Firma nicht mehr in `adresse` dupliziert).
+- **Cluster 1 — hartkodierte Muster-Literale:** `20099  Hamburg`
+  (Doppel-Space-Mismatch), `jwiegers@koch-fabrik.com`, Durchwahl,
+  Raumkarussell-Kontakt → tokenisiert (`{ADRESSE_ORT}`/`{SB_EMAIL}`/
+  `{SB_DURCHWAHL}`/`{KONTAKT_TEL}`/`{KONTAKT_EMAIL}`); Model+Fill+
+  token_map ergänzt. `_addr()` semantisch robust (PLZ/Straße/Kontakt
+  positionsfrei) — keine Straße-als-Name-Verschiebung mehr.
+- **Cluster 3 — Layout:** Gold-Header-Bar wird je Modell-Block frisch
+  geklont (nicht mehr nur die ~2 Referenz-Bars) + adaptive Pitch-
+  Kompression verhindert Footer-Overlap; Template-Folgeseiten (T&C)
+  unangetastet.
+
 ## [Sprint 5] — 2026-05-19 — EPIC-001 Angebotsgenerator-Frontend (AK3, **EPIC-001 DONE**)
 
 ### Hinzugefügt

@@ -20,17 +20,40 @@ from gen_fiktiv import MODEL, SCHEMA, _key, _extract              # noqa
 
 def beschreibung_zu_angebot(text: str) -> Angebot:
     from anthropic import Anthropic
+    import datetime
+    MON = ("Januar", "Februar", "März", "April", "Mai", "Juni", "Juli",
+           "August", "September", "Oktober", "November", "Dezember")
+    h = datetime.date.today()
+    heute = f"{h.day}. {MON[h.month - 1]} {h.year}"
     c = Anthropic(api_key=_key())
     msg = c.messages.create(
         model=MODEL, max_tokens=4000,
         messages=[{"role": "user", "content":
                    "Wandle diese Event-Beschreibung in EIN striktes "
-                   "KOCHfabrik-Angebot-JSON (nur JSON). Fehlende "
-                   "Angaben plausibel ergänzen, KOCHfabrik-typische "
-                   "Positionen/Preise, Sub-Header (is_header) + "
-                   "preisbehaftete Positionen, Zwischensumme je Block, "
-                   "Footer NICHT setzen.\n\nBeschreibung:\n" + text
-                   + "\n\nSchema:\n" + SCHEMA}])
+                   "KOCHfabrik-Angebot-JSON (nur JSON). KOCHfabrik-"
+                   "typische Positionen/Preise, Sub-Header (is_header) "
+                   "+ preisbehaftete Positionen, Zwischensumme je "
+                   "Block, Footer NICHT setzen.\n\n"
+                   f"HEUTE ist der {heute}. REGELN (strikt):\n"
+                   f"- Alle Datumswerte im deutschen Format "
+                   f"'T. Monat JJJJ' (z.B. '{heute}'), NIEMALS ISO/"
+                   f"JJJJ-MM-TT. Jahre = {h.year} oder später, nie in "
+                   f"der Vergangenheit.\n"
+                   "- Unbekannte Angaben LEER lassen (\"\"). KEINE "
+                   "Platzhalter erfinden — kein 'Max Mustermann', "
+                   "keine 'KF-JJJJ-…'-Nummern, keine Fake-Mail/-Tel. "
+                   "Nur aus der Beschreibung ableitbare Werte "
+                   "ergänzen.\n"
+                   "- FELDER: 'kunde' = Firmenname. 'adresse' = "
+                   "Postanschrift OHNE die Firma (die steht schon in "
+                   "'kunde' — NICHT wiederholen!), Format "
+                   "'[Ansprechpartner-Name, ]Straße Nr, PLZ Ort'. "
+                   "'veranstaltung.ort' = Event-LOCATION/Venue — "
+                   "NICHT die Kundenadresse/-PLZ. 'ansprechpartner' = "
+                   "KOCHfabrik-Sachbearbeiter (Name) — NICHT der "
+                   "Kunde. Kunden-PLZ/-Ort gehört AUSSCHLIESSLICH in "
+                   "'adresse'.\n\nBeschreibung:\n"
+                   + text + "\n\nSchema:\n" + SCHEMA}])
     d = json.loads(_extract("".join(b.text for b in msg.content
                                     if b.type == "text")))
     v = d.get("veranstaltung", {})
@@ -73,6 +96,33 @@ def main():
         sys.exit(1)
     print(f"OK: {out}  ({os.path.getsize(out)} bytes) | "
           f"Kunde={ang.kunde!r} Anlass={ang.veranstaltung.anlass!r}")
+
+
+def angebot_to_offer_md(d: dict) -> str:
+    """Angebot-dict → Offer-md, das assemble.parse_offer_dishes/
+    parse_header/parse_location konsumiert (Übergabe Angebots- →
+    Präsentationsgenerator, statt Hand-Paste). Pro Positionsblock ein
+    `### {Titel}`-Gang; Positionsbezeichnung = Gericht-Zeile,
+    Leerzeile trennt. Kategorie-Lock matcht die Gänge gegen den Korpus.
+    """
+    v = d.get("veranstaltung", {}) or {}
+    kunde = (d.get("kunde") or "Kunde").strip()
+    anlass = (v.get("anlass") or "Angebot").strip()
+    out = [f"## Angebot — {kunde} ({anlass})", "",
+           f"| Veranstaltungsdatum | {v.get('datum','')} |",
+           f"| Veranstaltungsort | {v.get('ort','')} |", ""]
+    for b in d.get("bloecke", []) or []:
+        titel = (b.get("titel") or b.get("typ") or "MENÜ").strip()
+        pos = [p for p in (b.get("positionen") or [])
+               if str(p.get("bezeichnung", "")).strip()]
+        if not pos:
+            continue
+        out.append(f"### {titel}")
+        out.append("")
+        for p in pos:                       # je Gericht: Name + Leerzeile
+            out.append(str(p["bezeichnung"]).strip())
+            out.append("")
+    return "\n".join(out) + "\n"
 
 
 if __name__ == "__main__":
