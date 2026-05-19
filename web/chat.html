@@ -124,6 +124,31 @@ function renderForm(){
   h+='<button class="mini" id="addblk" style="margin-top:12px">+ Block</button>';
   $('editor').innerHTML=h; bind();
 }
+// KOCHfabrik-Kalkulation: Personal (bezeichnung '(N Std.)') →
+// gesamt = N × einzelpreis; sonst (pauschal/pro Person) →
+// gesamt = menge × einzelpreis. zwischensumme = Σ gesamt (ohne
+// is_header). Stets ableitbar → kein manuelles Ges/Σ-Override nötig.
+function recalc(){
+  (A.bloecke||[]).forEach(b=>{
+    let s=0;
+    (b.positionen||[]).forEach(p=>{
+      if(p.is_header){p.gesamt=0;return;}
+      const hm=String(p.bezeichnung||'').match(/\((\d+(?:[.,]\d+)?)\s*Std/i);
+      const ep=parseFloat(p.einzelpreis)||0;
+      const base=hm?parseFloat(hm[1].replace(',','.')):(parseFloat(p.menge)||0);
+      p.gesamt=Math.round(base*ep*100)/100;
+      s+=p.gesamt;
+    });
+    b.zwischensumme=Math.round(s*100)/100;
+  });
+}
+function syncTotals(){
+  document.querySelectorAll('#editor input[data-k]').forEach(e=>{
+    const t=e.dataset.k.split('|');
+    if(t[0]==='p'&&t[3]==='gesamt')e.value=A.bloecke[+t[1]].positionen[+t[2]].gesamt;
+    else if(t[0]==='bs')e.value=A.bloecke[+t[1]].zwischensumme;
+  });
+}
 function collect(){
   document.querySelectorAll('#editor input[data-k]').forEach(e=>{
     const t=e.dataset.k.split('|');
@@ -135,6 +160,7 @@ function collect(){
   });
   document.querySelectorAll('#editor input[data-h]').forEach(e=>{
     const[bi,pi]=e.dataset.h.split('|');A.bloecke[+bi].positionen[+pi].is_header=e.checked;});
+  recalc();
 }
 function bind(){
   $('addblk').onclick=()=>{collect();A.bloecke.push({typ:'pos',titel:'Neuer Block',positionen:[],zwischensumme:0});renderForm();};
@@ -193,7 +219,16 @@ $('praes').onclick=async()=>{
   b.disabled=false;b.textContent=o;
 };
 $('logout').onclick=async e=>{e.preventDefault();await fetch('/api/logout',{method:'POST'});location.href='/login.html';};
-renderForm();
+// Live-Kalkulation: Mng/EP/Bezeichnung ändern → Ges + Block-Σ sofort
+// neu (kein Re-Render → Fokus bleibt). Delegiert auf #editor (stabil).
+$('editor').addEventListener('input',ev=>{
+  const k=ev.target.dataset&&ev.target.dataset.k; if(!k)return;
+  const t=k.split('|');
+  if(t[0]==='p'&&(t[3]==='menge'||t[3]==='einzelpreis'||t[3]==='bezeichnung')){
+    collect(); syncTotals();
+  }
+});
+renderForm(); collect(); syncTotals();
 </script>
 </body>
 </html>
