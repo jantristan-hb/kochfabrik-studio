@@ -44,7 +44,8 @@
 <div class="bar">
   <img src="assets/kochfabrik-logo.png" alt="KOCHfabrik">
   <h1>Studio · Bildgenerator</h1>
-  <small>KOCHfabrik-Style</small>
+  <small><a href="#" id="logout" style="color:var(--gold);
+   text-decoration:none;font-weight:700">Abmelden</a></small>
 </div>
 <div class="wrap">
   <p class="lead">Beschreib das Gericht oder Motiv — KOCHfabrik Studio
@@ -55,8 +56,16 @@
     <div class="chips" id="chips"></div>
     <div class="row">
       <button id="go">Bild generieren</button>
+      <label style="font-size:14px;display:flex;align-items:center;
+       gap:7px;cursor:pointer">
+        <input type="checkbox" id="table" checked>
+        KOCHfabrik-Tisch als Hintergrund
+      </label>
       <span id="model" style="font-size:13px;color:#9a907f"></span>
     </div>
+    <div style="font-size:12px;color:#9a907f;margin-top:6px">
+     Aus = freier, zum Gericht passender Kontext (z.B. Frühstück,
+     Sashibar) — der Tisch passt nicht zu allem.</div>
   </div>
   <div class="out" id="out"><div class="ph">Noch kein Bild — Prompt eingeben und generieren.</div></div>
 </div>
@@ -90,18 +99,29 @@ go.onclick=async()=>{
  try{
   const r=await fetch('/api/image',{method:'POST',
    headers:{'Content-Type':'application/json'},
-   body:JSON.stringify({prompt})});
+   body:JSON.stringify({prompt,
+    table:document.getElementById('table').checked})});
+  if(r.status===401){location.href='/login.html';return;}
   const d=await r.json();
   clearInterval(timer);
-  if(d.image){out.innerHTML='<img src="'+d.image+'" alt="">'+
-   '<div style="margin-top:10px;font-size:13px;color:#9a907f">'+
-   ((Date.now()-t0)/1000).toFixed(1)+' s · '+d.model+'</div>';}
+  if(d.image){
+   const fn='kochfabrik_'+Date.now()+'.png';
+   out.innerHTML='<img src="'+d.image+'" alt="">'+
+   '<div style="margin-top:12px"><a id="dl" href="'+d.image+'" '+
+   'download="'+fn+'" style="background:var(--gold);color:#fff;'+
+   'text-decoration:none;border-radius:999px;padding:11px 26px;'+
+   'font-weight:700;display:inline-block">⬇ Bild herunterladen</a>'+
+   '</div><div style="margin-top:10px;font-size:13px;color:#9a907f">'+
+   ((Date.now()-t0)/1000).toFixed(1)+' s · '+d.model+
+   (d.bg?(' · Tisch: '+d.bg):' · freier Kontext')+'</div>';}
   else{out.innerHTML='<div class="ph err">Fehler: '+
    (d.error||'unbekannt')+'</div>';}
  }catch(e){clearInterval(timer);
   out.innerHTML='<div class="ph err">Netzwerkfehler: '+e+'</div>';}
  go.disabled=false;
 };
+document.getElementById('logout').onclick=async(ev)=>{ev.preventDefault();
+ await fetch('/api/logout',{method:'POST'});location.href='/login.html';};
 </script>
 </body>
 </html>

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KOCHfabrik Studio — Login</title>
+<style>
+  :root{--gold:#AA8339;--ink:#2A2522;--cream:#FDFBF6}
+  *{box-sizing:border-box}
+  body{margin:0;height:100vh;display:flex;align-items:center;
+   justify-content:center;font-family:'Open Sans',system-ui,sans-serif;
+   background:var(--cream);color:var(--ink)}
+  .card{background:#fff;border:1px solid #ece3d2;border-radius:16px;
+   padding:38px 34px;width:360px;box-shadow:0 10px 34px rgba(170,131,57,.12);
+   border-top:4px solid var(--gold);text-align:center}
+  .card img{height:46px;margin-bottom:8px}
+  h1{font-size:18px;margin:6px 0 22px;font-weight:700}
+  input{width:100%;padding:13px 14px;margin:7px 0;border:1px solid
+   #e0d6c2;border-radius:10px;font:inherit}
+  button{width:100%;margin-top:14px;background:var(--gold);color:#fff;
+   border:0;border-radius:999px;padding:13px;font:inherit;font-weight:700;
+   cursor:pointer}
+  button:disabled{opacity:.6}
+  .err{color:#a8324b;font-size:14px;margin-top:12px;min-height:18px}
+</style>
+</head>
+<body>
+<div class="card">
+  <img src="assets/kochfabrik-logo.png" alt="KOCHfabrik">
+  <h1>Studio · Login</h1>
+  <input id="e" type="email" placeholder="E-Mail" autocomplete="username">
+  <input id="p" type="password" placeholder="Passwort"
+         autocomplete="current-password">
+  <button id="b">Anmelden</button>
+  <div class="err" id="err"></div>
+</div>
+<script>
+const b=document.getElementById('b'),err=document.getElementById('err');
+async function go(){
+ b.disabled=true;err.textContent='';
+ try{
+  const r=await fetch('/api/login',{method:'POST',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({email:document.getElementById('e').value,
+    password:document.getElementById('p').value})});
+  if(r.ok){location.href='/';return;}
+  err.textContent='E-Mail oder Passwort falsch.';
+ }catch(e){err.textContent='Fehler: '+e;}
+ b.disabled=false;
+}
+b.onclick=go;
+document.getElementById('p').addEventListener('keydown',
+ e=>{if(e.key==='Enter')go();});
+</script>
+</body>
+</html>
