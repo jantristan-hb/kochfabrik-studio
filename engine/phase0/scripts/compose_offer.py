@@ -455,10 +455,20 @@ def menu_overlay(seq, course_name, dishes):
         # "Grillbuffet & Sommerküche / MIT LIVE-COOKING").
         primary = max(heads, key=lambda hs: hs[1])[0]
         st = primary["lines"][0]
-        primary = dict(primary, lines=[{k: st[k] for k in
-                                        ("size", "color", "weight",
-                                         "italic") if k in st}
-                                       | {"txt": course_name.upper()}])
+        # Nach erstem kaufmännischen "&" umbrechen: passt besser ins
+        # KF-Headline-Layout (2 kurze Zeilen wie die Korpus-Originale
+        # "BBQ- / BUFFET", "TAGUNGS- / GETRÄNKE") statt 1 breite
+        # Zeile, die rechts ins Bild rutschen würde.
+        title = course_name.upper()
+        if "&" in title:
+            pre, _, post = title.partition("&")
+            head_lines = [pre.rstrip() + " &", post.lstrip()]
+        else:
+            head_lines = [title]
+        style = {k: st[k] for k in ("size", "color", "weight", "italic")
+                 if k in st}
+        primary = dict(primary, lines=[style | {"txt": t}
+                                       for t in head_lines])
         kept.append(primary)
 
     new_text = None
@@ -476,16 +486,31 @@ def menu_overlay(seq, course_name, dishes):
         # Body-Farbe: häufigste Caps-Farbe (typisch Weiß FFFFFF, fällt
         # zurück auf erste). Korpus-Sektionen sind Bold-Gold AA8339 —
         # die wollen wir NICHT als Body-Default, sondern Regular weiß.
+        # Sub-Sektion-Header (aus _ang2md kommen [H]-Flags als **…** im
+        # md). Zeile wird Bold + eine Leerzeile danach (und davor, außer
+        # wenn ganz oben — sonst kleben Sektionen an der vorherigen Liste).
+        def _blank():
+            return {"size": body_size, "color": "FFFFFF",
+                    "weight": "Regular", "italic": False, "txt": " "}
         lines = []
         for name, desc in dishes:
             txt = name + ((" — " + desc) if desc else "")
-            lines.append({
-                "size": body_size,
-                "color": "FFFFFF",
-                "weight": "Regular",
-                "italic": False,
-                "txt": txt,
-            })
+            is_head = (txt.startswith("**") and txt.endswith("**")
+                       and len(txt) > 4)
+            if is_head:
+                txt = txt[2:-2].strip()
+                if lines:                       # Leerzeile davor
+                    lines.append(_blank())
+                lines.append({
+                    "size": body_size, "color": "FFFFFF",
+                    "weight": "Bold", "italic": False, "txt": txt,
+                })
+                lines.append(_blank())          # Leerzeile danach
+            else:
+                lines.append({
+                    "size": body_size, "color": "FFFFFF",
+                    "weight": "Regular", "italic": False, "txt": txt,
+                })
         new_text = {
             "t": "text",
             "x": bbox_x, "y": bbox_y, "w": bbox_w, "h": bbox_h,
