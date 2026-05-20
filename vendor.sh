@@ -105,6 +105,28 @@ if [ "${1:-}" = "--deploy" ] || [ "${2:-}" = "--push-static" ] \
   done
 fi
 
+# Slide-Suche-Previews: alle cache/*/preview/*.png aufs Server-Volume
+# (lokal mit phase0/scripts/render_previews.py vorgeneriert). Wir
+# rsyncen das ganze cache-Tree, --include-Pattern beschränkt auf
+# preview/-Verzeichnisse → kein Risiko fürs Asset-Dir (sonst würden
+# wir 4,8 GB hochladen). Nur EIN Rsync pro Aufruf (idempotent).
+if [ "${1:-}" = "--push-previews" ] \
+   || [ "${2:-}" = "--push-previews" ] \
+   || [ "${1:-}" = "--deploy" ]; then
+  PREVIEW_CNT=$(find "$SRC/data/cache" -type f -name 'p*.png' \
+    -path '*/preview/*' 2>/dev/null | wc -l)
+  echo "==> Slide-Previews aufs Server-Volume ($PREVIEW_CNT PNGs)"
+  if [ "$PREVIEW_CNT" -gt 0 ]; then
+    rsync -az -e "ssh -i $HOME/.ssh/hetzner_id" \
+      --include='*/' --include='preview/***' --exclude='*' \
+      "$SRC/data/cache/" "root@188.245.110.5:$VOL/" \
+      && echo "   ✅ Previews → Volume" \
+      || { echo "   ❌ rsync Previews"; exit 1; }
+  else
+    echo "   ⚠ Keine preview/*.png lokal — render_previews.py erst laufen"
+  fi
+fi
+
 if [ "${1:-}" = "--deploy" ]; then
   echo "==> Force-Deploy via Coolify"
   set -a; source ~/work/.env; set +a

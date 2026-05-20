@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KOCHfabrik Studio — Slide Suche</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .ssbar{display:flex;gap:12px;margin-bottom:22px}
+  .ssbar input{flex:1;border:1px solid var(--line);border-radius:var(--radius);
+    padding:14px 18px;font:inherit;font-size:1rem;outline:none}
+  .ssbar input:focus{border-color:var(--gold)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    overflow:hidden;display:flex;flex-direction:column}
+  .card .pv{width:100%;aspect-ratio:16/9;background:#f4f3ee;
+    display:block;object-fit:cover}
+  .card .meta{padding:12px 14px 14px;font-size:.85rem;line-height:1.35}
+  .card .hl{font-weight:700;margin-bottom:4px}
+  .card .ref{color:var(--ink-soft);font-size:.78rem}
+  .card .chk{padding:0 14px 12px;font-size:.82rem}
+  .card .chk input{vertical-align:-2px;margin-right:6px}
+  .empty{padding:32px 22px;text-align:center;color:var(--ink-soft);font-size:.9rem}
+  .dlbar{position:sticky;bottom:0;background:var(--panel);
+    border-top:1px solid var(--line);padding:14px 22px;margin:22px -22px -22px;
+    display:flex;align-items:center;justify-content:space-between;gap:18px}
+  .spin{display:inline-block;width:16px;height:16px;border:2px solid var(--gold);
+    border-top-color:transparent;border-radius:50%;animation:s .8s linear infinite;
+    vertical-align:-2px;margin-right:6px}
+  @keyframes s{to{transform:rotate(360deg)}}
+  .warn{background:#fbe7e9;border:1px solid #e7b9c1;color:#a8324b;
+    padding:11px 13px;border-radius:8px;font-size:.85rem;margin-bottom:12px}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="side-logo"><a href="index.html"><img src="assets/kochfabrik-logo.png" alt="KOCHfabrik Studio"></a></div>
+    <nav class="side-nav">
+      <div class="nav-label">Arbeiten</div>
+      <a class="nav-item" href="index.html"><span class="ic">&#9632;</span> Dashboard</a>
+      <a class="nav-item" href="chat.html"><span class="ic">&#9993;</span> Angebotsgenerator</a>
+      <a class="nav-item active" href="slidesuche.html"><span class="ic">&#9906;</span> Slide Suche</a>
+      <a class="nav-item" href="bildgenerator.html"><span class="ic">&#9788;</span> Bildgenerator</a>
+      <div class="nav-label">Wissen</div>
+      <a class="nav-item" href="kunden.html"><span class="ic">&#9787;</span> Kunden</a>
+      <a class="nav-item" href="client.html"><span class="ic">&#9906;</span> Client Research</a>
+      <a class="nav-item" href="bibliothek.html"><span class="ic">&#9783;</span> Bibliothek</a>
+    </nav>
+    <div class="side-foot">
+      <div class="avatar">PD</div>
+      <div><div class="nm">Patrick Diehr</div><div class="rl">KOCHfabrik</div></div>
+    </div>
+  </aside>
+  <main class="view">
+    <div class="topbar">
+      <div><h1>Slide Suche</h1><div class="sub">Thematische Vektor-Suche über den Korpus — Vorschau ansehen, mehrere wählen, als Bundle herunterladen</div></div>
+      <div class="tb-actions">
+        <a class="btn btn-ghost btn-sm" href="#" id="logout">Abmelden</a>
+      </div>
+    </div>
+    <div class="content">
+      <div id="warn"></div>
+      <div class="ssbar">
+        <input type="text" id="q" placeholder="z.B. 'Sommerfest BBQ', 'Hochzeit Dessert', 'Tagung Kaffeepause' …" autofocus>
+        <button class="btn btn-primary" id="go">Suchen</button>
+      </div>
+      <div id="grid" class="grid">
+        <div class="empty">Gib oben einen Suchbegriff ein — z.B. <b>Sommerfest BBQ</b>.</div>
+      </div>
+      <div class="dlbar" id="dlbar" style="display:none">
+        <div><span id="cnt">0</span> Slides ausgewählt</div>
+        <button class="btn btn-primary" id="dl" disabled>Auswahl als PPTX herunterladen</button>
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let selected=new Map();   // key="deck|page" → {deck,page,headline}
+
+function refreshDl(){
+  const n=selected.size;
+  $('cnt').textContent=n;
+  $('dl').disabled=n===0;
+  $('dlbar').style.display=n>0?'flex':'none';
+}
+
+function render(results){
+  if(!results||!results.length){
+    $('grid').innerHTML='<div class="empty">Keine Treffer — andere Begriffe probieren.</div>';
+    return;
+  }
+  $('grid').innerHTML=results.map(r=>{
+    const key=`${r.deck}|${r.page}`;
+    const checked=selected.has(key)?'checked':'';
+    return `<div class="card" data-key="${esc(key)}">
+      <img class="pv" loading="lazy" src="${esc(r.preview_url)}" alt="${esc(r.headline)}" onerror="this.style.background='#fbe7e9';this.alt='Vorschau fehlt'">
+      <div class="meta"><div class="hl">${esc(r.headline||'(ohne Headline)')}</div><div class="ref">${esc(r.deck)} · S.${r.page}</div></div>
+      <label class="chk"><input type="checkbox" data-deck="${esc(r.deck)}" data-page="${r.page}" data-hl="${esc(r.headline)}" ${checked}> Auswählen</label>
+    </div>`;
+  }).join('');
+}
+
+$('grid').addEventListener('change',ev=>{
+  const t=ev.target;
+  if(t.tagName!=='INPUT'||t.type!=='checkbox') return;
+  const key=`${t.dataset.deck}|${t.dataset.page}`;
+  if(t.checked){selected.set(key,{deck:t.dataset.deck,page:+t.dataset.page,headline:t.dataset.hl});}
+  else{selected.delete(key);}
+  refreshDl();
+});
+
+async function doSearch(){
+  const q=$('q').value.trim();
+  if(!q)return;
+  const b=$('go'),lbl=b.textContent; b.disabled=true; b.textContent='sucht…';
+  $('grid').innerHTML='<div class="empty"><span class="spin"></span>Embedde Suchanfrage und matche gegen ~1000 Slides …</div>';
+  try{
+    const r=await fetch('/api/slidesuche/search',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({query:q,limit:5})});
+    if(r.status===401){location.href='/login.html';return;}
+    const d=await r.json();
+    if(d.results){render(d.results);}
+    else{$('grid').innerHTML='<div class="warn">'+esc(d.error||'Suche fehlgeschlagen')+'</div>';}
+  }catch(e){$('grid').innerHTML='<div class="warn">Netzwerkfehler: '+esc(e)+'</div>';}
+  b.disabled=false; b.textContent=lbl;
+}
+
+$('go').onclick=doSearch;
+$('q').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch();});
+
+$('dl').onclick=async()=>{
+  if(selected.size===0)return;
+  const b=$('dl'),lbl=b.textContent; b.disabled=true; b.textContent='baut PPTX…';
+  try{
+    const r=await fetch('/api/slidesuche/download',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({slides:[...selected.values()].map(s=>({deck:s.deck,page:s.page}))})});
+    if(r.status===401){location.href='/login.html';return;}
+    const d=await r.json();
+    if(d.pptx){const fn=`kochfabrik_slides_${Date.now()}.pptx`;
+      const a=document.createElement('a');a.href=d.pptx;a.download=fn;a.click();}
+    else{alert('Fehler: '+(d.error||'?'));}
+  }catch(e){alert('Netzwerkfehler: '+e);}
+  b.disabled=false; b.textContent=lbl;
+};
+
+$('logout').onclick=async e=>{e.preventDefault();await fetch('/api/logout',{method:'POST'});location.href='/login.html';};
+</script>
+</body>
+</html>

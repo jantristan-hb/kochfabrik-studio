@@ -461,6 +461,10 @@ app = FastAPI(title="KOCHfabrik Studio")
 from backend.praesentation_v2 import router as _praes_v2_router  # noqa: E402
 app.include_router(_praes_v2_router)
 
+# Slide-Suche — eigener Router, prefix /api/slidesuche, unabhängig
+from backend.slidesuche import router as _slidesuche_router  # noqa: E402
+app.include_router(_slidesuche_router)
+
 PUBLIC = ("/login.html", "/api/login", "/api/health", "/favicon.ico",
           "/api/oauth/providers")
 _PUBLIC_PREFIX = ("/assets/", "/api/oauth/")     # oauth login/callback
