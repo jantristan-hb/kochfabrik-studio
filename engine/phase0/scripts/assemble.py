@@ -226,8 +226,19 @@ def main():
         print(f"  Food «{c[:20]}» → {deck[:20]}::{pg} "
               f"[mod:{mlabel[:20]}] ({nd})")
 
-    # ---- Frame: pflicht, je Kategorie kunden-stabil random aus dem
-    #      freigegebenen Set (golden + Alternativen), verbatim ----
+    # ---- Frame: pflicht, verbatim. Drei Kategorien laufen "ALL"
+    #      (alle pflicht-Rows kommen ins Deck, deck+page-stabil
+    #      sortiert) — KOCHfabrik-Branding-Block:
+    #        • DEINE CATERING- & EVENT-CREW IM NORDEN  (skel_pos 0.10)
+    #        • PERSONAL                                (skel_pos 0.7644)
+    #        • WERTSCHÄTZUNG IST DER SCHLÜSSEL         (skel_pos 0.8911)
+    #      Andere Kategorien (AUSSTATTUNG, KONTAKT) bleiben "PICK_ONE"
+    #      (kunden-stabil-random via pick_frame).
+    FRAME_ALL = {
+        "DEINE CATERING- & EVENT-CREW IM NORDEN",
+        "PERSONAL",
+        "WERTSCHÄTZUNG IST DER SCHLÜSSEL",
+    }
     cu.execute("SELECT deck,page,src_pdf,category,skel_pos FROM "
                "static_slide WHERE inclusion='pflicht' "
                "AND category<>'COVER'")
@@ -238,11 +249,19 @@ def main():
     frame = []
     for cat, opts in by_cat.items():
         opts.sort(key=lambda r: (r[0], r[1]))     # stabile Reihenfolge
-        ch = pick_frame(cat, opts, kunde)
-        frame.append(ch)
-        print(f"  Frame «{cat[:22]}» → {ch[0][:24]}::{ch[1]} "
-              f"(aus {len(opts)})")
-    frame.sort(key=lambda r: r[4])                 # skel_pos
+        if cat in FRAME_ALL:
+            frame.extend(opts)
+            print(f"  Frame «{cat[:22]}» → ALLE {len(opts)} pflicht-"
+                  f"Slides ({', '.join(f'{o[0][:18]}::{o[1]}' for o in opts)})")
+        else:
+            ch = pick_frame(cat, opts, kunde)
+            frame.append(ch)
+            print(f"  Frame «{cat[:22]}» → {ch[0][:24]}::{ch[1]} "
+                  f"(aus {len(opts)})")
+    # skel_pos primär, dann (deck,page) als Tiebreak für stabile
+    # Reihenfolge innerhalb derselben skel_pos (z.B. die 3+ PERSONAL-
+    # Slides oder die 4 CREW-Slides direkt hintereinander).
+    frame.sort(key=lambda r: (r[4], r[0], r[1]))
     cx.close()
 
     # ---- alle Quell-Decks EINMAL in shared cachen (kein Extrakt) ----
