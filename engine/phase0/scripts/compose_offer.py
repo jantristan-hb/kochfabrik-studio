@@ -423,6 +423,107 @@ def text_swap(seq, dishes):
     return seq
 
 
+def menu_overlay(seq, course_name, dishes):
+    """MVP-Ersatz für text_swap auf Food-Slides: behält Visuals (rects,
+    images) und das größte Headline-Text-Element des Korpus-Picks
+    (dessen txt wird durch course_name ersetzt — Position/Style bleibt).
+    Alle kleineren Text-Elemente (Gerichte-Slots, Sektion-Header) werden
+    entfernt und durch EINE neue wrap-Textbox an deren BBox ersetzt, die
+    alle Gerichte als eigene Zeilen enthält.
+
+    Vermeidet die text_swap-Pathologien: Slot-Overflow (Gerichte ragen
+    in Bilder), Mismatch-Slot-Anzahl, inline-`•`-Verkettung. Garantiert
+    nicht über Bildern, weil BBox aus den Original-Korpus-Text-Slots
+    kommt (Korpus-Designer hat Text/Bild schon getrennt)."""
+    texts = [e for e in seq if e.get("t") == "text" and e.get("lines")]
+    non_texts = [e for e in seq if e.get("t") != "text"
+                 or not e.get("lines")]
+    if not texts:
+        return seq
+
+    sizes = [max(l["size"] for l in e["lines"]) for e in texts]
+    mx = max(sizes)
+    # Headline = Element mit size >= 0.5*mx (gleiche Schwelle wie
+    # text_swap.is_cap). Caps = der Rest (Gerichte-Slots).
+    heads = [(e, s) for e, s in zip(texts, sizes) if s >= 0.5 * mx]
+    caps = [e for e, s in zip(texts, sizes) if s < 0.5 * mx]
+
+    kept = []
+    if heads:
+        # Größte Headline bekommt course_name. Andere Headline-Elemente
+        # werden entfernt (sonst Korpus-Mehrzeiler-Mischung wie
+        # "Grillbuffet & Sommerküche / MIT LIVE-COOKING").
+        primary = max(heads, key=lambda hs: hs[1])[0]
+        st = primary["lines"][0]
+        # Nach erstem kaufmännischen "&" umbrechen: passt besser ins
+        # KF-Headline-Layout (2 kurze Zeilen wie die Korpus-Originale
+        # "BBQ- / BUFFET", "TAGUNGS- / GETRÄNKE") statt 1 breite
+        # Zeile, die rechts ins Bild rutschen würde.
+        title = course_name.upper()
+        if "&" in title:
+            pre, _, post = title.partition("&")
+            head_lines = [pre.rstrip() + " &", post.lstrip()]
+        else:
+            head_lines = [title]
+        style = {k: st[k] for k in ("size", "color", "weight", "italic")
+                 if k in st}
+        primary = dict(primary, lines=[style | {"txt": t}
+                                       for t in head_lines])
+        kept.append(primary)
+
+    new_text = None
+    if caps and dishes:
+        xs = [e["x"] for e in caps]
+        ys = [e["y"] for e in caps]
+        xws = [e["x"] + e["w"] for e in caps]
+        yhs = [e["y"] + e["h"] for e in caps]
+        bbox_x = min(xs)
+        bbox_y = min(ys)
+        bbox_w = max(xws) - bbox_x
+        bbox_h = max(yhs) - bbox_y
+        # Body-Größe: max der Caps-Sizes — Original-Stil halten
+        body_size = max(l["size"] for e in caps for l in e["lines"])
+        # Body-Farbe: häufigste Caps-Farbe (typisch Weiß FFFFFF, fällt
+        # zurück auf erste). Korpus-Sektionen sind Bold-Gold AA8339 —
+        # die wollen wir NICHT als Body-Default, sondern Regular weiß.
+        # Sub-Sektion-Header (aus _ang2md kommen [H]-Flags als **…** im
+        # md). Zeile wird Bold + eine Leerzeile danach (und davor, außer
+        # wenn ganz oben — sonst kleben Sektionen an der vorherigen Liste).
+        def _blank():
+            return {"size": body_size, "color": "FFFFFF",
+                    "weight": "Regular", "italic": False, "txt": " "}
+        lines = []
+        for name, desc in dishes:
+            txt = name + ((" — " + desc) if desc else "")
+            is_head = (txt.startswith("**") and txt.endswith("**")
+                       and len(txt) > 4)
+            if is_head:
+                txt = txt[2:-2].strip()
+                if lines:                       # Leerzeile davor
+                    lines.append(_blank())
+                lines.append({
+                    "size": body_size, "color": "FFFFFF",
+                    "weight": "Bold", "italic": False, "txt": txt,
+                })
+                lines.append(_blank())          # Leerzeile danach
+            else:
+                lines.append({
+                    "size": body_size, "color": "FFFFFF",
+                    "weight": "Regular", "italic": False, "txt": txt,
+                })
+        new_text = {
+            "t": "text",
+            "x": bbox_x, "y": bbox_y, "w": bbox_w, "h": bbox_h,
+            "lines": lines,
+            "wrap": True,  # lange Gericht-Namen umbrechen statt clippen
+        }
+
+    out = list(non_texts) + kept
+    if new_text:
+        out.append(new_text)
+    return out
+
+
 def cmd_swap(path, offer, picks, out):
     courses = parse_offer_dishes(path, offer)
     if not courses:
