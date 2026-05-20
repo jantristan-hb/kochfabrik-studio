@@ -92,17 +92,27 @@ def _dedup_key(deck, page):
         return deck, int(page)
 
 
-def _db_connect():
-    """Echte Postgres falls verfügbar, sonst pg_shim (Container)."""
-    try:
-        import psycopg2
-        from compose_offer import DSN                             # noqa
-        return psycopg2.connect(**DSN)
-    except Exception:
-        if _ENG not in sys.path:
-            sys.path.insert(0, _ENG)
-        import pg_shim                                            # noqa
-        return pg_shim.connect()
+_BUNDLE = None
+
+
+def _bundle():
+    """Direkter Lade pgbundle.npz — umgeht pg_shim für unsere
+    ANN-Query. pg_shim ist für assemble.py-spezifische
+    LIMIT-8-deck/page/src_pdf-Queries gebaut, unterstützt weder
+    LIMIT %s noch SELECT module_label. Direkter numpy-Zugriff ist
+    auch performanter (kein SQL-Parsing zur Laufzeit)."""
+    global _BUNDLE
+    if _BUNDLE is not None:
+        return _BUNDLE
+    import numpy as np
+    path = os.path.join(os.path.dirname(_ENG), "data", "pgbundle.npz")
+    z = np.load(path, allow_pickle=True)
+    b = {k: z[k] for k in z.files}
+    e = b["emb"].astype(np.float32)
+    b["_normemb"] = e / (np.linalg.norm(e, axis=1,
+                                        keepdims=True) + 1e-9)
+    _BUNDLE = b
+    return _BUNDLE
 
 
 def _auth_or_401(request):
@@ -139,22 +149,21 @@ def search(r: SearchReq, request: Request):
     except Exception as e:
         return JSONResponse({"error": "embed: " + str(e)[:160]},
                             status_code=502)
-    qv = "[" + ",".join(f"{x:.6f}" for x in vec) + "]"
 
-    cx = _db_connect()
-    cu = cx.cursor()
-    # ANN holt 4x mehr als limit — nach Dedup-Redirect & PNG-Existenz-
-    # Filter bleiben so genug Treffer für `limit`. menu_composition
-    # hat das embedding (768d, Gemini semantic_similarity); static_slide
-    # ohne embedding bleibt aus dem ANN raus (kann später lexical
-    # ergänzen falls Bedarf).
+    # ANN direkt gegen das vendored Bundle (umgeht pg_shim, das nur
+    # die spezifische LIMIT-8-Form aus assemble.py unterstützt).
+    # 4x oversampling — nach Dedup-Redirect + PNG-Existenz-Filter
+    # bleiben so genug Treffer für `limit`.
+    import numpy as np
+    b = _bundle()
+    qv = np.asarray(vec, np.float32)
+    qv = qv / (np.linalg.norm(qv) + 1e-9)
+    sim = b["_normemb"] @ qv
     over = limit * 4
-    cu.execute("SELECT deck, page, module_label "
-               "FROM menu_composition "
-               "ORDER BY embedding<=>%s::vector LIMIT %s", (qv, over))
-    rows = cu.fetchall()
-    cu.close()
-    cx.close()
+    order = np.argsort(-sim)[:over]
+    rows = [(str(b["deck"][i]),
+             int(b["page"][i]),
+             str(b["module_label"][i])) for i in order]
 
     base = "/api/slidesuche/preview"
     out = []
