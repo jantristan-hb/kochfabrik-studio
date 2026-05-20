@@ -22,11 +22,10 @@ class TestDateien:
     def test_editor_js_existiert(self):
         assert os.path.isfile(os.path.join(V2, "assets", "editor.js"))
 
-    def test_alter_generator_unangetastet(self):
-        """Sicherheits-Gate: praesentationsgenerator.html existiert
-        weiter und ist nicht leer. Sprint 8 macht den Switch — bis
-        dahin bleibt er voll erreichbar."""
-        p = os.path.join(WEB, "praesentationsgenerator.html")
+    def test_alter_generator_im_legacy_archiv(self):
+        """Sprint-9-Refactor: alte praesentationsgenerator.html ist
+        nach _legacy/ verschoben (raus aus aktivem WEB-Pfad)."""
+        p = os.path.join(WEB, "_legacy", "praesentationsgenerator.html")
         assert os.path.isfile(p)
         assert os.path.getsize(p) > 100
 

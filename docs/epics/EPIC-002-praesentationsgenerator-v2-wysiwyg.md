@@ -1,8 +1,9 @@
 ---
 id: EPIC-002
 title: "WYSIWYG-Präsentationsgenerator v2 (parallel zum bestehenden)"
-status: OPEN
+status: DONE
 created: 2026-05-20
+completed: 2026-05-20
 project: kochfabrik-studio
 sprints: [5, 6, 7, 8, 9]
 ---
@@ -76,7 +77,7 @@ Refactor (alten Code rausschneiden) erst wenn alles entspannt läuft.
 | Sprint | Scope | Status |
 |--------|-------|--------|
 | Sprint 5 | Backend-Skelett v2 + additive DB-Migration | ✅ DONE (master 7df66f1) |
-| Sprint 6 | Frontend Drei-Spalten-Editor + DB-Vorschläge | ⏳ TODO |
-| Sprint 7 | Realtime-Preview-Cache + Kohärenz-Layer | ⏳ TODO |
-| Sprint 8 | Frontend-Switch (v2 = Default) | ⏳ TODO |
-| Sprint 9 | Refactor (alten Code raus) | ⏳ TODO |
+| Sprint 6 | Frontend Drei-Spalten-Editor + DB-Vorschläge | ✅ DONE (master 0535567) |
+| Sprint 7 | Kohärenz-Layer + LLM-Editor-Chat | ✅ DONE (master 76f0cb6) |
+| Sprint 8 | Frontend-Switch (v2 = Default) | ✅ DONE (master fa37b59) |
+| Sprint 9 | Refactor (alter FE→_legacy/, REFACTOR-NOTES.md) | ✅ DONE |

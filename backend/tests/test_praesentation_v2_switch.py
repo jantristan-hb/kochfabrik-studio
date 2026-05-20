@@ -42,23 +42,32 @@ class TestNavRedirected:
                     not in src)
 
 
-class TestLegacyBanner:
-    def test_alte_seite_ist_legacy_markiert(self):
-        p = os.path.join(WEB, "praesentationsgenerator.html")
-        src = open(p, encoding="utf-8").read()
-        assert "LEGACY" in src
-        # Banner mit Link zur neuen Version
-        assert "/praesentation_v2/" in src
-        assert "Neue Version" in src or "neuen Editor" in src
+class TestLegacyArchive:
+    """Sprint 9: alter FE-View ist nach web/_legacy/ verschoben.
+    Datei bleibt im Repo als historischer Anker + Rollback-Quelle."""
 
-    def test_alte_seite_bleibt_funktional(self):
-        """Backend-Calls in der alten Seite sind unverändert (Rollback-
-        fähig). Wir prüfen die fetch-Pfade."""
+    def test_alte_seite_aus_dem_aktiven_pfad_raus(self):
+        # Datei darf NICHT mehr unter web/ direkt erreichbar sein
+        # (FastAPI StaticFiles würde sie sonst weiter ausliefern)
         p = os.path.join(WEB, "praesentationsgenerator.html")
-        src = open(p, encoding="utf-8").read()
+        assert not os.path.exists(p), (
+            "Alter FE muss aus dem aktiven web/-Pfad raus sein")
+
+    def test_alte_seite_im_legacy_archiv(self):
+        p = os.path.join(WEB, "_legacy", "praesentationsgenerator.html")
+        assert os.path.isfile(p), "Legacy-Archiv-Datei fehlt"
+
+    def test_backend_routes_unangetastet(self):
+        """Akzeptanzkriterium 6: /api/angebot/* bit-identisch — und
+        /api/praesentation/* (alt) bleibt für Rollback erreichbar."""
+        src = open(os.path.join(
+            os.path.dirname(__file__), "..", "app.py"),
+            encoding="utf-8").read()
+        # Alte Backend-Routes sind weiterhin registriert
         assert "/api/praesentation/health" in src
-        assert "/api/praesentation/generate" in src or \
-               "/api/praesentation/from-pdf" in src
+        assert "/api/praesentation/generate" in src
+        assert "/api/praesentation/from-angebot" in src
+        assert "/api/praesentation/from-pdf" in src
 
 
 class TestV2DefaultRoute:

@@ -1,3 +1,52 @@
+## Sprint 9 — EPIC-002 v2 Refactor (2026-05-20) — **DONE**
+
+| Story | Titel | Status |
+|-------|-------|--------|
+| US-033 | web/praesentationsgenerator.html → web/_legacy/ verschoben | DONE |
+| US-034 | REFACTOR-NOTES.md: Shared-Code-Analyse + Sprint-9-Backlog | DONE |
+| US-035 | Tests aktualisiert (Legacy-Archiv statt aktiv) | DONE |
+
+**Backend bleibt unverändert** für Rollback. `/api/praesentation/*` weiter
+aktiv. **111 Tests grün.**
+
+---
+
+## Sprint 8 — EPIC-002 v2 FE-Switch (2026-05-20) — **DONE**
+
+| Story | Titel | Status |
+|-------|-------|--------|
+| US-030 | Alle Nav-Items (9 FE-Files) auf /praesentation_v2/ umgebogen | DONE |
+| US-031 | praesentationsgenerator.html: LEGACY-Badge + Gold-Banner zum neuen Editor | DONE |
+| US-032 | 7 Switch-Tests (Nav, Banner, kein Alt-href, v2-Route distinct) | DONE |
+
+---
+
+## Sprint 7 — EPIC-002 v2 Kohärenz + Chat (2026-05-20) — **DONE**
+
+| Story | Titel | Status |
+|-------|-------|--------|
+| US-026 | praesentation_v2_coherence: offer_context, defaults_for (7 Kat), merge_overrides | DONE |
+| US-027 | GET /api/praesentation_v2/offer/{id}/context Endpoint | DONE |
+| US-028 | POST /api/praesentation_v2/chat (Anthropic LLM, graceful) | DONE |
+| US-029 | FE editor.js: Offer-Context-Merge + Chat-Endpunkt + Form-Refresh | DONE |
+
+**Akzeptanzkriterium 5 erfüllt:** Slide-Overrides werden mit Offer-Defaults
+(Kunde/Anlass/Konzept/Block-Bullets) gemergt — Präsentation matched das
+verknüpfte Angebot.
+
+---
+
+## Sprint 6 — EPIC-002 v2 Frontend (2026-05-20) — **DONE**
+
+| Story | Titel | Status |
+|-------|-------|--------|
+| US-022a | web/praesentation_v2/index.html (Drei-Spalten CSS-Grid) | DONE |
+| US-022b | assets/editor.js (State, API-Wrapper, Live-Edit-Debounce, Kat-Picker) | DONE |
+| US-022c | Slide-Vorschlags-Karten (Klick = Auswahl, persistiert) | DONE |
+| US-022d | 15 FE-Smoke-Tests (Layout-Marker, 7 Kategorien, kein Alt-API-Leak) | DONE |
+
+---
+
 ## Sprint 5 — EPIC-002 v2 Backend-Skelett (2026-05-20) — **DONE**
 
 | Story | Titel | Status |
