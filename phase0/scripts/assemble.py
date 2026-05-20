@@ -186,6 +186,11 @@ def main():
     Cv = list(allv[nL + len(heads):])
     picks = []                                # (pos, slug, page, dishes)
     fpos = (0.30, 0.72)
+    # HITL-Modus: pro Course liefern wir TOP_K Alternativen ins Deck.
+    # Mitarbeiter löscht die schlechtere(n). Vermeidet, dass ein
+    # algorithmischer Fehlpick (Slot-Mismatch, Korpus-Headline-
+    # Mismatch, fehlende Bold-weiß-Slots) den Block kaputtmacht.
+    TOP_K = 2
     for i, ((c, ds), hv, cv) in enumerate(zip(courses, Hv, Cv)):
         hvn = np.asarray(hv, float)
         hvn = hvn / (np.linalg.norm(hvn) + 1e-9)
@@ -199,14 +204,23 @@ def main():
             cands = cu.fetchall()
         else:
             cands = []
-        if not cands:                         # Fallback: global ANN
+        # Wenn das Modul-Lock < TOP_K Kandidaten liefert (~70% der Module
+        # haben nur 1 Row im Korpus), ergänzen wir aus dem GLOBAL-ANN-Pool
+        # mit thematischen Nachbarn — dedupliziert, Modul-Picks behalten
+        # Vorrang. Sonst hätte HITL-Modus mit nur 1 Pick keinen Sinn.
+        if len(cands) < TOP_K:
             cu.execute("SELECT deck,page,src_pdf FROM menu_composition "
                        "ORDER BY embedding<=>%s::vector LIMIT 8", (q,))
-            cands = cu.fetchall()
+            for r in cu.fetchall():
+                if r not in cands:
+                    cands.append(r)
+                if len(cands) >= 8:
+                    break
         nd = len(ds)
-        # kapazitäts-bewusst: kleinste Slot-Zahl >= #Gerichte (sonst
-        # max Slots), bei Gleichstand ANN-Rang (Reihenfolge bleibt)
-        best, bestkey = cands[0], None
+        # kapazitäts-bewusst sortieren: kleinste Slot-Zahl >= #Gerichte
+        # (sonst max Slots), bei Gleichstand ANN-Rang (Reihenfolge bleibt).
+        # Wir ranken JEDEN Kandidaten — die ersten TOP_K landen im Deck.
+        scored = []
         for rank, (dk, pgc, sc) in enumerate(cands):
             cp = os.path.join(CACHE, dk, "elements.json")
             try:
@@ -218,13 +232,21 @@ def main():
             key = ((rank,) if nd == 0 else          # abgeleitet: bester ANN
                    (0 if fits else 1,
                     slots - nd if fits else -slots, rank))
-            if bestkey is None or key < bestkey:
-                bestkey, best = key, (dk, pgc, sc)
-        deck, pg, src = best
-        p = fpos[0] + (fpos[1] - fpos[0]) * (i / max(len(courses) - 1, 1))
-        picks.append((p, deck, int(pg), src, c, ds))
-        print(f"  Food «{c[:20]}» → {deck[:20]}::{pg} "
-              f"[mod:{mlabel[:20]}] ({nd})")
+            scored.append((key, (dk, int(pgc), sc), slots))
+        scored.sort(key=lambda t: t[0])
+        chosen = scored[:TOP_K] or []
+        # Position: jeder Block bekommt seinen fpos-Slot; die TOP_K
+        # Alternativen liegen direkt nebeneinander mit Mikro-Offset,
+        # damit sie im finalen items-Sort hintereinander stehen.
+        block_p = fpos[0] + (fpos[1] - fpos[0]) \
+            * (i / max(len(courses) - 1, 1))
+        for k, (_, (dk, pgc, sc), slots) in enumerate(chosen):
+            p = block_p + k * 1e-4              # winziger Tiebreak
+            picks.append((p, dk, pgc, sc, c, ds))
+            tag = "" if len(chosen) == 1 else f" [alt {k+1}/{len(chosen)}]"
+            print(f"  Food «{c[:20]}» → {dk[:20]}::{pgc} "
+                  f"[mod:{mlabel[:20]}] (gerichte={nd}, slots={slots})"
+                  f"{tag}")
 
     # ---- Frame: pflicht, verbatim. Drei Kategorien laufen "ALL"
     #      (alle pflicht-Rows kommen ins Deck, deck+page-stabil
