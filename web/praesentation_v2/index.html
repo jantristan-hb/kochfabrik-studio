@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KOCHfabrik Studio — Präsentationsgenerator v2 (Editor)</title>
+<style>
+:root{
+  --bg:#fafaf7; --ink:#1c1b18; --ink-soft:#5a594f; --line:#e3e1dc;
+  --gold:#977825; --gold-soft:#c9a85a; --accent:#8b6914;
+  --card:#fff; --shadow:0 1px 3px rgba(28,27,24,.06);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+  font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+header{padding:10px 18px;border-bottom:1px solid var(--line);
+  background:#fff;display:flex;gap:14px;align-items:center;font-size:13px}
+header h1{font-size:14px;margin:0;font-weight:600;letter-spacing:.2px}
+header .badge{font-size:11px;background:var(--gold);color:#fff;
+  padding:2px 7px;border-radius:3px;letter-spacing:.5px}
+header select,header button{font:inherit;padding:5px 10px;
+  border:1px solid var(--line);border-radius:5px;background:#fff;
+  color:var(--ink);cursor:pointer}
+header button.primary{background:var(--gold);color:#fff;border-color:var(--gold)}
+header button:hover{border-color:var(--accent)}
+header .spacer{flex:1}
+.main{display:grid;grid-template-columns:300px 1fr 360px;height:calc(100vh - 50px - 50px)}
+.col{border-right:1px solid var(--line);overflow-y:auto;background:#fff}
+.col:last-child{border-right:none;background:var(--bg)}
+.col h2{font-size:11px;text-transform:uppercase;letter-spacing:1px;
+  color:var(--ink-soft);margin:0;padding:12px 16px;
+  border-bottom:1px solid var(--line);background:#fff}
+/* Chat (links) */
+#chat-msgs{padding:12px 14px;min-height:200px}
+.msg{margin-bottom:10px;padding:8px 11px;border-radius:6px;font-size:13px}
+.msg.me{background:#f0ede5;margin-left:24px}
+.msg.bot{background:#eef2f5;margin-right:24px;color:var(--ink-soft)}
+#chat-input{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--line);
+  padding:8px;display:flex;gap:6px}
+#chat-input input{flex:1;padding:7px 10px;border:1px solid var(--line);
+  border-radius:5px;font:inherit}
+#chat-input button{padding:7px 12px;background:var(--gold);color:#fff;
+  border:none;border-radius:5px;cursor:pointer}
+/* Form (mitte) */
+#slide-list{padding:10px 14px;border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:6px}
+.slide-tab{padding:5px 12px;border:1px solid var(--line);border-radius:14px;
+  font-size:12px;cursor:pointer;background:#fff;display:flex;align-items:center;gap:4px}
+.slide-tab.active{background:var(--gold);color:#fff;border-color:var(--gold)}
+.slide-tab .pos{font-size:10px;opacity:.7}
+#slide-add{border-style:dashed;color:var(--ink-soft)}
+#form{padding:18px 22px}
+#form .f{margin-bottom:14px}
+#form label{display:block;font-size:11px;text-transform:uppercase;
+  letter-spacing:.6px;color:var(--ink-soft);margin-bottom:4px}
+#form input,#form textarea,#form select{width:100%;padding:8px 11px;
+  border:1px solid var(--line);border-radius:5px;font:inherit;background:#fff}
+#form textarea{min-height:80px;resize:vertical;font-family:inherit}
+#form .kat-pick{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.kat-pick label{display:inline-flex;padding:4px 10px;border:1px solid var(--line);
+  border-radius:13px;cursor:pointer;font-size:11px;background:#fff;
+  color:var(--ink-soft);text-transform:none;letter-spacing:0;margin:0;
+  user-select:none}
+.kat-pick input{display:none}
+.kat-pick input:checked+span,.kat-pick label:has(input:checked){background:var(--gold);
+  color:#fff;border-color:var(--gold)}
+/* Vorschläge (rechts) */
+#sugg{padding:12px}
+.sugg-empty{color:var(--ink-soft);font-size:12px;padding:30px 14px;
+  text-align:center;border:1px dashed var(--line);border-radius:8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:7px;
+  padding:11px 13px;margin-bottom:9px;cursor:pointer;
+  box-shadow:var(--shadow);transition:border-color .12s,transform .08s}
+.card:hover{border-color:var(--gold-soft);transform:translateY(-1px)}
+.card.selected{border-color:var(--gold);background:#fffbf0}
+.card .t{font-weight:600;font-size:13px;margin-bottom:4px}
+.card .k{font-size:10px;text-transform:uppercase;letter-spacing:.7px;
+  color:var(--ink-soft)}
+.card .preview{margin-top:7px;height:60px;background:#f5f3ee;
+  border-radius:4px;display:flex;align-items:center;justify-content:center;
+  color:var(--ink-soft);font-size:11px}
+/* Footer */
+footer{padding:10px 18px;border-top:1px solid var(--line);background:#fff;
+  display:flex;gap:14px;align-items:center;font-size:12px;color:var(--ink-soft)}
+footer .live{color:var(--accent);font-weight:600}
+.muted{color:var(--ink-soft);font-size:11px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Präsentationsgenerator</h1>
+  <span class="badge">v2 BETA</span>
+  <span class="muted">|</span>
+  <label class="muted">Angebot:</label>
+  <select id="offer-select"><option value="">— wählen —</option></select>
+  <span class="spacer"></span>
+  <a href="/index.html" class="muted" style="text-decoration:none">← Dashboard</a>
+  <button id="btn-save">Auswahl speichern</button>
+  <button id="btn-generate" class="primary">Deck generieren</button>
+</header>
+
+<div class="main">
+  <!-- LINKS: Chat -->
+  <section class="col" id="col-chat">
+    <h2>Editor-Chat</h2>
+    <div id="chat-msgs">
+      <div class="msg bot">Hi — ich helfe dir beim Editieren der Slides.
+        Schreib mir z.B. „Mach den Titel kürzer" oder
+        „Schlag 3 Alternativen vor" — die aktuelle Slide wird angepasst.</div>
+    </div>
+    <div id="chat-input">
+      <input id="chat-text" placeholder="Nachricht…" />
+      <button id="chat-send">↵</button>
+    </div>
+  </section>
+
+  <!-- MITTE: Slide-Liste + Form -->
+  <section class="col" id="col-form">
+    <h2>Slides &amp; Editor</h2>
+    <div id="slide-list"></div>
+    <div id="form">
+      <div class="f">
+        <label>Kategorie (welche Vorlage zeigen)</label>
+        <div class="kat-pick" id="kat-pick"></div>
+      </div>
+      <div class="f">
+        <label>Titel <span class="muted">(live)</span></label>
+        <input id="f-titel" data-k="titel" placeholder="Slide-Titel" />
+      </div>
+      <div class="f">
+        <label>Untertitel</label>
+        <input id="f-untertitel" data-k="untertitel" placeholder="optional" />
+      </div>
+      <div class="f">
+        <label>Bullets <span class="muted">(eine Zeile = ein Bullet)</span></label>
+        <textarea id="f-bullets" data-k="bullets" placeholder="• Bullet 1
+• Bullet 2"></textarea>
+      </div>
+    </div>
+  </section>
+
+  <!-- RECHTS: Slide-Vorschläge -->
+  <section class="col" id="col-sugg">
+    <h2>Vorschläge (klicken zum Wählen)</h2>
+    <div id="sugg">
+      <div class="sugg-empty">Slide hinzufügen + Kategorie wählen.</div>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <span>Slides: <b id="ft-count">0</b></span>
+  <span>|</span>
+  <span>Live-Edit: <span id="ft-live" class="live">✓ aktiv</span></span>
+  <span class="spacer" style="flex:1"></span>
+  <span class="muted" id="ft-status">Bereit.</span>
+</footer>
+
+<script src="/praesentation_v2/assets/editor.js"></script>
+</body>
+</html>
