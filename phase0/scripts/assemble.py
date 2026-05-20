@@ -35,8 +35,8 @@ except Exception:                       # Container ohne DB-Treiber
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _deckpipe import cached_deck, slugify, CACHE              # noqa
 from compose_offer import (embed, parse_offer_dishes, text_swap,  # noqa
-                           slot_count, pick_frame, DSN, SPIKE,
-                           CORPUS_DIR)
+                           menu_overlay, slot_count, pick_frame,
+                           DSN, SPIKE, CORPUS_DIR)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "data")
@@ -328,9 +328,14 @@ def main():
     for p, deck, pg, src, c, ds in picks:
         seq = el_cache.get(deck, {}).get(str(pg))
         if seq:
-            # abgeleiteter Gang (ds leer) → Korpus-Slide verbatim
-            # (enthält bereits echte passende KOCHfabrik-Gerichte)
-            items.append((p, text_swap([dict(e) for e in seq], ds)
+            # ds vorhanden → menu_overlay: Korpus-Visuals (rects, images)
+            # + Headline-Element (txt=course_name) + 1 wrap-Textbox mit
+            # allen Gerichten an der BBox der entfernten Caps. Vermeidet
+            # text_swap-Slot-Overflow (Text ragt in Bilder).
+            # ds leer (abgeleiteter Gang aus Event-Kontext) → Korpus-
+            # Slide verbatim, da sie schon passende Mock-Gerichte enthält.
+            items.append((p,
+                          menu_overlay([dict(e) for e in seq], c, ds)
                           if ds else seq))
     for deck, pg, src, cat, sp in frame:
         seq = el_cache.get(deck, {}).get(str(pg))
