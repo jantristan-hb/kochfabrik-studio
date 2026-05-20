@@ -55,21 +55,37 @@ async function loadOffers() {
 }
 
 async function loadSlidesForOffer(offerId) {
+  // Sprint 7: parallel Kohärenz-Defaults holen (Kunde/Anlass/Konzept
+  // werden in die Slide-Overrides gemergt → Slide matched das Angebot).
+  let defaults = {};
+  let short = {};
+  try {
+    const ctx = await api(`/api/praesentation_v2/offer/${offerId}/context`);
+    defaults = ctx.defaults_per_kategorie || {};
+    short = ctx.short || {};
+    setStatus(`Angebot: ${short.kunde || ""} — ${short.anlass || ""}`);
+  } catch (e) { /* graceful */ }
+
   try {
     const d = await api(`/api/praesentation_v2/offer/${offerId}/slides`);
     S.slides = (d.items || []).map(it => ({
       kategorie: it.kategorie,
       slide_id: it.slide_id,
-      overrides: it.overrides || {},
+      overrides: {...(defaults[it.kategorie] || {}), ...(it.overrides || {})},
     }));
     if (S.slides.length === 0) {
-      // Sinnvolle Defaults: 1 Deckblatt, 1 Food, 1 Freitext
+      // Sinnvolle Defaults: 1 Deckblatt, 1 Food, 1 Freitext —
+      // jeweils mit Offer-Defaults vorgefüllt
       S.slides = [
-        {kategorie: "deckblatt", slide_id: null, overrides: {}},
-        {kategorie: "food", slide_id: null, overrides: {}},
-        {kategorie: "freitext", slide_id: null, overrides: {}},
+        {kategorie: "deckblatt", slide_id: null,
+         overrides: defaults.deckblatt || {}},
+        {kategorie: "food", slide_id: null,
+         overrides: defaults.food || {}},
+        {kategorie: "freitext", slide_id: null,
+         overrides: defaults.freitext || {}},
       ];
     }
+    S.offer_defaults = defaults;
     S.active = 0;
     renderSlideList();
     renderForm();
@@ -245,16 +261,35 @@ function wireChat() {
   });
 }
 
-function sendChat() {
+async function sendChat() {
   const t = $("chat-text").value.trim();
   if (!t) return;
   appendMsg("me", t);
   $("chat-text").value = "";
-  // Stub-Antwort. Sprint 7+: echte LLM-Anbindung.
-  setTimeout(() => {
-    appendMsg("bot", "Verstanden — Sprint 7 hängt mich an /api/praesentation_v2/chat. " +
-              "Bis dahin editiere bitte direkt im Form-Feld in der Mitte.");
-  }, 400);
+  appendMsg("bot", "…");
+  const ph = $("chat-msgs").lastChild;
+  try {
+    const sl = S.slides[S.active] || {};
+    const d = await api("/api/praesentation_v2/chat", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        message: t,
+        overrides: sl.overrides || {},
+        kategorie: sl.kategorie,
+        offer_id: S.offer_id,
+      }),
+    });
+    ph.textContent = d.reply || "Aktualisiert.";
+    if (d.patched && typeof d.patched === "object") {
+      // LLM-patched Overrides übernehmen + Form refreshen
+      sl.overrides = {...sl.overrides, ...d.patched};
+      renderForm();
+      schedulePersist();
+    }
+  } catch (e) {
+    ph.textContent = "Fehler: " + e.message;
+  }
 }
 
 function appendMsg(role, text) {
