@@ -157,7 +157,13 @@ def angebot_to_offer_md(d: dict) -> str:
         out.append(f"### {titel}")
         out.append("")
         for p in pos:                       # je Gericht: Name + Leerzeile
-            out.append(str(p["bezeichnung"]).strip())
+            bez = str(p["bezeichnung"]).strip()
+            # [H]-Flag aus dem Angebotsgenerator → Markdown-Bold-Marker
+            # (**…**). menu_overlay erkennt die Sterne und rendert die
+            # Zeile fett + Leerzeile davor (Sub-Sektion-Header).
+            if bez.startswith("[H] "):
+                bez = f"**{bez[4:].strip()}**"
+            out.append(bez)
             out.append("")
     return "\n".join(out) + "\n"
 
