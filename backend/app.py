@@ -477,11 +477,6 @@ def _chat_patch(angebot_dict, message):
 
 app = FastAPI(title="KOCHfabrik Studio")
 
-# EPIC-002: Präsentationsgenerator v2 (parallel zum alten /api/praesentation/*).
-# Sprint-9-Refactor entfernt diese Zeile + das Modul, fertig.
-from backend.praesentation_v2 import router as _praes_v2_router  # noqa: E402
-app.include_router(_praes_v2_router)
-
 # Slide-Suche — eigener Router, prefix /api/slidesuche, unabhängig
 from backend.slidesuche import router as _slidesuche_router  # noqa: E402
 app.include_router(_slidesuche_router)

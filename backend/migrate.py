@@ -15,7 +15,7 @@ import os
 import subprocess
 import sys
 
-HEAD = "0002_praesentation_v2"
+HEAD = "0003_drop_praesentation_v2"
 
 
 def _sync_url() -> str:
@@ -32,10 +32,6 @@ async def _create_all() -> bool:
         print("migrate: DB nicht verfügbar — übersprungen (graceful)")
         return False
     from .models import Base
-    # EPIC-002 v2-Tabellen ebenfalls registrieren (Import-Side-Effect
-    # hängt sie an Base.metadata) — sonst legt create_all sie nicht
-    # an und Alembic-Stamp führt zu Schema-Drift.
-    from . import praesentation_v2_models  # noqa: F401
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     print("migrate: Schema OK (create_all, idempotent)")
