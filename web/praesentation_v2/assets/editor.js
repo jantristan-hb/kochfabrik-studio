@@ -43,12 +43,19 @@ async function loadOffers() {
     const d = await api("/api/angebote?status=&q=");
     const sel = $("offer-select");
     sel.innerHTML = '<option value="">— wählen —</option>';
-    (d.items || d || []).forEach(o => {
+    // Response: {offers: [{offer_id, angebotsnummer, kundennummer,
+    //   kunde, anlass, status, updated}, ...]} — siehe store.list_offers
+    const items = d.offers || d.items || d || [];
+    items.forEach(o => {
       const opt = document.createElement("option");
-      opt.value = o.id;
-      opt.textContent = `${o.angebotsnummer || "#" + o.id} — ${o.kunde_name || o.kunde || "?"}`;
+      opt.value = o.offer_id || o.id;
+      const nr = o.angebotsnummer || ("#" + (o.offer_id || o.id));
+      const kunde = o.kunde || o.kunde_name || "?";
+      const anlass = o.anlass ? " · " + o.anlass : "";
+      opt.textContent = `${nr} — ${kunde}${anlass}`;
       sel.appendChild(opt);
     });
+    setStatus(`${items.length} Angebote geladen.`);
   } catch (e) {
     setStatus("Angebote-Liste fehlgeschlagen: " + e.message);
   }
