@@ -33,6 +33,12 @@ cp -r "$SRC"/spike-pptxgenjs/{lib,node_modules,reconstruct.js,package.json} \
 echo "==> 2/4 Templates + Referenz-/Static-Cache-Decks vendoren"
 cp "$SRC"/data/cover_template.elements.json \
    "$SRC"/data/angebot_template.elements.json "$DST/data/"
+# dedup_manifest.json: erst lokal via dedup_previews.py erzeugen, dann
+# wird das Manifest hier vendored. slidesuche.py liest es zur Laufzeit
+# und mappt Dubletten auf ihre Repräsentanten.
+[ -f "$SRC/data/dedup_manifest.json" ] && \
+  cp "$SRC/data/dedup_manifest.json" "$DST/data/" || \
+  echo "   ⚠ dedup_manifest.json fehlt im SRC — Slide-Suche läuft ohne Dedup"
 rm -rf "$DST/data/cache/$REFSLUG"
 cp -r "$SRC/data/cache/$REFSLUG" "$DST/data/cache/"
 for d in "${STATIC_DECKS[@]}"; do
@@ -103,6 +109,45 @@ if [ "${1:-}" = "--deploy" ] || [ "${2:-}" = "--push-static" ] \
       "$SRC/data/cache/$d/" "root@188.245.110.5:$VOL/$d/" \
       && echo "   ✅ $d → Volume" || { echo "   ❌ rsync $d"; exit 1; }
   done
+fi
+
+# Slide-Suche-Previews: NUR die Repräsentanten aus dem dedup_manifest
+# aufs Server-Volume (Dubletten bleiben lokal als Master-Set). Wenn
+# kein Manifest da ist → alle PNGs (graceful Fallback).
+if [ "${1:-}" = "--push-previews" ] \
+   || [ "${2:-}" = "--push-previews" ] \
+   || [ "${1:-}" = "--deploy" ]; then
+  MANIFEST="$SRC/data/dedup_manifest.json"
+  PREVIEW_CNT=$(find "$SRC/data/cache" -type f -name 'p*.png' \
+    -path '*/preview/*' 2>/dev/null | wc -l)
+  if [ "$PREVIEW_CNT" -eq 0 ]; then
+    echo "==> Slide-Previews: keine PNGs lokal — render_previews.py erst laufen"
+  elif [ -f "$MANIFEST" ]; then
+    # files-from-Liste der Repräsentanten generieren
+    FILES_LIST=$(mktemp)
+    python3 - "$MANIFEST" > "$FILES_LIST" <<'PY'
+import json, sys
+m = json.load(open(sys.argv[1]))
+for k in m["kept"]:                          # "deck::page"
+    deck, _, page = k.partition("::")
+    print(f"{deck}/preview/p{int(page)}.png")
+PY
+    KEPT=$(wc -l < "$FILES_LIST")
+    echo "==> Slide-Previews (nur Repräsentanten): $KEPT von $PREVIEW_CNT"
+    rsync -az -e "ssh -i $HOME/.ssh/hetzner_id" \
+      --files-from="$FILES_LIST" \
+      "$SRC/data/cache/" "root@188.245.110.5:$VOL/" \
+      && echo "   ✅ Repräsentanten → Volume" \
+      || { echo "   ❌ rsync"; rm -f "$FILES_LIST"; exit 1; }
+    rm -f "$FILES_LIST"
+  else
+    echo "==> Slide-Previews (ohne Dedup — Manifest fehlt): $PREVIEW_CNT PNGs"
+    rsync -az -e "ssh -i $HOME/.ssh/hetzner_id" \
+      --include='*/' --include='preview/***' --exclude='*' \
+      "$SRC/data/cache/" "root@188.245.110.5:$VOL/" \
+      && echo "   ✅ Previews → Volume" \
+      || { echo "   ❌ rsync Previews"; exit 1; }
+  fi
 fi
 
 if [ "${1:-}" = "--deploy" ]; then
