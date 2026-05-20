@@ -35,12 +35,26 @@ IMG_ASPECT = os.environ.get("KF_IMG_ASPECT", "16:9")
 COOKIE = "kf_sess"
 SESSION_DAYS = 7
 
+# Kategorie-spezifische Photo-Preambel.
+# PHOTO (food-spezifisch) bleibt 1:1 wie vorher → Food-Generierung
+# byte-identisch zum Pre-Fix-Stand (keine Regression).
+# PHOTO_NEUTRAL wird nur für non-food-Kategorien verwendet (cover,
+# location, ausstattung, goldschaetzchen, kochfabrik, freitext) —
+# entfernt das "food photograph" + "fine-dining quality"-Bias, das
+# sonst auch Location-/Ausstattungs-Prompts food-lastig macht.
 PHOTO = ("Ultra-realistic professional food photograph, shot on a "
          "full-frame DSLR, 85mm prime, f/2.8, soft natural light, "
          "shallow depth of field, true-to-life colours, textures and "
          "natural imperfections, editorial fine-dining quality. This is "
          "a REAL PHOTOGRAPH — not an illustration, 3D render or AI art; "
          "no oversaturation, no plastic look, no text, no logo. ")
+PHOTO_NEUTRAL = ("Ultra-realistic professional photograph, shot on a "
+                 "full-frame DSLR, 85mm prime, f/2.8, soft natural "
+                 "light, shallow depth of field, true-to-life colours, "
+                 "textures and natural imperfections, editorial quality. "
+                 "This is a REAL PHOTOGRAPH — not an illustration, 3D "
+                 "render or AI art; no oversaturation, no plastic look, "
+                 "no text, no logo. ")
 ON_TABLE = ("Plate the dish beautifully and place it naturally ON the "
             "rustic reclaimed-wood KOCHfabrik table shown in the "
             "reference photo, keeping that exact table and its warm "
@@ -289,7 +303,11 @@ def image_kochfabrik(prompt: str, table: bool = True, cat: str = "food"):
     scaffold = CATS.get(cat, CATS["freitext"])["scaffold"]
     parts, bg = [], None
     pool = _bg_pool()
-    if table and pool:
+    # ON_TABLE (rustic KF-table-Foto als Referenz) und FREE ("place
+    # the dish in a fitting setting") sind food-spezifisch — nur in
+    # FOOD_LIKE-Kategorien anwenden. Sonst leakt z.B. ein cat=cover-
+    # Prompt mit table=True einen Tischhintergrund + Food-Phrasen.
+    if cat in FOOD_LIKE and table and pool:
         bg = random.choice(pool)
         parts.append({"inlineData": {"mimeType": "image/png",
                       "data": base64.b64encode(open(bg, "rb").read())
@@ -299,7 +317,10 @@ def image_kochfabrik(prompt: str, table: bool = True, cat: str = "food"):
         ctx = FREE
     else:
         ctx = ""        # Kontext trägt das Kategorie-Scaffold
-    parts.append({"text": PHOTO + ctx + scaffold
+    # Photo-Preambel: FOOD bleibt 1:1 (food photograph / fine-dining),
+    # alle anderen Kategorien bekommen PHOTO_NEUTRAL (kein food-Bias).
+    photo = PHOTO if cat in FOOD_LIKE else PHOTO_NEUTRAL
+    parts.append({"text": photo + ctx + scaffold
                   + "Motiv: " + prompt.strip()})
     body = {"contents": [{"parts": parts}],
             "generationConfig": {"responseModalities": ["IMAGE"],
