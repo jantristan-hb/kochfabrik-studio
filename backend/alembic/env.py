@@ -13,10 +13,6 @@ from sqlalchemy import engine_from_config, pool
 
 sys.path.insert(0, os.getcwd())
 from backend.models import Base                                   # noqa
-# EPIC-002 v2-Tabellen müssen für Alembic-autogenerate UND
-# Base.metadata.create_all (migrate.py) sichtbar sein → Import-Side-
-# Effect registriert die Modelle an Base.
-from backend import praesentation_v2_models  # noqa: F401
 
 
 def _sync_url() -> str:
