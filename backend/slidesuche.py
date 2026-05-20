@@ -41,6 +41,7 @@ _SPIKE = os.path.join(os.path.dirname(_ENG), "spike-pptxgenjs")
 # Engine-Module lazy laden (gleich wie app.py macht's)
 _engine_ready = False
 _embed = None
+_DEDUP = None                              # {"redirect": {...}, "kept": [...]}
 
 
 def _ensure_engine():
@@ -58,6 +59,37 @@ def _ensure_engine():
         return True
     except Exception:
         return False
+
+
+def _load_dedup():
+    """Lädt dedup_manifest.json (vom render+dedup-Pipeline lokal
+    erzeugt, via vendor.sh hier reinkopiert). Graceful: wenn nicht
+    da, läuft die Suche ohne Dedup (alle PNGs werden gerendert/served
+    falls vorhanden)."""
+    global _DEDUP
+    if _DEDUP is not None:
+        return _DEDUP
+    path = os.path.join(os.path.dirname(_ENG), "data",
+                        "dedup_manifest.json")
+    try:
+        with open(path, encoding="utf-8") as f:
+            _DEDUP = json.load(f)
+    except Exception:
+        _DEDUP = {"redirect": {}, "kept": []}
+    return _DEDUP
+
+
+def _dedup_key(deck, page):
+    """Mappt (deck, page) auf den Repräsentanten gemäß manifest;
+    Identity wenn kein Eintrag (z.B. lokal ohne dedup-Run)."""
+    d = _load_dedup()
+    k = f"{deck}::{int(page)}"
+    repr_k = d.get("redirect", {}).get(k, k)
+    deck2, _, page2 = repr_k.partition("::")
+    try:
+        return deck2, int(page2)
+    except Exception:
+        return deck, int(page)
 
 
 def _db_connect():
@@ -111,26 +143,42 @@ def search(r: SearchReq, request: Request):
 
     cx = _db_connect()
     cu = cx.cursor()
-    # Union über menu_composition + static_slide, beide haben embedding-
-    # Spalten? static_slide hat KEIN embedding (Cluster-frei). Daher
-    # nur menu_composition für ANN; static_slide als ergänzende
-    # Lexical-Treffer kann später kommen.
+    # ANN holt 4x mehr als limit — nach Dedup-Redirect & PNG-Existenz-
+    # Filter bleiben so genug Treffer für `limit`. menu_composition
+    # hat das embedding (768d, Gemini semantic_similarity); static_slide
+    # ohne embedding bleibt aus dem ANN raus (kann später lexical
+    # ergänzen falls Bedarf).
+    over = limit * 4
     cu.execute("SELECT deck, page, module_label "
                "FROM menu_composition "
-               "ORDER BY embedding<=>%s::vector LIMIT %s", (qv, limit))
+               "ORDER BY embedding<=>%s::vector LIMIT %s", (qv, over))
     rows = cu.fetchall()
     cu.close()
     cx.close()
 
     base = "/api/slidesuche/preview"
     out = []
+    seen = set()
     for deck, page, label in rows:
+        # 1) Auf Repräsentanten umlenken (Dubletten kollabieren)
+        rd, rp = _dedup_key(str(deck), int(page))
+        key = (rd, rp)
+        if key in seen:
+            continue
+        # 2) PNG muss tatsächlich existieren (Server-Volume hat nur
+        #    Repräsentanten — sonst 404 in der Vorschau)
+        png = os.path.join(_CACHE, rd, "preview", f"p{rp}.png")
+        if not os.path.isfile(png):
+            continue
+        seen.add(key)
         out.append({
-            "deck": str(deck),
-            "page": int(page),
+            "deck": rd,
+            "page": rp,
             "headline": str(label or ""),
-            "preview_url": f"{base}/{deck}/{int(page)}.png",
+            "preview_url": f"{base}/{rd}/{rp}.png",
         })
+        if len(out) >= limit:
+            break
     return {"results": out, "query": q}
 
 
