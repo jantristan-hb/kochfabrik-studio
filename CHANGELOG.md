@@ -2,6 +2,18 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/)
 
+## [Sprint 10] — 2026-06-09 — EPIC-003 Analyse-Fundament (doc-only)
+
+### Hinzugefügt
+- **US-036:** `docs/sprint-10/FINDINGS-STUDIO.md` — 12 belegte Studio-Findings (3 HIGH/3 MEDIUM/4 LOW, 2 VERWORFEN)
+- **US-037:** `docs/sprint-10/FINDINGS-ENGINE.md` — 13 Engine-Findings, F-E-02 CRITICAL: Open Sans fehlt im Docker-Image
+- **US-038:** `tools/font_report.py` + `docs/sprint-10/font-report.json` — exakte Font-/pt-Daten über 200/200 Referenz-PDFs (PyMuPDF-Spans, kein SIZE_K)
+- **US-039:** `docs/sprint-10/FONT-REPORT.md` — Verteilung (Open Sans 72,8%), pt-Histogramm (14pt+8pt = 83%), Wingdings-Inventar, T1–T4-Konsequenzen; SIZE_K=0.78 als größenabhängig falsch belegt
+- **US-040:** `docs/sprint-10/TEST-BASELINE.md` — realer Collect-Count 63 (PROGRESS behauptete 111), Lücken-Karte als EPIC-004-Refactoring-Gate
+- **US-041:** `docs/adr/ADR-001-pptx-font-embedding.md` (proposed) — Empfehlung Server-Treue statt Embedding
+- **US-042:** `docs/adr/ADR-002-monorepo-schnitt.md` (proposed) — Monorepo via git-subtree, vendor.sh entfällt, Coolify bleibt am Repo
+- **US-043:** `docs/adr/ADR-003-pgbundle-vs-postgres.md` (proposed) — Hybrid: pgbundle read-only hinter EINER Bundle-Schicht
+
 ## [Sprint 4] — 2026-05-19 — EPIC-001 OAuth2 (Microsoft/Google) — **EPIC DONE**
 
 ### Hinzugefügt
