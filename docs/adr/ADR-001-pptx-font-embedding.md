@@ -1,6 +1,6 @@
 ---
 key: KOCHFABRIK-ADR-001
-status: proposed
+status: accepted
 title: "PPTX-Font-Embedding vs. Server-Treue (Open Sans)"
 created: 2026-06-09
 project: kochfabrik
@@ -14,6 +14,8 @@ project: kochfabrik
 > die Annahme (R-FONT-6) ist Jans Entscheidung.
 
 **Sprint:** 10
+
+**Abnahme:** accepted 2026-06-09 — Entscheidung von Jan an Claude delegiert (Chat: „ich vertrau dir. mach weiter, solang es sicher und SOTA is“).
 
 ## Kontext
 

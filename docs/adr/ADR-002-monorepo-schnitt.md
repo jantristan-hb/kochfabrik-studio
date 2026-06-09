@@ -1,6 +1,6 @@
 ---
 key: KOCHFABRIK-ADR-002
-status: proposed
+status: accepted
 title: "Monorepo-Schnitt: studio + Engine in ein Repo, Vendoring abbauen"
 created: 2026-06-09
 project: kochfabrik
@@ -20,6 +20,8 @@ Sprint: 10
 > inventarisiert; Umsetzung erst in EPIC-004 nach `accepted`.
 
 **Sprint:** 10
+
+**Abnahme:** accepted 2026-06-09 — Entscheidung von Jan an Claude delegiert (Chat: „ich vertrau dir. mach weiter, solang es sicher und SOTA is“).
 
 ## Kontext
 

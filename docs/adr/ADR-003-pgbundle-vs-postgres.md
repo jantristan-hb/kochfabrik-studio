@@ -1,6 +1,6 @@
 ---
 key: KOCHFABRIK-ADR-003
-status: proposed
+status: accepted
 title: "pgbundle.npz vs. Postgres für Engine-Korpus-Queries"
 created: 2026-06-09
 project: kochfabrik
@@ -14,6 +14,8 @@ project: kochfabrik
 > strikt erhalten").
 
 **Sprint:** 10
+
+**Abnahme:** accepted 2026-06-09 — Entscheidung von Jan an Claude delegiert (Chat: „ich vertrau dir. mach weiter, solang es sicher und SOTA is“).
 
 ## Kontext
 
