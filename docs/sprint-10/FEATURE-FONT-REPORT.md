@@ -1,6 +1,6 @@
 ---
 key: KOCHFABRIK-FEATURE-002
-status: approved
+status: implemented
 title: "Font-/Größen-Report über die 200 Referenz-PDFs"
 created: 2026-06-09
 project: kochfabrik

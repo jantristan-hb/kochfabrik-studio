@@ -1,6 +1,6 @@
 ---
 key: KOCHFABRIK-FEATURE-003
-status: approved
+status: implemented
 title: "ADR-Paket: Embedding, Monorepo-Schnitt, pgbundle vs. Postgres"
 created: 2026-06-09
 project: kochfabrik

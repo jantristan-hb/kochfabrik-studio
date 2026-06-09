@@ -37,5 +37,12 @@
 - ADR-Abnahme (`proposed → accepted`) ist bewusst NICHT Teil des
   Sprints — Jans Entscheidung, Gate vor EPIC-004/M1 und EPIC-005.
 
+## Erfüllungs-Stand (Review 2026-06-09)
+
+Alle 8 Stories DONE (PRs #11–#18), alle Verifies gegen die
+Remote-Branches re-geprüft (exit 0), Pitfall-Gegenprobe: kein Branch
+ändert Produktiv-Code. 5/5 WPs geliefert; ADR-Abnahme bleibt der
+einzige offene Punkt (siehe oben).
+
 **Summe: 5/5 WPs, 9/9 sprint-relevante R-IDs, 4/4 Kriterien
 zugeordnet. Nichts verloren.**

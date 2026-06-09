@@ -1,7 +1,7 @@
 ---
 id: EPIC-003
 title: "Analyse-Fundament & Entscheidungen (Bugs, Fonts, ADRs)"
-status: OPEN
+status: IN_PROGRESS
 created: 2026-06-09
 project: kochfabrik-studio
 sprints: []
@@ -55,7 +55,10 @@ Findings-Dokumente, ein Font-Datenartefakt und ADRs.
 |--------|-------|---------|
 | Sprint 10 | Q1–Q5 komplett | M |
 
-> **Fortschritt:** wird von /sprint-review aktualisiert.
+> **Fortschritt:** Sprint 10 = Q1–Q5 ✅ DONE (2026-06-09, PRs #11–#18,
+> 8/8 Stories, alle EARS-Verifies grün). Akzeptanzkriterien 1/2/4 erfüllt;
+> Kriterium 3 teilweise: 3 ADRs liegen als `proposed` vor —
+> **Abnahme durch Jan offen** (Gate für EPIC-004/M1 + EPIC-005).
 
 ## Akzeptanzkriterien
 

@@ -87,10 +87,10 @@ REQUIREMENTS §2-Befund (Render-Pfad). **Offen markiert, Owner: M7.**
 - `lib/text.js` Kopf-Kommentar („Größe 1:1 verifiziert") widerspricht
   `SIZE_K = 0.78` — wird nicht doc-gefixt, sondern durch T1 obsolet.
 
-**Offene Entscheidungen (vor betroffenem WP zu klären):**
-- **PPTX-Font-Embedding** — Q5-ADR, vor Schnitt von EPIC-005-Sprint 13.
-- **Monorepo-Schnitt + Alt-Ordner** — Q5-ADR, vor M1.
-- **pgbundle vs. Postgres** — Q5-ADR; Umbau wäre Folge-Epic, nicht M-Scope.
+**Offene Entscheidungen (Stand 2026-06-09: Sprint 10 hat die ADR-Vorlagen geliefert, Abnahme durch Jan offen):**
+- **PPTX-Font-Embedding** — `docs/adr/ADR-001` (proposed, Empfehlung: Server-Treue) — vor EPIC-005.
+- **Monorepo-Schnitt + Alt-Ordner** — `docs/adr/ADR-002` (proposed, Empfehlung: git-subtree-Monorepo) — vor M1.
+- **pgbundle vs. Postgres** — `docs/adr/ADR-003` (proposed, Empfehlung: Hybrid, kein Folge-Epic — WP in EPIC-004/M5).
 - **D2-Persistenz-Level + D4/D5-Scope** — beim Sprint-Schnitt EPIC-006.
 - **Treue-Schwellen (R-FID-5)** — nach V3-Baseline, vor EPIC-005-Abnahme.
 - **DSGVO-Verantwortlichkeit AKARA vs. KOCHfabrik (R-SEC-4)** — vor H4.

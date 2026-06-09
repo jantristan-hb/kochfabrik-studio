@@ -1,6 +1,6 @@
 ---
 key: KOCHFABRIK-FEATURE-001
-status: approved
+status: implemented
 title: "Bug-Analyse beider Repos + Test-Baseline-Inventur"
 created: 2026-06-09
 project: kochfabrik
