@@ -144,5 +144,5 @@ Roadmap + WP-Master-Liste: `docs/epics/README.md` · Abdeckung: `docs/epics/TRAC
 |--------|------|
 | Tests (pytest collect) | 63 Bestand + 34 Sprint-10-Artefakt-Tests |
 | Bug-Findings offen | 25 verifiziert (12 Studio + 13 Engine), zugeordnet auf EPIC-004/005/007/010 |
-| ADRs | 3 proposed (Embedding, Monorepo, pgbundle) — Abnahme offen |
+| ADRs | 3 accepted 2026-06-09 (Embedding, Monorepo, pgbundle) |
 | Deploy | Coolify, live; Korpus-Volume ~4,8 GB gemountet |
