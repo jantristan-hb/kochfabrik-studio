@@ -14,7 +14,7 @@
 |---|---|---|---|---|
 | [[EPIC-001]] | Persistenz, Multi-Tenant & CRM | — (vor WP-System) | DONE | PostgreSQL-Persistenz, Nummernkreise, Tenant-Isolation |
 | [[EPIC-002]] | WYSIWYG-Präsentationsgenerator v2 | — (vor WP-System) | DONE (rollback Sprint 9) | Erkenntnisse; Code wieder ausgebaut |
-| [[EPIC-003]] | Analyse-Fundament & Entscheidungen | Q1–Q5 | OPEN | Bug-Findings beider Repos, Font-Report (200 PDFs), 3 ADRs, Test-Baseline |
+| [[EPIC-003]] | Analyse-Fundament & Entscheidungen | Q1–Q5 | DONE | Bug-Findings beider Repos, Font-Report (200 PDFs), 3 ADRs, Test-Baseline |
 | [[EPIC-004]] | Monorepo & Refactoring | M1–M7 | OPEN | Ein Repo ohne Vendoring, entzerrte Struktur, sauberes Alembic, Docs auf Stand |
 | [[EPIC-005]] | Font-Treue | T1–T4, T6 | OPEN | Exakte Open-Sans-Fonts + pt-Größen, Previews re-rendert |
 | [[EPIC-006]] | Live-Deck-Builder | D1–D5 | OPEN | Deck per Suche + Klick bauen, PPTX-Download |

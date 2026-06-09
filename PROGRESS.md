@@ -108,7 +108,7 @@ verknüpfte Angebot.
 |----|-------|--------|---------|
 | EPIC-001 | Persistenz, Multi-Tenant & CRM | DONE | S1–S4 ✅ |
 | EPIC-002 | WYSIWYG-Präsentationsgenerator v2 | DONE (Rollback S9) | S5–S9 ✅ |
-| EPIC-003 | Analyse-Fundament & Entscheidungen | IN_PROGRESS | S10 ✅ — ADR-Abnahme durch Jan offen |
+| EPIC-003 | Analyse-Fundament & Entscheidungen | DONE | S10 ✅ — ADRs accepted 2026-06-09 |
 | EPIC-004 | Monorepo & Refactoring | OPEN | S11–S12 (geplant, gated: ADR-002) |
 | EPIC-005 | Font-Treue | OPEN | S14–S15 (geplant, gated: ADR-001) |
 | EPIC-006 | Live-Deck-Builder | OPEN | S15 (geplant) |
