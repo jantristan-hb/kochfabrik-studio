@@ -6,12 +6,13 @@
 > **Scope:** BEIDE Repos — `kochfabrik-studio` (App, Deploy) +
 > `pptxgenerator_v2` (Engine, Single Source). Entschieden 2026-06-09.
 >
-> **Status:** v0.2 — initiale Ableitung aus Jans Brain-Dump 2026-06-09
+> **Status:** v0.3 — initiale Ableitung aus Jans Brain-Dump 2026-06-09
 > (Original: `REQUIREMENTS-raw-2026-06-09.md`) + Code-/PDF-Faktencheck.
 > v0.2: §2b Render-Treue (R-FID-*) ergänzt — Jan, Epic-Dialog
 > 2026-06-09: „die präsentationen, die wir generieren, sollen super
 > nah an den pdfs sein. alleine dieses testing ist nen epic."
-> Offene Punkte mit ❓.
+> v0.3: §6b Betrieb & Delivery (R-CI/R-BAK/R-SEC) — Gap-Analyse
+> 2026-06-09, Jan: „alle drei". Offene Punkte mit ❓.
 
 ---
 
@@ -206,6 +207,37 @@ heben: saubere Specs, sauberer Techstack, saubere Dokumente, Monorepo.
 
 ---
 
+## 6b. Betrieb & Delivery (Gap-Analyse 2026-06-09) · `R-CI-*` / `R-BAK-*` / `R-SEC-*`
+
+### CI/Delivery
+- **R-CI-1** Jede Änderung läuft vor dem Merge durch CI: Lint +
+  Tests + Sample-Treue-Gate (vgl. R-FID-3).
+- **R-CI-2** master ist branch-protected; deployt wird nur ein
+  Stand, der durch CI gegangen ist.
+- **R-CI-3** Das Treue-Regressions-Gate ist als Pflicht-Check in der
+  CI verankert (nicht nur lokal lauffähig).
+
+### Backup & Resilienz
+- **R-BAK-1** Postgres (Kunden, Angebote, Chats, Nummernkreise) wird
+  automatisch gesichert — definierter Zyklus, Aufbewahrung, Ablage
+  außerhalb des Hosts.
+- **R-BAK-2** Das Korpus-Volume (~4,8 GB) ist gesichert bzw. sein
+  Wiederaufbau ist dokumentiert (regenerierbare vs. originäre Anteile).
+- **R-BAK-3** Restore wird real geprobt und als Runbook dokumentiert —
+  ungetestete Backups gelten als nicht vorhanden.
+
+### Security & DSGVO-Light
+- **R-SEC-1** LLM-Endpoints (Gemini/Anthropic) haben Rate-Limits und
+  Usage-Caps pro User + global — kein Kosten-Runaway.
+- **R-SEC-2** Secrets nur via Env/Secret-Store; Audit, dass keins in
+  Repo/Image/Logs liegt; Rotation dokumentiert.
+- **R-SEC-3** Auth-Härtung gemäß den Findings der Bug-Analyse
+  (R-QA-1): Cookie-Attribute, Session-Laufzeit, Bruteforce-Schutz.
+- **R-SEC-4** DSGVO-Basics: PII-Inventar, Datenschutz/Impressum,
+  AVV-Klärung. ❓ Verantwortlichkeit AKARA vs. KOCHfabrik.
+
+---
+
 ## 7. Offene Entscheidungen (❓ zusammengefasst)
 
 1. **PPTX-Font-Embedding** (R-FONT-6): Server-Treue vs. Portabilität
@@ -218,6 +250,8 @@ heben: saubere Specs, sauberer Techstack, saubere Dokumente, Monorepo.
    Integration, Text-Edit — Ausbaustufen schneiden.
 5. **Treue-Schwellen** (R-FID-5): Zielwerte pro Metrik-Dimension —
    nach Baseline-Messung, vor Abnahme der Font-Arbeit.
+6. **DSGVO-Verantwortlichkeit** (R-SEC-4): AKARA vs. KOCHfabrik —
+   bestimmt Impressum/AVV; vor EPIC-010/H4.
 
 ---
 

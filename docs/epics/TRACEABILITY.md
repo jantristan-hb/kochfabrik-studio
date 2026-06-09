@@ -6,12 +6,12 @@
 
 ## Methode
 
-Quellen-Inventare: **30 R-IDs** (REQUIREMENTS.md v0.2, 2026-06-09),
-**22 Epic-Akzeptanzkriterien** (EPIC-003…007), **Session-Absprachen**
+Quellen-Inventare: **40 R-IDs** (REQUIREMENTS.md v0.3, 2026-06-09),
+**32 Epic-Akzeptanzkriterien** (EPIC-003…010), **Session-Absprachen**
 (Ideation-/Epic-Dialog 2026-06-09). Regel: jedes Item ≥ 1 WP
 zugeordnet; „später/offen" explizit markiert.
 
-## 1. Requirement-Abdeckung (30/30)
+## 1. Requirement-Abdeckung (40/40)
 
 | R-ID | WP | R-ID | WP |
 |---|---|---|---|
@@ -28,12 +28,17 @@ zugeordnet; „später/offen" explizit markiert.
 | R-QA-4 | Q4 | R-DECK-5 | D5 (Ausbaustufe, offen markiert) |
 | R-NF-1 | Querschnitt M3/M4, D1–D3 | R-NF-2 | M3 (Plan: Q5-ADR) |
 | R-NF-3 | Querschnitt (Q3/T6/D3/V2 read-only) | R-FID-1 | V1 |
-| R-FID-2 | V2 | R-FID-3 | V3 |
+| R-FID-2 | V2 | R-FID-3 | V3 + C2 (CI-Enforcement) |
 | R-FID-4 | V4 | R-FID-5 | V3 + V5 (❓ Schwellen nach Baseline) |
+| R-CI-1 | C1 | R-CI-2 | C3 |
+| R-CI-3 | C2 | R-BAK-1 | B1 |
+| R-BAK-2 | B2 | R-BAK-3 | B3 |
+| R-SEC-1 | H1 | R-SEC-2 | H2 |
+| R-SEC-3 | H3 (Input: Q1) | R-SEC-4 | H4 (❓ AVV-Verantwortlichkeit) |
 
-✅ **30/30 zugeordnet.** „Später/offen" markiert: R-FONT-6
+✅ **40/40 zugeordnet.** „Später/offen" markiert: R-FONT-6
 (ADR-abhängig), R-DECK-4, R-DECK-5 (Ausbaustufen), R-FID-5
-(Schwellen nach Baseline-Messung).
+(Schwellen nach Baseline-Messung), R-SEC-4-❓ (AVV-Klärung vor H4).
 
 ## 2. Architektur-Abdeckung (§)
 
@@ -41,7 +46,7 @@ Keine ARCH-Spec vorhanden — entsteht in M7 (Techstack an einem Ort).
 Bis dahin: Ist-Architektur dokumentiert in README.md (Studio) +
 REQUIREMENTS §2-Befund (Render-Pfad). **Offen markiert, Owner: M7.**
 
-## 3. Epic-Akzeptanzkriterien-Abdeckung (22/22)
+## 3. Epic-Akzeptanzkriterien-Abdeckung (32/32)
 
 | Epic | Kriterien | WPs |
 |---|---|---|
@@ -50,8 +55,11 @@ REQUIREMENTS §2-Befund (Render-Pfad). **Offen markiert, Owner: M7.**
 | [[EPIC-005]] (5) | Nur Open-Sans-Faces (pdffonts) · pt exakt ohne Faktor · Run-Roundtrip · Score-Delta über Harness · Previews re-rendert | T1–T4, T6 (+V5) |
 | [[EPIC-006]] (4) | Suche+Klick+Reorder+Remove · reload-fest · Download exakt/verbatim · Suche regressionsfrei | D1–D3 |
 | [[EPIC-007]] (5) | 1-Befehl-Messung mit Score · Korpus-Lauf reproduzierbar + Sample in Suite · Gate fängt eingebaute Regression · Report mit Diffs/Trend · Schwellen von Jan abgenommen | V1–V5 |
+| [[EPIC-008]] (3) | Roter Check blockiert Merge · Treue-Gate fängt Regression im PR · Delivery-Flow dokumentiert | C1–C3 |
+| [[EPIC-009]] (3) | Auto-Backup off-host nachweisbar · Volume gesichert/Wiederaufbau verifiziert · Restore-Probe im Runbook | B1–B3 |
+| [[EPIC-010]] (4) | Limits lehnen nachweisbar ab · Secrets-Audit sauber · Q1-Findings gefixt/Risk-Log · DSGVO-Basics + AVV entschieden | H1–H4 |
 
-✅ **22/22 zugeordnet.**
+✅ **32/32 zugeordnet.**
 
 ## 4. Session-Absprachen-Abdeckung
 
@@ -65,6 +73,7 @@ REQUIREMENTS §2-Befund (Render-Pfad). **Offen markiert, Owner: M7.**
 | 6 | D4/D5 als ❓-Ausbaustufe, nicht im MVP | EPIC-006 Scope | D4, D5 |
 | 7 | 4 Epics statt einem (User-OK „ja passt") | ROADMAP | — (Struktur) |
 | 8 | „super nah an den pdfs … alleine dieses testing ist nen epic" → eigenes Treue-Test-Epic, erst messen dann verbessern | R-FID-1…5, [[EPIC-007]], ROADMAP Phase 2 | V1–V5 |
+| 9 | Gap-Analyse: „alle drei" Betriebs-Epics (CI, Backup, Security) angenommen | R-CI/R-BAK/R-SEC, [[EPIC-008]]–[[EPIC-010]] | C1–C3, B1–B3, H1–H4 |
 
 ## 5. Konsistenz-Findings
 
@@ -84,16 +93,17 @@ REQUIREMENTS §2-Befund (Render-Pfad). **Offen markiert, Owner: M7.**
 - **pgbundle vs. Postgres** — Q5-ADR; Umbau wäre Folge-Epic, nicht M-Scope.
 - **D2-Persistenz-Level + D4/D5-Scope** — beim Sprint-Schnitt EPIC-006.
 - **Treue-Schwellen (R-FID-5)** — nach V3-Baseline, vor EPIC-005-Abnahme.
+- **DSGVO-Verantwortlichkeit AKARA vs. KOCHfabrik (R-SEC-4)** — vor H4.
 
 ## 6. Abdeckungs-Summe
 
 | Inventar | Anzahl | zugeordnet | offen markiert |
 |---|---|---|---|
-| R-IDs | 30 | 30 | 4 (R-FONT-6, R-DECK-4/5, R-FID-5) |
+| R-IDs | 40 | 40 | 5 (R-FONT-6, R-DECK-4/5, R-FID-5, R-SEC-4-❓) |
 | §-Abschnitte (ARCH) | 0 | — | ARCH entsteht in M7 |
-| Epic-Akzeptanzkriterien | 22 | 22 | 0 |
-| Session-Absprachen | 8 | 8 | 0 |
-| Epics | 7 (2 DONE) | 7 | — |
+| Epic-Akzeptanzkriterien | 32 | 32 | 0 |
+| Session-Absprachen | 9 | 9 | 0 |
+| Epics | 10 (2 DONE) | 10 | — |
 
 **Nichts verloren. Offene Entscheidungen sind als Q5-ADRs bzw.
 Sprint-Schnitt-Punkte explizit verankert.**

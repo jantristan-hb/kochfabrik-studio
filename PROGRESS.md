@@ -200,6 +200,9 @@ _(Keine FAILED-Stories — Sprint 1 vollständig.)_
 | EPIC-005 | Font-Treue | OPEN | S14–S15 (geplant) |
 | EPIC-006 | Live-Deck-Builder | OPEN | S15 (geplant) |
 | EPIC-007 | Render-Treue-Harness | OPEN | S13, S15 (geplant) |
+| EPIC-008 | CI/Delivery | OPEN | S13 (geplant) |
+| EPIC-009 | Backup & Resilienz | OPEN | S12 (geplant) |
+| EPIC-010 | Security & DSGVO-Light | OPEN | S16 (geplant) |
 
 Roadmap + WP-Master-Liste: `docs/epics/README.md` · Abdeckung: `docs/epics/TRACEABILITY.md`
 

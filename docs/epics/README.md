@@ -19,6 +19,9 @@
 | [[EPIC-005]] | Font-Treue | T1–T4, T6 | OPEN | Exakte Open-Sans-Fonts + pt-Größen, Previews re-rendert |
 | [[EPIC-006]] | Live-Deck-Builder | D1–D5 | OPEN | Deck per Suche + Klick bauen, PPTX-Download |
 | [[EPIC-007]] | Render-Treue-Harness | V1–V5 | OPEN | Treue-Metrik + Korpus-Harness + Baseline-Gate + Diff-Report — „super nah am PDF" messbar |
+| [[EPIC-008]] | CI/Delivery | C1–C3 | OPEN | GitHub Actions (Lint+Tests+Treue-Gate), Branch-Protection |
+| [[EPIC-009]] | Backup & Resilienz | B1–B3 | OPEN | Postgres- + Korpus-Backup, geprobter Restore, Runbook |
+| [[EPIC-010]] | Security & DSGVO-Light | H1–H4 | OPEN | Rate-Limits, Secrets-Audit, Auth-Härtung, DSGVO-Basics |
 
 ## Arbeitspakete (Master-Liste)
 
@@ -53,6 +56,22 @@
 - **V4** Treue-Report: Worst-Slides, Side-by-Side-Diffs, Trend
 - **V5** Abnahme-Integration: EPIC-005 wird über den Harness abgenommen
 
+**EPIC-008 CI/Delivery**
+- **C1** GitHub-Actions-Pipeline: Lint + pytest auf PR + master
+- **C2** Sample-Treue-Gate (V3) als Pflicht-CI-Check
+- **C3** Branch-Protection master + Delivery-Flow-Doku
+
+**EPIC-009 Backup & Resilienz**
+- **B1** Postgres-Backup-Zyklus (Aufbewahrung, off-host) + Restore-Doku
+- **B2** Korpus-Volume-Backup/Wiederaufbau-Pfad (~4,8 GB)
+- **B3** Restore-Probe real durchgespielt + Runbook
+
+**EPIC-010 Security & DSGVO-Light**
+- **H1** Rate-Limits/Usage-Caps auf LLM-Endpoints (pro User + global)
+- **H2** Secrets-Audit (Env/Coolify only, Rotation dokumentiert)
+- **H3** Auth-Härtung gemäß Q1-Findings
+- **H4** DSGVO-Basics: PII-Inventar, Datenschutz/Impressum, AVV-Klärung ❓
+
 **EPIC-006 Live-Deck-Builder**
 - **D1** Builder-UI (Suche + Storyboard, Klick/Reorder/Remove)
 - **D2** Arbeits-Deck-Persistenz (reload-fest)
@@ -65,20 +84,23 @@
 | Phase | WPs | Warum hier | Meilenstein |
 |---|---|---|---|
 | **0 — Analyse & Decisions** | Q1–Q5 | Doc-only, billig, entsperrt alles | Findings + Font-Report + 3 ADRs abgenommen |
-| **1 — Foundation** | M1–M3, dann M4–M7 | Monorepo zuerst — sonst Doppelarbeit im Vendoring | Coolify-Deploy aus Monorepo grün, Tests grün |
-| **2 — Messen** | V1–V3 | Erst messen, dann verbessern — Baseline vor Font-Arbeit | Treue-Baseline eingefroren, Gate in Suite |
+| **1 — Foundation** | M1–M3, dann M4–M7 + B1–B3 | Monorepo zuerst; Backup direkt nach Deploy-Migration | Coolify-Deploy aus Monorepo grün; Restore geprobt |
+| **2 — Messen + Gate-Enforcement** | C1 + C3, V1–V3, C2 | Erst messen, dann verbessern; CI macht das Gate verbindlich | Baseline eingefroren, Treue-Gate als Pflicht-Check in CI |
 | **3 — Font-Kern** | T1–T4 | Engine-Arbeit auf neuer Struktur, Score-Delta sichtbar | Rekonstruktion exakt (pdffonts + pt-Abgleich), Score ↑ |
 | **4 — Gate + Feature** | V4–V5, T6, D1–D3 | Report + Abnahme; Builder-MVP als vertikale Scheibe | EPIC-005 über Harness abgenommen; Deck klick-bar + Download |
+| **5 — Härtung** | H1–H4 | Fixes aus Q1-Findings + Compliance; parallelisierbar ab Q1 | Limits aktiv, Secrets sauber, DSGVO-Basics stehen |
 | **später** | D4–D5 | Scope-Entscheid (❓) ausstehend | — |
 
 **Vertikale-Scheibe-Prinzip:** Phase 4 liefert den Deck-Builder
 end-to-end (Suche → Storyboard → Download) auf bereits font-treuen
 Previews; D4/D5 erweitern dieselbe Surface später.
 
-**MVP-Kern:** Phasen 0–4. D4/D5 und ggf. PPTX-Embedding sind Ausbau.
+**MVP-Kern:** Phasen 0–4. Phase 5 ist Pflicht vor breiterem Rollout;
+D4/D5 und ggf. PPTX-Embedding sind Ausbau.
 
 ## Referenzen
 - parent_of → [[EPIC-003]], [[EPIC-004]], [[EPIC-005]], [[EPIC-006]],
-  [[EPIC-007]] (Historie: [[EPIC-001]], [[EPIC-002]])
+  [[EPIC-007]], [[EPIC-008]], [[EPIC-009]], [[EPIC-010]]
+  (Historie: [[EPIC-001]], [[EPIC-002]])
 - relates_to → REQUIREMENTS.md (R-IDs, 2026-06-09)
 - depends_on → [[TRACEABILITY]] — Abdeckungs-Nachweis WP ↔ Quelle
