@@ -189,13 +189,29 @@ _(Keine FAILED-Stories — Sprint 1 vollständig.)_
 
 ---
 
+## Sprint 10 — EPIC-003 Analyse-Fundament (geplant 2026-06-09)
+
+| Story | Titel | Status |
+|-------|-------|--------|
+| US-036 | Bug-Analyse kochfabrik-studio (Q1) | TODO |
+| US-037 | Bug-Analyse pptxgenerator_v2-Engine (Q2) | TODO |
+| US-038 | Font-Extraktor + font-report.json, 200 PDFs (Q3) | TODO |
+| US-039 | FONT-REPORT.md aus JSON (Q3) | TODO |
+| US-040 | Test-Baseline-Inventur (Q4) | TODO |
+| US-041 | ADR-001 PPTX-Font-Embedding (Q5) | TODO |
+| US-042 | ADR-002 Monorepo-Schnitt (Q5) | TODO |
+| US-043 | ADR-003 pgbundle vs. Postgres (Q5) | TODO |
+
+Doc-only-Sprint (keine Code-Änderungen). Docs: `docs/sprint-10/` ·
+Übergabe: `docs/sprint-10/EXECUTE.md` (2 Waves à 4 Stories).
+
 ## Epics
 
 | ID | Titel | Status | Sprints |
 |----|-------|--------|---------|
 | EPIC-001 | Persistenz, Multi-Tenant & CRM | DONE | S1–S4 ✅ |
 | EPIC-002 | WYSIWYG-Präsentationsgenerator v2 | DONE (Rollback S9) | S5–S9 ✅ |
-| EPIC-003 | Analyse-Fundament & Entscheidungen | OPEN | S10 (geplant) |
+| EPIC-003 | Analyse-Fundament & Entscheidungen | OPEN | S10 geplant ✅ (Docs) |
 | EPIC-004 | Monorepo & Refactoring | OPEN | S11–S12 (geplant) |
 | EPIC-005 | Font-Treue | OPEN | S14–S15 (geplant) |
 | EPIC-006 | Live-Deck-Builder | OPEN | S15 (geplant) |
