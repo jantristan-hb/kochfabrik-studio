@@ -193,7 +193,15 @@ _(Keine FAILED-Stories — Sprint 1 vollständig.)_
 
 | ID | Titel | Status | Sprints |
 |----|-------|--------|---------|
-| EPIC-001 | Persistenz, Multi-Tenant & CRM | IN_PROGRESS | S1 ✅, S2 ✅, S3 geplant, S4 (später) |
+| EPIC-001 | Persistenz, Multi-Tenant & CRM | DONE | S1–S4 ✅ |
+| EPIC-002 | WYSIWYG-Präsentationsgenerator v2 | DONE (Rollback S9) | S5–S9 ✅ |
+| EPIC-003 | Analyse-Fundament & Entscheidungen | OPEN | S10 (geplant) |
+| EPIC-004 | Monorepo & Refactoring | OPEN | S11–S12 (geplant) |
+| EPIC-005 | Font-Treue | OPEN | S14–S15 (geplant) |
+| EPIC-006 | Live-Deck-Builder | OPEN | S15 (geplant) |
+| EPIC-007 | Render-Treue-Harness | OPEN | S13, S15 (geplant) |
+
+Roadmap + WP-Master-Liste: `docs/epics/README.md` · Abdeckung: `docs/epics/TRACEABILITY.md`
 
 ## Bekannte Lücken (nicht in S1)
 - Chat-History-Restore (S2) · Dashboard/Bibliothek-UI (S3) · OAuth2 (S4)
