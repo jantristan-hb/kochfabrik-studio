@@ -8,8 +8,27 @@
 > Ältere Sprints (1–5): `PROGRESS-archive.md`.
 
 **Projekt:** kochfabrik-studio (FastAPI, web/, vendored engine)
-**Aktueller Sprint:** Sprint 10 **DONE** — EPIC-003 Analyse-Fundament (ADR-Abnahme durch Jan offen)
+**Aktueller Sprint:** Sprint 11 **GEPLANT** — EPIC-004 Monorepo-Schnitt (Execute steht aus) · Sprint 10 DONE, EPIC-003 DONE (ADRs accepted)
 **Status:** 10 Sprints done · Stack: FastAPI + PostgreSQL + SQLAlchemy2 async + Alembic + OAuth2-ready
+
+---
+
+## Sprint 11 — EPIC-004 Monorepo-Schnitt M1–M3 (geplant 2026-06-09)
+
+| Story | Titel | Status |
+|-------|-------|--------|
+| US-044 | Backup vor Cutover (B1 vorgezogen) | TODO |
+| US-045 | Engine-Repo konsolidieren (Mac-Diff + F-E-10) | TODO |
+| US-046 | Charakterisierungs-Tests + Suite 100% grün | TODO |
+| US-047 | Engine via subtree + Layout flachziehen | TODO |
+| US-048 | Backend-Pfade repo-intern + vendor.sh weg | TODO |
+| US-049 | Dockerfile Monorepo + alembic.ini | TODO |
+| US-050 | Sim-Gate-Skript + Container-Smoke | TODO |
+| US-051 | Cutover-Runbook + Live-Verify | TODO |
+
+⚠️ Prod-Sprint: Cutover = Merge nach master im /sprint-review, NUR nach
+Backup ✓ + Sim-Gate ✓. Docs: `docs/sprint-11/` · Issues #20–#27 ·
+Wave 1 parallel, US-047–051 sequentiell auf `sprint-11-monorepo`.
 
 ---
 

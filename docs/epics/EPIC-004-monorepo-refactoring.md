@@ -1,10 +1,10 @@
 ---
 id: EPIC-004
 title: "Monorepo & Refactoring (Verhalten strikt erhalten)"
-status: OPEN
+status: IN_PROGRESS
 created: 2026-06-09
 project: kochfabrik-studio
-sprints: []
+sprints: [11]
 ---
 
 # EPIC-004: Monorepo & Refactoring
