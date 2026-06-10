@@ -33,7 +33,13 @@ def test_keine_phase0_referenzen_im_backend():
     assert not os.path.exists(os.path.join(ROOT, "vendor.sh"))
 
 
-# FEATURE-005 EARS 2/3 — Dockerfile- + Sim-Gate-Tests (test_dockerfile_monorepo,
-# test_sim_gate_vorhanden aus TEST.md) gehören zu US-049/US-050 und werden mit
-# diesen Folge-Stories ergänzt (Dockerfile-COPY + tools/sim_gate.sh existieren
-# hier noch nicht).
+# FEATURE-005 EARS 2 — Dockerfile zieht Monorepo-Layout (US-049)
+def test_dockerfile_monorepo():
+    df = open(os.path.join(ROOT, "Dockerfile"), encoding="utf-8").read()
+    assert "COPY alembic.ini" in df
+    assert "COPY engine ./engine" in df
+
+
+# FEATURE-005 EARS 2/3 — Sim-Gate-Test (test_sim_gate_vorhanden aus TEST.md)
+# gehört zu US-050 und wird mit dieser Folge-Story ergänzt (tools/sim_gate.sh
+# existiert hier noch nicht).
