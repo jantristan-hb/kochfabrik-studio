@@ -90,7 +90,7 @@ fett statt unterstrichen.
 
 **Verify:**
 ```bash
-cd phase0/scripts && python3 -c "import angebot_parse as A; a=A.parse('/home/jrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Muster_Angebote/# 9_745_HOWDENRE_11_06_2025.pdf'); assert a.kunde, 'HOWDENRE kunde leer'"
+cd phase0/scripts && python3 -c "import angebot_parse as A; a=A.parse('/Users/janrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Muster_Angebote/# 9_745_HOWDENRE_11_06_2025.pdf'); assert a.kunde, 'HOWDENRE kunde leer'"
 ```
 
 **Blocked-by:** —

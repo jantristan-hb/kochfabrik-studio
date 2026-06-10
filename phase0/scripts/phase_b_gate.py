@@ -24,7 +24,7 @@ from PIL import Image
 from pptx import Presentation
 from pptx.util import Emu
 
-CORPUS = "/home/jrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Präsentationen"
+CORPUS = "/Users/janrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Präsentationen"
 SPIKE = os.path.dirname(os.path.abspath(__file__)).replace(
     "/scripts", "/spike-pptxgenjs")
 REPORT = os.path.abspath(os.path.join(SPIKE, "..", "REPORT-phase-b.md"))

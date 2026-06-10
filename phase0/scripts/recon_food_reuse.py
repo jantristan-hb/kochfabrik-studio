@@ -17,7 +17,7 @@ import sys
 from collections import defaultdict
 from PIL import Image
 
-CORPUS = "/home/jrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Präsentationen"
+CORPUS = "/Users/janrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Präsentationen"
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 EXTRACT = os.path.join(HERE, "cache", "extract50")
 MIN_BYTES = 8 * 1024

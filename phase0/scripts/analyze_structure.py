@@ -29,7 +29,7 @@ from _deckpipe import cached_deck, slugify                     # noqa
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CACHE = os.path.join(ROOT, "data", "cache")
 REPORT = os.path.join(ROOT, "..", "docs", "REPORT-structure.md")
-CORPUS = "/home/jrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Präsentationen"
+CORPUS = "/Users/janrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Präsentationen"
 DSN = dict(host="localhost", port=5434, user="postgres",
            password="pptxgen", dbname="pptxgen")
 

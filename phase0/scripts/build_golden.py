@@ -32,7 +32,7 @@ from dedup_exact import CACHE                                  # noqa
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "data")
 SPIKE = os.path.join(ROOT, "spike-pptxgenjs")
-CORPUS = "/home/jrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Präsentationen"
+CORPUS = "/Users/janrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Präsentationen"
 
 # Skelett-Position (aus REPORT-structure.md Ø-Position); kleiner = früher
 SKELETON = [("CREW IM NORDEN", 0.10), ("PARTNER IM NORDEN", 0.10),

@@ -26,7 +26,7 @@ from _deckpipe import cached_deck, slugify                     # noqa
 
 SPIKE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                      "spike-pptxgenjs")
-CORPUS = "/home/jrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Präsentationen"
+CORPUS = "/Users/janrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Präsentationen"
 DSN = dict(host="localhost", port=5434, user="postgres",
            password="pptxgen", dbname="pptxgen")
 

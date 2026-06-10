@@ -30,7 +30,7 @@ from _deckpipe import cached_deck                              # noqa
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "data")
 SPIKE = os.path.join(ROOT, "spike-pptxgenjs")
-CORPUS = "/home/jrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Präsentationen"
+CORPUS = "/Users/janrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Präsentationen"
 BECHTLE_PDF = os.path.join(CORPUS, "12.09.2025_KF Bechtle.pdf")
 DSN = dict(host="localhost", port=5434, user="postgres",
            password="pptxgen", dbname="pptxgen")

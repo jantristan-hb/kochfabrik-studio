@@ -92,7 +92,7 @@ gegen das Original zu diffen.
 
 **Verify:**
 ```bash
-cd phase0/scripts && python3 -c "import angebot_parse as A; a=A.parse('/home/jrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Muster_Angebote/# 10_182_RAUMKARUSSELL GmbH_12_09_2026.pdf'); assert a.kunde and a.veranstaltung.anlass and a.bloecke"
+cd phase0/scripts && python3 -c "import angebot_parse as A; a=A.parse('/Users/janrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Muster_Angebote/# 10_182_RAUMKARUSSELL GmbH_12_09_2026.pdf'); assert a.kunde and a.veranstaltung.anlass and a.bloecke"
 ```
 
 **Blocked-by:** —

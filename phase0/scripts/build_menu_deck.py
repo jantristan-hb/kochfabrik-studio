@@ -26,7 +26,7 @@ from ingest_compositions import classify, is_content_photo          # noqa
 
 SPIKE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                      "spike-pptxgenjs")
-CORPUS = "/home/jrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Präsentationen"
+CORPUS = "/Users/janrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Präsentationen"
 
 
 def signature(seq, W, H):

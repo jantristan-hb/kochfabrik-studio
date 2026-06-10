@@ -27,7 +27,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _deckpipe import slugify, cached_deck                       # noqa
 
-CORPUS_DIR = "/home/jrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Präsentationen"
+CORPUS_DIR = "/Users/janrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Präsentationen"
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(_ROOT, "data")                 # persistent, raus aus /tmp
 CURATED = os.path.join(DATA, "all_menus.pptx")

@@ -22,7 +22,7 @@ from pdf_diff import diff_pdfs                                    # noqa
 
 PROJ = os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__))))                  # scripts→phase0→root
-MUS = ("/home/jrudat/Nextcloud/Kochfabrik Dokumente/"
+MUS = ("/Users/janrudat/Nextcloud/Kochfabrik Dokumente/"
        "AKARA_Muster_Angebote")
 REFERENZ = "# 10_182_RAUMKARUSSELL GmbH_12_09_2026"
 ANDERE = ["# 9_745_HOWDENRE_11_06_2025",

@@ -3,7 +3,7 @@
 > Übergabe-Prompt für `/sprint-execute` nach `/clear`.
 > Referenzieren mit: @docs/sprint-2/EXECUTE.md
 
-**Pfad:** `/home/jrudat/work/03 AKARA Solutions GmbH/kochfabrik/pptxgenerator_v2`
+**Pfad:** `/Users/janrudat/work/03 AKARA Solutions GmbH/kochfabrik/pptxgenerator_v2`
 **Sprint:** 2 · **Epic:** EPIC-001 Angebotsgenerator
 **Erstellt:** 2026-05-19
 **Build:** `python3 -m py_compile phase0/scripts/*.py`

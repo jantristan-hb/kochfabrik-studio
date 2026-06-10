@@ -18,7 +18,7 @@ import subprocess
 import sys
 from collections import defaultdict
 
-CORPUS = "/home/jrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Präsentationen"
+CORPUS = "/Users/janrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Präsentationen"
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 EXTRACT = os.path.join(HERE, "cache", "extract")
 MIN_BYTES = 8 * 1024

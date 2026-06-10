@@ -43,7 +43,7 @@ Schwellen sind Vorschläge; finale Werte legt Jan beim Report-Review fest.
 ## 3. Scope
 
 **In:**
-- Korpus: `/home/jrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Präsentationen/`
+- Korpus: `/Users/janrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Präsentationen/`
   (199 PDF; die 4 großen `.pptx` sind in Phase 0 **out** — flache
   Layout-Analyse, separat als spätere Master-Kandidaten notieren).
 - Nur **Menü-/Speisen-Kompositions-Slides**. Cover/„Über uns"/Team/Wein/Kontakt

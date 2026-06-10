@@ -23,7 +23,7 @@ from _deckpipe import slugify                                  # noqa
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "data")
-CORPUS = "/home/jrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Präsentationen"
+CORPUS = "/Users/janrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Präsentationen"
 DSN = dict(host="localhost", port=5434, user="postgres",
            password="pptxgen", dbname="pptxgen")
 

@@ -26,7 +26,7 @@ from angebot_model import example                               # noqa
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "data")
 SPIKE = os.path.join(ROOT, "spike-pptxgenjs")
-REF_PDF = ("/home/jrudat/Nextcloud/Kochfabrik Dokumente/"
+REF_PDF = ("/Users/janrudat/Nextcloud/Kochfabrik Dokumente/"
            "AKARA_Muster_Angebote/# 10_182_RAUMKARUSSELL GmbH_"
            "12_09_2026.pdf")
 
