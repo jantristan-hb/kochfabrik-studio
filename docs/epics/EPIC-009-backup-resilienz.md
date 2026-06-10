@@ -52,6 +52,11 @@ wurde, ist keins.
 |--------|-------|---------|
 | Sprint 12 (Teil) | B1–B3 (nach Deploy-Migration M3) | S–M |
 
+> **B1 teilweise vorgezogen → Sprint 11 (US-044):** Einmal-Dump
+> off-host + Volume-Inventar als Cutover-Sicherheitsnetz
+> (Cross-Epic-Pull, 2026-06-09). Automatischer Zyklus + Restore-Probe
+> bleiben Sprint 12.
+
 > **Fortschritt:** wird von /sprint-review aktualisiert.
 
 ## Akzeptanzkriterien
