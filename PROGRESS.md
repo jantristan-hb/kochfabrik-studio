@@ -8,8 +8,27 @@
 > Ältere Sprints (1–5): `PROGRESS-archive.md`.
 
 **Projekt:** kochfabrik-studio (FastAPI, web/, vendored engine)
-**Aktueller Sprint:** Sprint 11 **DONE** — Monorepo-Cutover live (EPIC-004 M1–M3)
+**Aktueller Sprint:** Sprint 12 **GEPLANT** (M4–M7 + B1–B3, schließt EPIC-004+009) · Sprint 11 DONE — Monorepo-Cutover live
 **Status:** 11 Sprints done · Stack: FastAPI + PostgreSQL + SQLAlchemy2 async + Alembic + OAuth2-ready
+
+---
+
+## Sprint 12 — EPIC-004-Abschluss + EPIC-009 (geplant 2026-06-10)
+
+| Story | Titel | Status |
+|-------|-------|--------|
+| US-052 | Backup-Zyklus auf Host (B1) | TODO |
+| US-053 | Router auth + bildgenerator (M4) | TODO |
+| US-054 | Router angebot + praesentation, app.py <200 Z. (M4) | TODO |
+| US-055 | Eine Bundle-Schicht — ADR-003 (M5) | TODO |
+| US-056 | Engine-Tooling-Split (M5) | TODO |
+| US-057 | Alembic-Container-Abnahme (M6) | TODO |
+| US-058 | Restore-Probe + Runbook (B2/B3) | TODO |
+| US-059 | Projekt-CLAUDE.md (M7) | TODO |
+| US-060 | Engine-Repo archivieren (ADR-002-Konsequenz) | TODO |
+
+Issues #33–#41 · Wave 1 (2 parallel) → Code-Kette US-053–057 sequentiell
+auf `sprint-12-code` → End-Wave 3 parallel. Docs: `docs/sprint-12/`.
 
 ---
 
