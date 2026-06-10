@@ -19,8 +19,10 @@ def _text():
 
 
 def test_status_proposed():
-    assert re.search(r"^status: proposed$", _text(), re.MULTILINE), \
-        "Frontmatter 'status: proposed' fehlt (NIE accepted setzen)"
+    # ADR-Lifecycle proposed→accepted; accepted seit 2026-06-09 (4713b2a).
+    assert re.search(r"^status: (proposed|accepted)$", _text(),
+                     re.MULTILINE), \
+        "Frontmatter 'status: proposed|accepted' fehlt"
 
 
 def test_required_sections():
