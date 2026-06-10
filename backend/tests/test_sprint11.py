@@ -40,6 +40,9 @@ def test_dockerfile_monorepo():
     assert "COPY engine ./engine" in df
 
 
-# FEATURE-005 EARS 2/3 — Sim-Gate-Test (test_sim_gate_vorhanden aus TEST.md)
-# gehört zu US-050 und wird mit dieser Folge-Story ergänzt (tools/sim_gate.sh
-# existiert hier noch nicht).
+# FEATURE-005 EARS 2/3 — Sim-Gate existiert, macOS-kompatibel (US-050)
+def test_sim_gate_vorhanden():
+    p = os.path.join(ROOT, "tools", "sim_gate.sh")
+    assert os.access(p, os.X_OK)
+    src = open(p, encoding="utf-8").read()
+    assert "timeout " not in src  # macOS hat kein GNU timeout
