@@ -10,14 +10,19 @@ tools/.venv/
 docs/
 *.md
 
+# Tests + Engine-Reste (keine Laufzeit-Abhängigkeit)
+backend/tests
+engine/upstream
+engine/tests
+
 # Git
 .git/
 .gitignore
 
 # Python-Cruft
-__pycache__/
-*.pyc
-.pytest_cache/
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
 
 # Lokale Secrets / Env (nie ins Image)
 .env
