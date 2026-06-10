@@ -2,6 +2,20 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/)
 
+## [Sprint 11] — 2026-06-10 — EPIC-004 Monorepo-Schnitt (M1–M3)
+
+### Hinzugefügt
+- **US-044:** Erst-Backup vor Cutover — pg_dump `kf-studio-pg` off-host (Integrität verifiziert) + Korpus-Volume-Inventar (201 Decks, 5,2 GB) → `docs/sprint-11/BACKUP-VERIFY.md`
+- **US-046:** `backend/tests/test_charakterisierung.py` — TestClient-Verhaltens-Netz (DB-los); Suite erstmals lokal 0 failed (Alembic-Namespace-Fix)
+- **US-050:** `tools/sim_gate.sh` — Container-Smoke-Gate (Build, Health, Engine-Import, reconstruct.js-Probe), Pflicht vor jedem Cutover
+- **US-051:** `tools/live_verify.sh` + `docs/sprint-11/CUTOVER-RUNBOOK.md` — Prod-Health-Check + Cutover-/Rollback-Ablauf
+
+### Geändert
+- **US-045:** Engine-Repo konsolidiert — Mac-Migrations-Diff committet; Build-DSN + CORPUS_DIR env-übersteuerbar (F-E-10), Defaults identisch
+- **US-047:** Engine via `git subtree` ins Studio-Repo (Historie erhalten, 26 Commits), Layout flachgezogen (`engine/scripts` statt `engine/phase0/…`), `data/` + `node_modules` aus vendored Stand gerettet
+- **US-048:** Backend-Pfade repo-intern (`_VEND/_SIB`-Heuristik entfernt), `vendor.sh` gelöscht, README auf Monorepo-Workflow
+- **US-049:** Dockerfile auf Monorepo-Layout + `COPY alembic.ini` (behebt rc=255-Migrations-Drift im Container, F-S-01) + `.dockerignore`
+
 ## [Sprint 10] — 2026-06-09 — EPIC-003 Analyse-Fundament (doc-only)
 
 ### Hinzugefügt
