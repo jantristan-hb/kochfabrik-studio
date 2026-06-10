@@ -1,0 +1,68 @@
+# Recon v3: Speisenfoto-Reuse, Furniture entfernt (50 Decks)
+
+- Bild-Instanzen gesamt: 2322
+- Als Furniture erkannt (Hash in ≥80% Decks): **5 Hashes**
+- **Speisenfoto-Kandidaten** (groß, kein Furniture): **910**
+
+## Recyceln sich die SPEISENFOTOS?
+
+**Exakt (sha256):**
+- eindeutige Fotos: 362 → Dedup 60%
+- Fotos in ≥2 Decks: **111** (31% der eindeutigen)
+- Instanzen, die recycelt sind: **72%**
+
+**Perceptual (aHash, re-encode-fest):**
+- visuell eigenständige Fotos (Cluster): 289
+- Cluster in ≥2 Decks: **100** (35%)
+- Instanzen in deck-übergreifenden Clustern: **79%**
+
+## Slide-für-Slide-Profil (erste 3 Decks)
+
+**01.08.2026 KF Pflegedienst Hamester.pdf**
+  S1: Speisenfotos=1 Furniture=5
+  S2: Speisenfotos=1 Furniture=2
+  S3: Speisenfotos=2 Furniture=1
+  S4: Speisenfotos=1 Furniture=1
+  S5: Speisenfotos=1 Furniture=1
+  S6: Speisenfotos=1 Furniture=1
+  S7: Speisenfotos=3 Furniture=1
+  S8: Speisenfotos=3 Furniture=1
+  S9: Speisenfotos=3 Furniture=1
+  S10: Speisenfotos=5 Furniture=1
+  S11: Speisenfotos=1 Furniture=1
+  S12: Speisenfotos=0 Furniture=1
+
+**03.06. Prototyp Menü.pdf**
+  S1: Speisenfotos=1 Furniture=5
+  S2: Speisenfotos=1 Furniture=2
+  S3: Speisenfotos=3 Furniture=1
+  S4: Speisenfotos=1 Furniture=1
+  S5: Speisenfotos=1 Furniture=1
+  S6: Speisenfotos=1 Furniture=1
+  S7: Speisenfotos=3 Furniture=1
+  S8: Speisenfotos=3 Furniture=1
+  S9: Speisenfotos=0 Furniture=1
+  S10: Speisenfotos=3 Furniture=1
+  S11: Speisenfotos=1 Furniture=1
+  S12: Speisenfotos=1 Furniture=1
+  S13: Speisenfotos=0 Furniture=1
+
+**04.02.2026 KF Wilkenwerk.pdf**
+  S1: Speisenfotos=1 Furniture=5
+  S2: Speisenfotos=1 Furniture=2
+  S3: Speisenfotos=3 Furniture=1
+  S4: Speisenfotos=3 Furniture=1
+  S5: Speisenfotos=3 Furniture=1
+  S6: Speisenfotos=3 Furniture=1
+  S7: Speisenfotos=0 Furniture=1
+  S8: Speisenfotos=3 Furniture=1
+  S9: Speisenfotos=1 Furniture=1
+  S10: Speisenfotos=1 Furniture=1
+  S11: Speisenfotos=3 Furniture=1
+  S12: Speisenfotos=1 Furniture=1
+  S13: Speisenfotos=3 Furniture=1
+  S14: Speisenfotos=3 Furniture=1
+  S15: Speisenfotos=3 Furniture=1
+  S16: Speisenfotos=1 Furniture=1
+  S17: Speisenfotos=0 Furniture=1
+

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KOCHfabrik Studio — Im Gespräch entwerfen</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="site-inner">
+    <a class="brand" href="index.html">
+      <img src="assets/kochfabrik-logo.png" alt="KOCHfabrik">
+      <span class="studio">Studio</span>
+    </a>
+    <nav class="main">
+      <a href="index.html">Atelier</a>
+      <a href="upload.html">Angebot</a>
+      <a href="chat.html" class="active">Konzeption</a>
+      <a href="bildgenerator.html">Bildatelier</a>
+      <a href="client.html">Recherche</a>
+    </nav>
+    <div class="acct" title="Patrick Diehr">PD</div>
+  </div>
+</header>
+
+<main>
+  <section class="hero" style="padding:64px 0 30px">
+    <div class="wrap">
+      <p class="eyebrow r r1">Konzeption · Gespräch</p>
+      <h1 class="display r r2" style="font-size:clamp(2.2rem,4vw,3rem)">Erzählen Sie vom Event —<br><em>das Deck folgt.</em></h1>
+    </div>
+  </section>
+
+  <section class="block" style="padding-top:18px">
+    <div class="wrap">
+      <div class="chat-shell">
+        <div class="r r3">
+          <div class="chat-stream">
+            <div class="msg bot"><div class="who">KOCHfabrik Atelier</div>Womit darf ich beginnen? Beschreiben Sie Anlass, Kundin und gewünschte Stimmung — oder nennen Sie einfach das Menü.</div>
+            <div class="msg me">Sommerfest für die Lürssen Werft, 120 Gäste, draußen am Wasser. Soll edel-maritim wirken, Hauptlinie BIG BBQ.</div>
+            <div class="msg bot"><div class="who">KOCHfabrik Atelier</div>Verstanden — edel-maritim, Open-Air, 120 Gäste. Ich schlage 14 Slides vor: Titel, Anlass, BIG-BBQ-Menüfolge (3 Gänge), Live-Cooking-Station, Getränkekonzept, Servicekonzept, Investition, Referenzen. Soll „Sweet Dreams" als Dessertbühne ergänzt werden?</div>
+            <div class="msg me">Ja, Sweet Dreams als eigene Dessertstation dazu.</div>
+            <div class="msg bot"><div class="who">KOCHfabrik Atelier</div>Eingefügt. Das Deck steht im Markenlayout — 15 Slides, editierbar. Speisenbilder im KOCHfabrik-Stil sind zugeordnet.</div>
+          </div>
+          <div class="chat-input">
+            <input type="text" placeholder="Antworten oder Änderung beschreiben …" aria-label="Nachricht">
+            <button class="send" aria-label="Senden">&rarr;</button>
+          </div>
+        </div>
+
+        <aside class="r r4" style="display:flex;flex-direction:column;gap:22px">
+          <div class="aside-card">
+            <h4>Deck wächst mit</h4>
+            <div class="progress-track"><div class="progress-bar" style="width:88%"></div></div>
+            <p style="font-size:.86rem;color:var(--ink-soft)">15 von ~17 Slides gesetzt</p>
+            <a class="btn btn-primary btn-sm" href="vorschau.html" style="margin-top:18px;width:100%;justify-content:center">Aktuelles Deck ansehen</a>
+          </div>
+          <div class="aside-card">
+            <h4>Schnell ergänzen</h4>
+            <div class="chip-set">
+              <span class="chip">+ Veggie-Linie</span>
+              <span class="chip">+ Weinbegleitung</span>
+              <span class="chip">+ Zeitplan</span>
+              <span class="chip">+ Team vor Ort</span>
+              <span class="chip">+ Allergene</span>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site">
+  <div class="wrap"><div class="foot-inner">
+    <span>KOCHfabrik Studio — by Patrick Diehr</span>
+    <div class="fb"><a href="index.html">Atelier</a><a href="bibliothek.html">Bibliothek</a><a href="client.html">Recherche</a></div>
+  </div></div>
+</footer>
+
+<script>
+  var ci=document.querySelector('.chat-input input'),sb=document.querySelector('.send'),st=document.querySelector('.chat-stream');
+  function add(){ if(!ci.value.trim())return;
+    var m=document.createElement('div');m.className='msg me';m.textContent=ci.value;st.appendChild(m);
+    ci.value='';st.scrollTop=st.scrollHeight;
+    setTimeout(function(){var b=document.createElement('div');b.className='msg bot';b.innerHTML='<div class="who">KOCHfabrik Atelier</div>Übernommen — das Deck wird angepasst.';st.appendChild(b);st.scrollTop=st.scrollHeight;},650);
+  }
+  sb.addEventListener('click',add);
+  ci.addEventListener('keydown',function(e){if(e.key==='Enter')add()});
+</script>
+</body>
+</html>

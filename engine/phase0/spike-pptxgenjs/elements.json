@@ -1,0 +1,1686 @@
+{
+ "1": [
+  {
+   "t": "text",
+   "x": 2.9236,
+   "y": 5.509,
+   "w": 7.9085,
+   "h": 1.6501,
+   "lines": [
+    {
+     "txt": "BECHTLE",
+     "size": 54.0,
+     "color": "FFFFFF",
+     "weight": "ExtraBold",
+     "italic": false
+    },
+    {
+     "txt": "12. SEPTEMBER 2025",
+     "size": 54.02,
+     "color": "AA8339",
+     "weight": "ExtraBold",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "rect",
+   "fill": "1B0000",
+   "x": 0.0,
+   "y": -0.0,
+   "w": 13.3333,
+   "h": 7.5
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 0.0083,
+   "y": 7.3683,
+   "w": 13.3333,
+   "h": 0.1567
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 0.0,
+   "y": -0.03,
+   "w": 0.1567,
+   "h": 7.555
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 0.0,
+   "y": -0.03,
+   "w": 13.3333,
+   "h": 0.1583
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 13.1917,
+   "y": -0.03,
+   "w": 0.1583,
+   "h": 7.555
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-1_1.png",
+   "x": 10.9183,
+   "y": 0.325,
+   "w": 1.89,
+   "h": 1.89
+  },
+  {
+   "t": "rect",
+   "fill": "0070C0",
+   "x": 0.13,
+   "y": 0.1267,
+   "w": 13.0583,
+   "h": 7.2467
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-1_2.jpg",
+   "x": 0.13,
+   "y": 0.1267,
+   "w": 13.0583,
+   "h": 7.2467
+  },
+  {
+   "t": "rect",
+   "fill": "1B0000",
+   "x": 0.2117,
+   "y": 5.37,
+   "w": 12.895,
+   "h": 1.8183
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-1_3.png",
+   "x": 5.1467,
+   "y": 0.3133,
+   "w": 1.7833,
+   "h": 1.7833
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-1_4.jpg",
+   "x": 5.205,
+   "y": 0.33,
+   "w": 1.6717,
+   "h": 1.6717
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-1_5.png",
+   "x": 8.9467,
+   "y": 0.315,
+   "w": 1.7833,
+   "h": 1.7833
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-1_6.png",
+   "x": 9.005,
+   "y": 0.3317,
+   "w": 1.6717,
+   "h": 1.6717
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-1_7.png",
+   "x": 6.9767,
+   "y": 0.3133,
+   "w": 1.7833,
+   "h": 1.7833
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-1_8.png",
+   "x": 7.035,
+   "y": 0.33,
+   "w": 1.6717,
+   "h": 1.6717
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-1_9.png",
+   "x": 11.0583,
+   "y": 0.0717,
+   "w": 2.185,
+   "h": 2.1867
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-1_10.png",
+   "x": 11.0,
+   "y": 0.3233,
+   "w": 1.7833,
+   "h": 1.7833
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-1_11.jpg",
+   "x": 11.0583,
+   "y": 0.34,
+   "w": 1.6717,
+   "h": 1.6717
+  }
+ ],
+ "2": [
+  {
+   "t": "text",
+   "x": 0.7357,
+   "y": 2.251,
+   "w": 6.7482,
+   "h": 1.0834,
+   "lines": [
+    {
+     "txt": "DEINE CATERING- &",
+     "size": 36.0,
+     "color": "FFFFFF",
+     "weight": "ExtraBold",
+     "italic": false
+    },
+    {
+     "txt": "EVENT-CREW IM NORDEN",
+     "size": 36.02,
+     "color": "FFFFFF",
+     "weight": "ExtraBold",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "text",
+   "x": 0.7357,
+   "y": 3.8451,
+   "w": 6.709,
+   "h": 1.1286,
+   "lines": [
+    {
+     "txt": "Seit 15 Jahren rockt unser TEAM KOCHfabrik die Event-Catering-Szene",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    },
+    {
+     "txt": "mit Liebe, Respekt und einem untr\u00fcglichen Sinn f\u00fcr Stil und",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Bold",
+     "italic": false
+    },
+    {
+     "txt": "Geschmack. Der enge und pers\u00f6nliche Kontakt zu unseren Kunden",
+     "size": 14.06,
+     "color": "FFFFFF",
+     "weight": "Bold",
+     "italic": false
+    },
+    {
+     "txt": "und ma\u00dfgeschneiderte Genuss-Erlebnisse stehen im Mittelpunkt",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    },
+    {
+     "txt": "unseres Schaffens.",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "text",
+   "x": 0.7357,
+   "y": 5.1787,
+   "w": 6.8184,
+   "h": 1.3621,
+   "lines": [
+    {
+     "txt": "Vergesst 'Standard' \u2013 wir denken mit euch um Ecken und kreieren",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Bold",
+     "italic": false
+    },
+    {
+     "txt": "Erlebnisse, die den Puls eurer G\u00e4ste beschleunigen. Mit uns als Partner",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Bold",
+     "italic": false
+    },
+    {
+     "txt": "wird jedes Detail eurer Veranstaltung zum Statement. Wir sind mehr als",
+     "size": 14.06,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    },
+    {
+     "txt": "nur euer Caterer \u2013 wir sind eure Verb\u00fcndeten auf dem Weg zu einem",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    },
+    {
+     "txt": "unvergesslichen Event. Eure Vision, unser gemeinsamer Nervenkitzel \u2013",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Bold",
+     "italic": false
+    },
+    {
+     "txt": "f\u00fcr kulinarische Momente, die mehr als Geschmack hinterlassen.",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "rect",
+   "fill": "1B0000",
+   "x": 0.0,
+   "y": -0.0,
+   "w": 13.3333,
+   "h": 7.5
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 0.0083,
+   "y": 7.3683,
+   "w": 13.3333,
+   "h": 0.1567
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 0.0,
+   "y": -0.03,
+   "w": 0.1567,
+   "h": 7.555
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 0.0,
+   "y": -0.03,
+   "w": 13.3333,
+   "h": 0.1583
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 13.1917,
+   "y": -0.03,
+   "w": 0.1583,
+   "h": 7.555
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-2_1.png",
+   "x": 10.9183,
+   "y": 0.325,
+   "w": 1.89,
+   "h": 1.89
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-2_2.png",
+   "x": 0.5017,
+   "y": 0.2867,
+   "w": 1.8883,
+   "h": 1.8883
+  },
+  {
+   "t": "rect",
+   "fill": "0070C0",
+   "x": 7.8467,
+   "y": 3.8083,
+   "w": 2.62,
+   "h": 3.565
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-2_3.jpg",
+   "x": 7.8467,
+   "y": 3.8083,
+   "w": 2.62,
+   "h": 3.565
+  },
+  {
+   "t": "rect",
+   "fill": "0070C0",
+   "x": 10.585,
+   "y": 3.8083,
+   "w": 2.6183,
+   "h": 3.565
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-2_4.jpg",
+   "x": 10.585,
+   "y": 3.8083,
+   "w": 2.6183,
+   "h": 3.565
+  },
+  {
+   "t": "rect",
+   "fill": "0070C0",
+   "x": 7.8467,
+   "y": 0.1267,
+   "w": 5.3567,
+   "h": 3.565
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-2_5.jpg",
+   "x": 7.8467,
+   "y": 0.1267,
+   "w": 5.3567,
+   "h": 3.565
+  }
+ ],
+ "3": [
+  {
+   "t": "text",
+   "x": 0.7357,
+   "y": 0.7143,
+   "w": 1.1153,
+   "h": 1.0833,
+   "lines": [
+    {
+     "txt": "BIG",
+     "size": 36.0,
+     "color": "FFFFFF",
+     "weight": "ExtraBold",
+     "italic": false
+    },
+    {
+     "txt": "BBQ",
+     "size": 36.0,
+     "color": "AA8339",
+     "weight": "ExtraBold",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "text",
+   "x": 0.7357,
+   "y": 2.2111,
+   "w": 2.1165,
+   "h": 0.4283,
+   "lines": [
+    {
+     "txt": "SCHLACHTER RAABES",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Bold",
+     "italic": false
+    },
+    {
+     "txt": "LANDBRATWURST",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Bold",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "text",
+   "x": 0.7357,
+   "y": 2.8444,
+   "w": 2.8642,
+   "h": 0.6621,
+   "lines": [
+    {
+     "txt": "Heimatsenf | kleines Br\u00f6tchen",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    },
+    {
+     "txt": "Vegan:",
+     "size": 14.06,
+     "color": "AA8339",
+     "weight": "Bold",
+     "italic": false
+    },
+    {
+     "txt": "Erbsen-Pilz-Bratwurst",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "text",
+   "x": 4.3047,
+   "y": 2.2061,
+   "w": 1.1835,
+   "h": 0.195,
+   "lines": [
+    {
+     "txt": "Flammlachs",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Bold",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "text",
+   "x": 4.3047,
+   "y": 2.6059,
+   "w": 3.4442,
+   "h": 0.6623,
+   "lines": [
+    {
+     "txt": "R\u00f6stkartoffel | schwarze Sour Cream",
+     "size": 14.06,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    },
+    {
+     "txt": "Quellar | Kerbel |Dill | Chili",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    },
+    {
+     "txt": "Oliven-Zitronen-Emulsion",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "text",
+   "x": 0.7357,
+   "y": 4.5118,
+   "w": 1.9748,
+   "h": 0.195,
+   "lines": [
+    {
+     "txt": "BRISKET SANDWICH",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Bold",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "text",
+   "x": 0.7357,
+   "y": 4.9118,
+   "w": 3.3588,
+   "h": 1.1284,
+   "lines": [
+    {
+     "txt": "geschmorte Malzbier-Zwiebeln | Jus",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    },
+    {
+     "txt": "Sauerteig Brot | Gr\u00fcnzeug",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    },
+    {
+     "txt": "Chipotle Sauce",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    },
+    {
+     "txt": "Vegan:",
+     "size": 14.04,
+     "color": "AA8339",
+     "weight": "Bold",
+     "italic": false
+    },
+    {
+     "txt": "Plant Based Chicken",
+     "size": 14.06,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "rect",
+   "fill": "1B0000",
+   "x": 0.0,
+   "y": -0.0,
+   "w": 13.3333,
+   "h": 7.5
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 0.0083,
+   "y": 7.3683,
+   "w": 13.3333,
+   "h": 0.1567
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 0.0,
+   "y": -0.03,
+   "w": 0.1567,
+   "h": 7.555
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 0.0,
+   "y": -0.03,
+   "w": 13.3333,
+   "h": 0.1583
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 13.1917,
+   "y": -0.03,
+   "w": 0.1583,
+   "h": 7.555
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-3_1.png",
+   "x": 10.9183,
+   "y": 0.325,
+   "w": 1.89,
+   "h": 1.89
+  },
+  {
+   "t": "rect",
+   "fill": "0070C0",
+   "x": 7.8467,
+   "y": 0.1267,
+   "w": 5.3567,
+   "h": 3.565
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-3_2.jpg",
+   "x": 7.8467,
+   "y": 0.1267,
+   "w": 5.2976,
+   "h": 3.565
+  },
+  {
+   "t": "rect",
+   "fill": "0070C0",
+   "x": 7.8467,
+   "y": 3.8083,
+   "w": 2.62,
+   "h": 3.565
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-3_3.jpg",
+   "x": 7.8467,
+   "y": 3.8083,
+   "w": 2.62,
+   "h": 3.565
+  },
+  {
+   "t": "rect",
+   "fill": "0070C0",
+   "x": 10.585,
+   "y": 3.8083,
+   "w": 2.6183,
+   "h": 3.565
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-3_4.jpg",
+   "x": 10.585,
+   "y": 3.8083,
+   "w": 2.6183,
+   "h": 3.565
+  }
+ ],
+ "4": [
+  {
+   "t": "text",
+   "x": 0.7357,
+   "y": 0.7143,
+   "w": 1.8725,
+   "h": 1.0833,
+   "lines": [
+    {
+     "txt": "STREET",
+     "size": 36.0,
+     "color": "FFFFFF",
+     "weight": "ExtraBold",
+     "italic": false
+    },
+    {
+     "txt": "FOOD",
+     "size": 36.0,
+     "color": "AA8339",
+     "weight": "ExtraBold",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "text",
+   "x": 0.7357,
+   "y": 2.2111,
+   "w": 1.8652,
+   "h": 0.195,
+   "lines": [
+    {
+     "txt": "CHIPS GREEK STYLE",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Bold",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "text",
+   "x": 0.7357,
+   "y": 2.6111,
+   "w": 4.1279,
+   "h": 0.8954,
+   "lines": [
+    {
+     "txt": "warme Kartoffelchips | Tzatziki | Schafsk\u00e4se",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    },
+    {
+     "txt": "Radieschen | Dillkraut | Senfkaviar",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    },
+    {
+     "txt": "Topp:",
+     "size": 14.06,
+     "color": "AA8339",
+     "weight": "Bold",
+     "italic": false
+    },
+    {
+     "txt": "Salsiccia Pallets",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "text",
+   "x": 0.7357,
+   "y": 4.1349,
+   "w": 1.6119,
+   "h": 0.195,
+   "lines": [
+    {
+     "txt": "SELLERIE D\u00d6NER",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Bold",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "text",
+   "x": 0.7357,
+   "y": 4.5351,
+   "w": 4.2861,
+   "h": 0.895,
+   "lines": [
+    {
+     "txt": "Sou Vide Sellerie mit Soja und Terijkaiso\u00dfe",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    },
+    {
+     "txt": "Sesam Cashewnuss Aioli | Rotkraut Cranberry",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    },
+    {
+     "txt": "Zwiebeln | Tomaten | Senfgurke",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    },
+    {
+     "txt": "Blattpetersilie | Sriracha Bar",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "rect",
+   "fill": "1B0000",
+   "x": 0.0,
+   "y": -0.0,
+   "w": 13.3333,
+   "h": 7.5
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 0.0083,
+   "y": 7.3683,
+   "w": 13.3333,
+   "h": 0.1567
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 0.0,
+   "y": -0.03,
+   "w": 0.1567,
+   "h": 7.555
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 0.0,
+   "y": -0.03,
+   "w": 13.3333,
+   "h": 0.1583
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 13.1917,
+   "y": -0.03,
+   "w": 0.1583,
+   "h": 7.555
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-4_1.png",
+   "x": 10.9183,
+   "y": 0.325,
+   "w": 1.89,
+   "h": 1.89
+  },
+  {
+   "t": "rect",
+   "fill": "0070C0",
+   "x": 9.405,
+   "y": 0.1267,
+   "w": 3.7917,
+   "h": 3.565
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-4_2.jpg",
+   "x": 9.405,
+   "y": 0.1267,
+   "w": 3.7917,
+   "h": 3.565
+  },
+  {
+   "t": "rect",
+   "fill": "0070C0",
+   "x": 9.4033,
+   "y": 3.8083,
+   "w": 3.7933,
+   "h": 3.565
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-4_3.jpg",
+   "x": 9.4033,
+   "y": 3.8083,
+   "w": 3.7933,
+   "h": 3.565
+  },
+  {
+   "t": "rect",
+   "fill": "0070C0",
+   "x": 5.4933,
+   "y": 0.1267,
+   "w": 3.7917,
+   "h": 7.2467
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-4_4.jpg",
+   "x": 5.4933,
+   "y": 0.1267,
+   "w": 3.7917,
+   "h": 7.2467
+  }
+ ],
+ "5": [
+  {
+   "t": "text",
+   "x": 7.994,
+   "y": 1.91,
+   "w": 2.2195,
+   "h": 1.0834,
+   "lines": [
+    {
+     "txt": "SWEET",
+     "size": 36.0,
+     "color": "FFFFFF",
+     "weight": "ExtraBold",
+     "italic": false
+    },
+    {
+     "txt": "DREAMS",
+     "size": 36.02,
+     "color": "AA8339",
+     "weight": "ExtraBold",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "text",
+   "x": 7.994,
+   "y": 3.4368,
+   "w": 0.7845,
+   "h": 0.195,
+   "lines": [
+    {
+     "txt": "Churros",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Bold",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "text",
+   "x": 7.994,
+   "y": 3.8368,
+   "w": 2.0434,
+   "h": 0.195,
+   "lines": [
+    {
+     "txt": "Zimt | Zucker | Butter",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "text",
+   "x": 7.994,
+   "y": 4.6037,
+   "w": 1.3952,
+   "h": 0.195,
+   "lines": [
+    {
+     "txt": "Pfirsich Melba",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Bold",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "text",
+   "x": 7.994,
+   "y": 5.0037,
+   "w": 3.7651,
+   "h": 0.195,
+   "lines": [
+    {
+     "txt": "Pfirsich | Himbeergel | Quark | Pistazien",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "rect",
+   "fill": "1B0000",
+   "x": 0.0,
+   "y": -0.0,
+   "w": 13.3333,
+   "h": 7.5
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 0.0083,
+   "y": 7.3683,
+   "w": 13.3333,
+   "h": 0.1567
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 0.0,
+   "y": -0.03,
+   "w": 0.1567,
+   "h": 7.555
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 0.0,
+   "y": -0.03,
+   "w": 13.3333,
+   "h": 0.1583
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 13.1917,
+   "y": -0.03,
+   "w": 0.1583,
+   "h": 7.555
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-5_1.png",
+   "x": 10.9183,
+   "y": 0.325,
+   "w": 1.89,
+   "h": 1.89
+  },
+  {
+   "t": "rect",
+   "fill": "0070C0",
+   "x": 0.1517,
+   "y": 0.1267,
+   "w": 7.7033,
+   "h": 7.2467
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-5_2.jpg",
+   "x": 0.1517,
+   "y": 0.1267,
+   "w": 7.7033,
+   "h": 7.2467
+  }
+ ],
+ "6": [
+  {
+   "t": "text",
+   "x": 0.7357,
+   "y": 0.7143,
+   "w": 4.159,
+   "h": 1.0833,
+   "lines": [
+    {
+     "txt": "MITTERNACHTS",
+     "size": 36.0,
+     "color": "FFFFFF",
+     "weight": "ExtraBold",
+     "italic": false
+    },
+    {
+     "txt": "SNACK",
+     "size": 36.0,
+     "color": "AA8339",
+     "weight": "ExtraBold",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "text",
+   "x": 0.7357,
+   "y": 2.2111,
+   "w": 1.0218,
+   "h": 0.195,
+   "lines": [
+    {
+     "txt": "OPTIONAL",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Bold",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "text",
+   "x": 0.7357,
+   "y": 2.6111,
+   "w": 3.1291,
+   "h": 0.195,
+   "lines": [
+    {
+     "txt": "KOCHfabriks EDELCURRYWURST",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Bold",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "text",
+   "x": 0.7357,
+   "y": 3.0209,
+   "w": 3.8068,
+   "h": 0.4523,
+   "lines": [
+    {
+     "txt": "Tomaten-Mango-Currysauce I Koriander",
+     "size": 14.06,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    },
+    {
+     "txt": "R\u00f6stzwiebel I B\u00e4cker Gaues Lieblingsbrot",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "text",
+   "x": 0.7357,
+   "y": 3.7015,
+   "w": 0.6648,
+   "h": 0.195,
+   "lines": [
+    {
+     "txt": "Vegan",
+     "size": 14.04,
+     "color": "AA8339",
+     "weight": "Bold",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "text",
+   "x": 0.7357,
+   "y": 4.1249,
+   "w": 0.9374,
+   "h": 0.195,
+   "lines": [
+    {
+     "txt": "mit Saitan",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "rect",
+   "fill": "1B0000",
+   "x": 0.0,
+   "y": -0.0,
+   "w": 13.3333,
+   "h": 7.5
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 0.0083,
+   "y": 7.3683,
+   "w": 13.3333,
+   "h": 0.1567
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 0.0,
+   "y": -0.03,
+   "w": 0.1567,
+   "h": 7.555
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 0.0,
+   "y": -0.03,
+   "w": 13.3333,
+   "h": 0.1583
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 13.1917,
+   "y": -0.03,
+   "w": 0.1583,
+   "h": 7.555
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-6_1.png",
+   "x": 10.9183,
+   "y": 0.325,
+   "w": 1.89,
+   "h": 1.89
+  },
+  {
+   "t": "rect",
+   "fill": "0070C0",
+   "x": 9.4033,
+   "y": 0.1267,
+   "w": 3.7933,
+   "h": 3.565
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-6_2.jpg",
+   "x": 9.4033,
+   "y": 0.1267,
+   "w": 3.7933,
+   "h": 3.565
+  },
+  {
+   "t": "rect",
+   "fill": "0070C0",
+   "x": 9.405,
+   "y": 3.8083,
+   "w": 3.7917,
+   "h": 3.565
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-6_3.jpg",
+   "x": 9.405,
+   "y": 3.8083,
+   "w": 3.7917,
+   "h": 3.565
+  },
+  {
+   "t": "rect",
+   "fill": "0070C0",
+   "x": 5.4933,
+   "y": 0.1267,
+   "w": 3.7917,
+   "h": 7.2467
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-6_4.jpg",
+   "x": 5.4933,
+   "y": 0.1267,
+   "w": 3.7917,
+   "h": 7.2467
+  }
+ ],
+ "7": [
+  {
+   "t": "text",
+   "x": 5.6593,
+   "y": 2.275,
+   "w": 5.135,
+   "h": 1.0836,
+   "lines": [
+    {
+     "txt": "WERTSCH\u00c4TZUNG",
+     "size": 36.0,
+     "color": "FFFFFF",
+     "weight": "ExtraBold",
+     "italic": false
+    },
+    {
+     "txt": "IST DER SCHL\u00dcSSEL",
+     "size": 36.0,
+     "color": "AA8339",
+     "weight": "ExtraBold",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "text",
+   "x": 5.6986,
+   "y": 3.8571,
+   "w": 7.0587,
+   "h": 0.7084,
+   "lines": [
+    {
+     "txt": "Unser Ziel? Euch mitten ins Herz zu treffen. Mit multiplen kulinarischen",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Bold",
+     "italic": false
+    },
+    {
+     "txt": "H\u00f6hepunkten, einer professionellen Service-Crew und einer perfekten",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Bold",
+     "italic": false
+    },
+    {
+     "txt": "Planung. Das ist unsere Art, euch zu sagen: \u201eWir sch\u00e4tzen euch.\u201c",
+     "size": 14.06,
+     "color": "FFFFFF",
+     "weight": "Bold",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "text",
+   "x": 5.6986,
+   "y": 4.7942,
+   "w": 7.1206,
+   "h": 1.992,
+   "lines": [
+    {
+     "txt": "Wir sind die Crew, die keinen Unterschied zwischen Tellerw\u00e4scher und Big",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    },
+    {
+     "txt": "Boss macht. Bei uns z\u00e4hlt jeder, Punkt. Und weil wir wollen, dass unsere",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    },
+    {
+     "txt": "n\u00e4chsten Generationen noch was vom Morgen haben, pflanzen wir heute",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    },
+    {
+     "txt": "die Samen f\u00fcr morgen \u2013 nachhaltig und mit Wow-Effekt. In unserer",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Bold",
+     "italic": false
+    },
+    {
+     "txt": "K\u00fcche spielen wir mit regionalen und saisonalen Zutaten. Fleisch, Fisch",
+     "size": 14.06,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    },
+    {
+     "txt": "und Federvieh kommen bei uns ausschlie\u00dflich von Lieferanten unseres",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    },
+    {
+     "txt": "Vertrauens. Das ist unser Engagement f\u00fcr euch und f\u00fcr unseren Planeten",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Bold",
+     "italic": false
+    },
+    {
+     "txt": "\u2013 voller Geschmack und mit jeder Menge Liebe.",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Regular",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "rect",
+   "fill": "1B0000",
+   "x": 0.0,
+   "y": -0.0,
+   "w": 13.3333,
+   "h": 7.5
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 0.0083,
+   "y": 7.3683,
+   "w": 13.3333,
+   "h": 0.1567
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 0.0,
+   "y": -0.03,
+   "w": 0.1567,
+   "h": 7.555
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 0.0,
+   "y": -0.03,
+   "w": 13.3333,
+   "h": 0.1583
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 13.1917,
+   "y": -0.03,
+   "w": 0.1583,
+   "h": 7.555
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-7_1.png",
+   "x": 10.9183,
+   "y": 0.325,
+   "w": 1.89,
+   "h": 1.89
+  },
+  {
+   "t": "rect",
+   "fill": "0070C0",
+   "x": 0.1433,
+   "y": 0.1267,
+   "w": 5.3583,
+   "h": 3.565
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-7_2.jpg",
+   "x": 0.1433,
+   "y": 0.1267,
+   "w": 5.3583,
+   "h": 3.565
+  },
+  {
+   "t": "rect",
+   "fill": "0070C0",
+   "x": 0.1433,
+   "y": 3.8083,
+   "w": 2.62,
+   "h": 3.565
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-7_3.jpg",
+   "x": 0.1433,
+   "y": 3.8083,
+   "w": 2.62,
+   "h": 3.565
+  },
+  {
+   "t": "rect",
+   "fill": "0070C0",
+   "x": 2.8817,
+   "y": 3.8083,
+   "w": 2.62,
+   "h": 3.565
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-7_4.jpg",
+   "x": 2.8817,
+   "y": 3.8083,
+   "w": 2.62,
+   "h": 3.565
+  }
+ ],
+ "8": [
+  {
+   "t": "text",
+   "x": 4.986,
+   "y": 2.3531,
+   "w": 3.8102,
+   "h": 0.7503,
+   "lines": [
+    {
+     "txt": "KONTAKT",
+     "size": 54.02,
+     "color": "FFFFFF",
+     "weight": "ExtraBold",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "text",
+   "x": 0.9173,
+   "y": 3.4468,
+   "w": 4.092,
+   "h": 0.195,
+   "lines": [
+    {
+     "txt": "Deine Catering- & Event-Crew im Norden",
+     "size": 14.04,
+     "color": "AA8339",
+     "weight": "Bold",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "text",
+   "x": 0.9173,
+   "y": 3.8601,
+   "w": 2.1863,
+   "h": 0.8953,
+   "lines": [
+    {
+     "txt": "Die KOCHfabrik GmbH",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Bold",
+     "italic": false
+    },
+    {
+     "txt": "KOCHfabrik Campus",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Bold",
+     "italic": false
+    },
+    {
+     "txt": "Peiner Hag 9a",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Bold",
+     "italic": false
+    },
+    {
+     "txt": "25497 Prisdorf",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Bold",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "text",
+   "x": 0.9173,
+   "y": 4.9704,
+   "w": 4.6008,
+   "h": 0.195,
+   "lines": [
+    {
+     "txt": "Noch Fragen? Ruf einfach an oder schreib uns:",
+     "size": 14.04,
+     "color": "AA8339",
+     "weight": "Bold",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "text",
+   "x": 0.9173,
+   "y": 5.3869,
+   "w": 1.8135,
+   "h": 0.2018,
+   "lines": [
+    {
+     "txt": "\u2192 04101-60109-10",
+     "size": 14.04,
+     "color": "AA8339",
+     "weight": "Regular",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "text",
+   "x": 0.9173,
+   "y": 5.8107,
+   "w": 2.7113,
+   "h": 0.2018,
+   "lines": [
+    {
+     "txt": "\u2192 anfrage@koch-fabrik.com",
+     "size": 14.04,
+     "color": "AA8339",
+     "weight": "Regular",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "text",
+   "x": 0.9173,
+   "y": 6.2408,
+   "w": 3.3181,
+   "h": 0.195,
+   "lines": [
+    {
+     "txt": "Mehr Infos? Findest du auch hier:",
+     "size": 14.04,
+     "color": "AA8339",
+     "weight": "Bold",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "text",
+   "x": 0.9173,
+   "y": 6.6541,
+   "w": 2.167,
+   "h": 0.195,
+   "lines": [
+    {
+     "txt": "www.koch-fabrik.com",
+     "size": 14.04,
+     "color": "FFFFFF",
+     "weight": "Bold",
+     "italic": false
+    }
+   ]
+  },
+  {
+   "t": "rect",
+   "fill": "1B0000",
+   "x": 0.0,
+   "y": -0.0,
+   "w": 13.3333,
+   "h": 7.5
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 0.0083,
+   "y": 7.3683,
+   "w": 13.3333,
+   "h": 0.1567
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 0.0,
+   "y": -0.03,
+   "w": 0.1567,
+   "h": 7.555
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 0.0,
+   "y": -0.03,
+   "w": 13.3333,
+   "h": 0.1583
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 13.1917,
+   "y": -0.03,
+   "w": 0.1583,
+   "h": 7.555
+  },
+  {
+   "t": "image",
+   "src": "assets/ref-8_1.png",
+   "x": 10.9183,
+   "y": 0.325,
+   "w": 1.89,
+   "h": 1.89
+  },
+  {
+   "t": "rect",
+   "fill": "AA8339",
+   "x": 0.22,
+   "y": 2.2167,
+   "w": 12.8933,
+   "h": 0.9083
+  }
+ ]
+}

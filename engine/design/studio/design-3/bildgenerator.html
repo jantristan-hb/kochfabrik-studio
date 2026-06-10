@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KOCHfabrik Studio — Speisenbilder</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="top">
+  <a class="logo" href="index.html"><img src="assets/kochfabrik-logo.png" alt="KOCHfabrik Studio"></a>
+  <nav>
+    <a href="index.html">Start</a>
+    <a href="bildgenerator.html" class="active">Bilder</a>
+    <a href="client.html">Recherche</a>
+    <a href="bibliothek.html">Bibliothek</a>
+  </nav>
+</header>
+
+<main class="stage" style="justify-content:flex-start;padding-top:34px">
+  <div class="step-mark r r1">Speisen visualisieren</div>
+  <h1 class="giant r r2" style="font-size:clamp(1.9rem,4vw,2.8rem)">Welches <span class="accent">Gericht?</span></h1>
+
+  <div class="gen-stage r r3" style="margin-top:30px">
+    <div class="gen-input">
+      <input type="text" value="Pulled-Beef-Brisket, Maiscreme, Röstzwiebel" id="dish" aria-label="Gericht">
+      <span class="opt">Linie <select><option>BIG BBQ</option><option>Sweet Dreams</option><option>Fingerfood Deluxe</option><option>Greenline Veggie</option></select></span>
+      <button class="go" id="gen" aria-label="Erzeugen">&rarr;</button>
+    </div>
+
+    <div class="grid4">
+      <div class="shot" onclick="sel(this)"><span class="pk">&#10003;</span><span class="cap">Schiefer · nah</span></div>
+      <div class="shot" onclick="sel(this)"><span class="pk">&#10003;</span><span class="cap">Live-Station</span></div>
+      <div class="shot" onclick="sel(this)"><span class="pk">&#10003;</span><span class="cap">Porzellan · pur</span></div>
+      <div class="shot" onclick="sel(this)"><span class="pk">&#10003;</span><span class="cap">Buffet · weit</span></div>
+    </div>
+  </div>
+
+  <div class="cta-wrap" style="margin-top:38px">
+    <a class="cta" href="vorschau.html">Auswahl ins Deck <span class="a">&rarr;</span></a>
+    <a class="cta-second" id="gen2" href="#" onclick="return false">Andere Varianten? <u>Neu erzeugen</u></a>
+  </div>
+</main>
+
+<footer class="foot">KOCHfabrik Studio — by Patrick Diehr</footer>
+
+<script>
+  document.querySelectorAll('.shot')[0].classList.add('sel');
+  document.querySelectorAll('.shot')[2].classList.add('sel');
+  function sel(el){el.classList.toggle('sel')}
+  function flash(b,o){b.textContent='…';setTimeout(function(){b.innerHTML=o;},1000)}
+  document.getElementById('gen').addEventListener('click',function(){var b=this;b.textContent='…';setTimeout(function(){b.innerHTML='&rarr;'},1000)});
+  document.getElementById('gen2').addEventListener('click',function(){var b=this;var o=b.innerHTML;b.textContent='Erzeuge neue Varianten …';setTimeout(function(){b.innerHTML=o},1100);return false});
+</script>
+</body>
+</html>

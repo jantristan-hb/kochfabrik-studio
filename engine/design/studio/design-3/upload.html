@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KOCHfabrik Studio — Angebot hochladen</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="top">
+  <a class="logo" href="index.html"><img src="assets/kochfabrik-logo.png" alt="KOCHfabrik Studio"></a>
+  <nav>
+    <a href="index.html">Start</a>
+    <a href="bildgenerator.html">Bilder</a>
+    <a href="client.html">Recherche</a>
+    <a href="bibliothek.html">Bibliothek</a>
+  </nav>
+</header>
+
+<main class="stage">
+  <div id="phase1">
+    <div class="step-mark r r1">Schritt 1 von 3 <span class="pips"><span class="pip on"></span><span class="pip"></span><span class="pip"></span></span></div>
+    <h1 class="giant r r2" style="font-size:clamp(2.2rem,5vw,3.6rem)">Wo ist das <span class="accent">Angebot?</span></h1>
+    <p class="sub r r3">PDF hierher ziehen. Gänge, Preise und Eventdaten werden gelesen — Sie prüfen nur noch.</p>
+    <div class="cta-wrap r r4">
+      <div class="bigzone" id="dz">
+        <div class="bz-ic">&#8682;</div>
+        <div class="bz-t">Angebots-PDF ablegen</div>
+        <div class="bz-s">oder klicken zum Auswählen · bis 25 MB</div>
+      </div>
+      <a class="cta-second" href="chat.html">Kein Angebot zur Hand? <u>Im Gespräch entwerfen</u></a>
+    </div>
+  </div>
+
+  <div id="phase2" style="display:none">
+    <div class="step-mark r r1">Schritt 2 von 3 <span class="pips"><span class="pip on"></span><span class="pip on"></span><span class="pip"></span></span></div>
+    <h1 class="giant r r2" style="font-size:clamp(2rem,4.4vw,3rem);margin-bottom:34px">Wird zum <span class="accent">Deck.</span></h1>
+    <div class="focus-card r r3">
+      <div class="fc-file">
+        <div class="ic">PDF</div>
+        <div><div class="nm">Angebot_BIG-BBQ_Hamester.pdf</div><div class="mt">3,2 MB · 4 Seiten</div></div>
+      </div>
+      <div class="track"><div class="bar" id="bar" style="width:8%"></div></div>
+      <div class="fstep done"><span class="d">&#10003;</span><div><div class="t">Dokument gelesen</div><div class="s">4 Seiten erkannt</div></div></div>
+      <div class="fstep active" id="s2"><span class="d">2</span><div><div class="t">Gänge &amp; Preise extrahiert</div><div class="s">BIG BBQ · 6 Komponenten · 48 Gäste</div></div></div>
+      <div class="fstep" id="s3"><span class="d">3</span><div><div class="t">Speisenbilder zugeordnet</div><div class="s">KOCHfabrik-Bildwelt</div></div></div>
+      <div class="fstep" id="s4"><span class="d">4</span><div><div class="t">Deck gesetzt</div><div class="s">14 Slides, Markenlayout</div></div></div>
+    </div>
+    <div class="cta-wrap"><a class="cta" id="go" href="vorschau.html" style="display:none">Deck ansehen <span class="a">&rarr;</span></a></div>
+  </div>
+</main>
+
+<footer class="foot">KOCHfabrik Studio — by Patrick Diehr</footer>
+
+<script>
+  var dz=document.getElementById('dz');
+  function run(){
+    document.getElementById('phase1').style.display='none';
+    document.getElementById('phase2').style.display='block';
+    var p=8,bar=document.getElementById('bar');
+    var t=setInterval(function(){
+      p+=7;if(p>100)p=100;bar.style.width=p+'%';
+      if(p>=34){var s=document.getElementById('s2');s.className='fstep done';s.querySelector('.d').innerHTML='&#10003;'}
+      if(p>=58){var s=document.getElementById('s3');s.className='fstep active';s.querySelector('.d').textContent='3'}
+      if(p>=80){var s=document.getElementById('s3');s.className='fstep done';s.querySelector('.d').innerHTML='&#10003;';document.getElementById('s4').className='fstep active'}
+      if(p>=100){clearInterval(t);var s4=document.getElementById('s4');s4.className='fstep done';s4.querySelector('.d').innerHTML='&#10003;';document.getElementById('go').style.display='inline-flex'}
+    },420);
+  }
+  dz.addEventListener('click',run);
+  dz.addEventListener('dragover',function(e){e.preventDefault();dz.style.borderColor='#AA8339'});
+  dz.addEventListener('drop',function(e){e.preventDefault();run()});
+</script>
+</body>
+</html>

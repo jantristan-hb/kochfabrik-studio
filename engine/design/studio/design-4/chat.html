@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KOCHfabrik Studio — Im Gespräch anrichten</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="hin">
+    <a class="brand" href="index.html"><img src="assets/kochfabrik-logo.png" alt="KOCHfabrik Studio"></a>
+    <nav class="main">
+      <a href="index.html">Küche</a>
+      <a href="upload.html">Angebot</a>
+      <a href="chat.html" class="active">Gespräch</a>
+      <a href="bildgenerator.html">Bildküche</a>
+      <a href="client.html">Recherche</a>
+      <a href="bibliothek.html">Sammlung</a>
+    </nav>
+    <div class="acct" title="Patrick Diehr">PD</div>
+  </div>
+</header>
+
+<main>
+  <section class="block">
+    <div class="wrap">
+      <div class="sec-h">
+        <div><div class="sm">am Küchentisch entwickelt</div><h2>Im Gespräch anrichten</h2></div>
+        <a href="vorschau.html">Deck ansehen &rarr;</a>
+      </div>
+      <div class="chat-shell">
+        <div class="chat-box r r1">
+          <div class="chat-top">Konzeptgespräch — Sommergala Lürssen</div>
+          <div class="chat-stream" id="stream">
+            <div class="msg bot"><div class="who">Studio</div>Womit darf ich beginnen? Anlass, Kundin, Stimmung — oder einfach das Menü.</div>
+            <div class="msg me">Sommerfest Lürssen Werft, 120 Gäste, draußen am Wasser. Edel-maritim, Hauptlinie BIG BBQ.</div>
+            <div class="msg bot"><div class="who">Studio</div>Verstanden. Vorschlag: 14 Slides — Titel, Anlass, BIG-BBQ-Menüfolge, Live-Cooking, Getränke, Service, Investition, Referenzen. „Sweet Dreams" als Dessertbühne ergänzen?</div>
+            <div class="msg me">Ja, Sweet Dreams als eigene Station.</div>
+            <div class="msg bot"><div class="who">Studio</div>Angerichtet — 15 Slides im Markenlayout, Speisenbilder zugeordnet.</div>
+          </div>
+          <div class="chat-bar">
+            <input type="text" id="ci" placeholder="Antworten oder Änderung beschreiben …" aria-label="Nachricht">
+            <button class="send" id="sb" aria-label="Senden">&rarr;</button>
+          </div>
+        </div>
+        <aside class="r r2" style="display:flex;flex-direction:column;gap:20px">
+          <div class="aside">
+            <h4>Deck wächst mit</h4>
+            <div class="track"><div class="bar" style="width:88%"></div></div>
+            <p style="font-size:.86rem;color:var(--ink-soft)">15 von ~17 Slides</p>
+            <a class="btn btn-gold btn-sm" href="vorschau.html" style="width:100%;justify-content:center;margin-top:14px">Vorschau</a>
+          </div>
+          <div class="aside">
+            <h4>Schnell ergänzen</h4>
+            <div class="chips">
+              <span class="chip">+ Veggie-Linie</span><span class="chip">+ Weinbegleitung</span>
+              <span class="chip">+ Zeitplan</span><span class="chip">+ Team vor Ort</span><span class="chip">+ Allergene</span>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site">
+  <div class="wrap"><div class="fin">
+    <span>KOCHfabrik Studio — by Patrick Diehr</span>
+    <div class="fb"><a href="index.html">Küche</a><a href="bibliothek.html">Sammlung</a><a href="client.html">Recherche</a></div>
+  </div></div>
+</footer>
+
+<script>
+  var ci=document.getElementById('ci'),sb=document.getElementById('sb'),st=document.getElementById('stream');
+  function add(){if(!ci.value.trim())return;var m=document.createElement('div');m.className='msg me';m.textContent=ci.value;st.appendChild(m);ci.value='';st.scrollTop=st.scrollHeight;
+    setTimeout(function(){var b=document.createElement('div');b.className='msg bot';b.innerHTML='<div class="who">Studio</div>Übernommen — das Deck wird angepasst.';st.appendChild(b);st.scrollTop=st.scrollHeight;},650);}
+  sb.addEventListener('click',add);ci.addEventListener('keydown',function(e){if(e.key==='Enter')add()});
+  document.querySelectorAll('.chip').forEach(function(c){c.addEventListener('click',function(){ci.value=c.textContent.replace('+ ','')+' ergänzen';ci.focus()})});
+</script>
+</body>
+</html>
