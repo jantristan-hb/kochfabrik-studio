@@ -18,7 +18,7 @@ README nicht auto-triggert; im Zweifel force, s.u.).
 
 | Gate | Story | Nachweis |
 |------|-------|----------|
-| **Backup liegt** | US-044 | pg_dump von `kf-studio-pg` off-host + Korpus-Volume-Inventar (EARS 1) |
+| **Backup liegt** | US-044 | `../backups/kf-studio-pg-2026-06-09.sql.gz` (off-host neben dem Repo) + `BACKUP-VERIFY.md` (Branch `sprint-11-us044-backup`); Restore-Hinweis dort |
 | **Sim-Gate grün** | US-050 | `./tools/sim_gate.sh` → exit 0 (Build + Container-Smoke; siehe [SIM-GATE.md](SIM-GATE.md)) |
 | **Suite grün** | US-046/048 | `tools/.venv/bin/python -m pytest backend/tests -q` → 0 failed |
 | **Pre-Cutover Live-Verify** | US-051 | `./tools/live_verify.sh` gegen aktuelle Prod → exit 0 (Referenz, s.u.) |
@@ -57,13 +57,14 @@ Erst ein erfolgreicher, gesunder Build swappt.
 `tools/live_verify.sh` prüft deterministisch ohne Credentials:
 
 - `GET /api/health` → **200 + `db:true`** (DB erreichbar)
-- `GET /api/angebot/health` → **401** (Route lebt hinter Auth-Gate)
+- `GET /api/angebot/health` → **401** (Route lebt hinter Auth-Gate; 200 falls public auch ok)
 - `GET /api/praesentation/health` → **401** (Route lebt)
-- `POST /api/slidesuche/search` → **401** (Route lebt)
+- `POST /api/slidesuche/search` → **401/422/200** (Route lebt; 5xx = FAIL)
+- `GET /login.html` → **200** (statisches Frontend ausgeliefert)
 
-Ein **404** auf einer der Modul-Routen = Route fehlt in der laufenden
+Ein **404/5xx** auf einer der Routen = Route fehlt/kaputt in der laufenden
 Revision = kaputter Deploy → Rollback. (Override Base-URL via
-`LIVE_BASE`, Default `https://kochfabrik-studio.flinkbase.com`.)
+`BASE_URL`, Default `https://kochfabrik-studio.flinkbase.com`.)
 
 ### Pre-Cutover-Referenz (Lauf vom 2026-06-10, gegen laufende Prod)
 
@@ -73,6 +74,7 @@ Revision = kaputter Deploy → Rollback. (Override Base-URL via
 ✅ GET /api/angebot/health → 401 (Route lebt)
 ✅ GET /api/praesentation/health → 401 (Route lebt)
 ✅ POST /api/slidesuche/search → 401 (Route lebt)
+✅ GET /login.html → 200 (Route lebt)
 LIVE-VERIFY GRUEN — alle Health-Routen erreichbar.   (exit 0)
 ```
 
@@ -99,6 +101,12 @@ curl "https://coolify.flinkbase.com/api/v1/deploy?uuid=yu2fqx0twmtqcp6zyx2e59si&
 > echtes Zurück auf den Vor-Cutover-Code ist der zuverlässige Weg, den
 > Merge-Commit auf master per `git revert` rückgängig zu machen und
 > erneut zu deployen — danach `./tools/live_verify.sh` zur Bestätigung.
+
+**DB-Restore (nur Worst-Case, falls Migration Daten beschädigt):** Der
+Image-Rollback allein reicht für ein Code-Problem. Ist die DB betroffen,
+liegt der Dump unter `../backups/kf-studio-pg-2026-06-09.sql.gz` (Restore-
+Schritte in `BACKUP-VERIFY.md`, US-044). DB-Restore ist ein bewusster,
+separater Eingriff — nicht Teil des Standard-Rollbacks.
 
 App-UUID `yu2fqx0twmtqcp6zyx2e59si` · Server `188.245.110.5` ·
 SSH `ssh -i ~/.ssh/hetzner_id root@188.245.110.5`. Secrets

@@ -9,7 +9,7 @@
 # macOS-tauglich: keine GNU-only-Tools, reines curl + bash.
 set -euo pipefail
 
-BASE="${LIVE_BASE:-https://kochfabrik-studio.flinkbase.com}"
+BASE="${BASE_URL:-https://kochfabrik-studio.flinkbase.com}"
 CURL=(curl -sS -m 15)
 
 fails=0
@@ -29,11 +29,10 @@ else
   bad "/api/health code=$code (erwartet 200)"
 fi
 
-# 2) Auth-gatete Routen — erwartet 401 (Route lebt; 404 = Route fehlt =
-#    kaputte Revision). 200 wäre ebenfalls OK (falls je public), aber 401
-#    ist der deterministische Erwartungswert ohne Cookie.
-check_auth_gated() {
-  local path="$1" method="${2:-GET}"
+# 2) Auth-gatete Modul-Routen — erwartet 401 ohne Cookie (Route lebt; 200
+#    auch ok falls je public). Ein 404/5xx = Route fehlt/kaputt = FAIL.
+check_route() {
+  local path="$1" method="${2:-GET}" allow="$3"
   local c
   if [ "$method" = "POST" ]; then
     c=$("${CURL[@]}" -o /dev/null -w '%{http_code}' -X POST \
@@ -42,15 +41,22 @@ check_auth_gated() {
   else
     c=$("${CURL[@]}" -o /dev/null -w '%{http_code}' "$BASE$path" 2>/dev/null || true)
   fi
-  case "$c" in
-    401|200) ok "$method $path → $c (Route lebt)" ;;
-    *)       bad "$method $path → $c (erwartet 401/200; 404 = Route fehlt)" ;;
-  esac
+  # Treffer auf erlaubte Codes (Wort-genau, damit 200 nicht 2000 matcht)
+  if printf ' %s ' "$allow" | grep -q " $c "; then
+    ok "$method $path → $c (Route lebt)"
+  else
+    bad "$method $path → $c (erlaubt: $allow)"
+  fi
 }
 
-check_auth_gated "/api/angebot/health"
-check_auth_gated "/api/praesentation/health"
-check_auth_gated "/api/slidesuche/search" "POST"
+check_route "/api/angebot/health"       GET  "200 401"
+check_route "/api/praesentation/health" GET  "200 401"
+# slidesuche/search: 401 (kein Cookie) / 422 (Validierung) / 200 zulässig,
+# 5xx (oder 404) = FAIL.
+check_route "/api/slidesuche/search"     POST "200 401 422"
+
+# 3) Statische Login-Seite — MUSS 200 (Frontend ausgeliefert)
+check_route "/login.html"                GET  "200"
 
 echo ""
 if [ "$fails" -eq 0 ]; then
