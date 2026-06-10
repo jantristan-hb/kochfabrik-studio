@@ -22,9 +22,11 @@ def test_adr_existiert_und_nicht_leer():
 
 
 def test_status_proposed():
-    """Frontmatter-Status proposed — NIE accepted in diesem Sprint."""
-    assert re.search(r"^status: proposed$", _read(), re.MULTILINE), \
-        "status: proposed fehlt"
+    """Frontmatter-Status im ADR-Lifecycle (proposed→accepted)."""
+    # ADR-Lifecycle proposed→accepted; accepted seit 2026-06-09 (4713b2a).
+    assert re.search(r"^status: (proposed|accepted)$", _read(),
+                     re.MULTILINE), \
+        "status: proposed|accepted fehlt"
 
 
 def test_alternativen_abschnitt():

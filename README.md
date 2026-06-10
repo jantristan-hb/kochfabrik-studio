@@ -197,6 +197,30 @@ python3 angebot_render.py <angebot.json> -o out.pdf   # Angebot
 PPTX_PGSHIM=1 python3 assemble.py …                   # DB-frei (wie Container)
 ```
 
+## Tests lokal
+
+> **Python ≥ 3.10 zwingend.** Backend- und Engine-Code nutzen PEP-604-Typen
+> (`str | None`). System-Python 3.9 wirft beim Collect `TypeError` und bricht
+> ab. Auf macOS daher gegen `/opt/homebrew/bin/python3.13` ein venv anlegen
+> (System-Python ist 3.9).
+
+```bash
+# venv anlegen (httpx = Test-Dep für fastapi.testclient, NICHT in requirements.txt)
+/opt/homebrew/bin/python3.13 -m venv tools/.venv
+tools/.venv/bin/pip install pytest httpx -r requirements.txt
+
+# Volle Suite (DB-Tests skippen ohne TEST_DATABASE_URL — kein Fehler):
+tools/.venv/bin/python -m pytest backend/tests -q
+
+# DB-Integration zusätzlich (gegen Test-Postgres):
+TEST_DATABASE_URL=postgresql://… tools/.venv/bin/python -m pytest backend/tests -q
+```
+
+`backend/tests/test_charakterisierung.py` ist das DB-lose HTTP-Verhaltens-Netz
+(TestClient): friert vor dem Monorepo-Schnitt das IST-Verhalten der Routen ein
+(Health-Shape, Auth-Gate-Status, statische Seiten). Die `tools/.venv/` ist
+nicht eingecheckt.
+
 ## System-Dependencies (Container — Dockerfile)
 
 Engine-Pfade brauchen mehr als Python. Fehlt eins → Modul-Endpoint 502.
