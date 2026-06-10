@@ -6,6 +6,15 @@
 > Agent — der Merge nach master ist der Cutover und passiert manuell
 > nach grünen Gates).
 
+> **⚠️ KORREKTUR (Review 2026-06-10, beim echten Cutover gelernt):**
+> Es gibt KEINEN Auto-Deploy-Webhook — ein Merge nach master deployt
+> NICHT automatisch. Der Deploy muss explizit getriggert werden:
+> `source ~/work/.env && curl "https://coolify.flinkbase.com/api/v1/deploy?uuid=yu2fqx0twmtqcp6zyx2e59si&force=true" -H "Authorization: Bearer $COOLIFY_TOKEN"`
+> Status überwachen: `GET /api/v1/deployments` (Running-Liste) bzw.
+> `GET /api/v1/deployments/applications/{uuid}?take=3` (Historie mit
+> finished/failed). So lief der Sprint-11-Cutover: Merge 09:44Z →
+> manueller Trigger 09:45Z → finished 09:46:37Z → live_verify grün.
+
 ## Was der Cutover ist
 
 Der Merge des Branches `sprint-11-monorepo` nach `master` **ist** der
