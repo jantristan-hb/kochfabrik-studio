@@ -27,15 +27,21 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _deckpipe import slugify, cached_deck                       # noqa
 
-CORPUS_DIR = "/Users/janrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Präsentationen"
+CORPUS_DIR = os.environ.get(
+    "KF_CORPUS_DIR",
+    "/Users/janrudat/Nextcloud/Kochfabrik Dokumente/AKARA_Präsentationen")
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(_ROOT, "data")                 # persistent, raus aus /tmp
 CURATED = os.path.join(DATA, "all_menus.pptx")
 SLIDES_JSON = os.path.join(DATA, "all_menus.slides.json")
 SPIKE = os.path.join(_ROOT, "spike-pptxgenjs")
 MODEL, DIM, TASK = "gemini-embedding-001", 768, "SEMANTIC_SIMILARITY"
-DSN = dict(host="localhost", port=5434, user="postgres",
-           password="pptxgen", dbname="pptxgen")
+# Passwort-Default bleibt vorerst (Rotation → EPIC-010/H2).
+DSN = dict(host=os.environ.get("KF_PG_HOST", "localhost"),
+           port=int(os.environ.get("KF_PG_PORT", "5434")),
+           user=os.environ.get("KF_PG_USER", "postgres"),
+           password=os.environ.get("KF_PG_PASSWORD", "pptxgen"),
+           dbname=os.environ.get("KF_PG_DB", "pptxgen"))
 
 FOOTER = re.compile(r"(KOCHfabrik|Kochfabrik|koch-fabrik|Prisdorf|Pinneberg|"
                     r"BIC:|DE\d|HRB|Steuernummer|Gerichtsstand|www\.|@|"
