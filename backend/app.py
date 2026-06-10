@@ -339,17 +339,14 @@ def image_kochfabrik(prompt: str, table: bool = True, cat: str = "food"):
 
 
 # ---------------- Angebotsgenerator-Engine (graceful) ----------------
-# Engine lebt in Schwester-Repo pptxgenerator_v2. Import gekapselt:
-# fehlt sie (Deploy ohne node/soffice/Asset-Bundle) → Endpoints melden
-# sauber 503 statt App-Crash. Containerisierung = Post-Epic-Ops-Item.
+# Engine liegt repo-intern unter engine/ (subtree, ADR-002). Import
+# gekapselt: fehlt sie (Deploy ohne node/soffice/Asset-Bundle) →
+# Endpoints melden sauber 503 statt App-Crash.
 import sys as _sys
 
 ENGINE_OK, ENGINE_ERR = False, ""
 try:
-    _VEND = os.path.join(ROOT, "engine", "phase0", "scripts")
-    _SIB = os.path.join(os.path.dirname(ROOT), "pptxgenerator_v2",
-                        "phase0", "scripts")
-    _ENG = _VEND if os.path.isdir(_VEND) else _SIB
+    _ENG = os.path.join(ROOT, "engine", "scripts")
     if os.path.isdir(_ENG):
         _sys.path.insert(0, _ENG)
         from angebot_model import Angebot, dump as _adump          # noqa

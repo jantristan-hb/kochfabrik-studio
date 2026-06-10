@@ -9,8 +9,9 @@ Web-App (FastAPI + Design-2-Frontend) mit drei Modulen, live auf
 | **Angebotsgenerator** | `web/chat.html` | `/api/angebot/{health,chat,pdf}` | Chat **+ Hand-Edit-Formular** → Angebots-**PDF** jederzeit |
 | **Präsentationsgenerator** | `web/praesentationsgenerator.html` | `/api/praesentation/{health,generate}` | Angebot rein → kanonisches KOCHfabrik-**Deck** (PPTX) |
 
-> ⚠️ **`engine/` NIEMALS von Hand editieren** — generiert aus der
-> Single Source `pptxgenerator_v2`. Siehe [Engine-Sync](#engine-sync).
+> ℹ️ **`engine/` ist repo-intern** (Monorepo via git-subtree, ADR-002)
+> mit eigener Git-Historie — direkt hier entwickeln. Siehe
+> [Engine im Monorepo](#engine-im-monorepo).
 
 ---
 
@@ -27,53 +28,56 @@ kochfabrik-studio/
 │   ├── bildgenerator.html / gen.html Bildgenerator-Hub + Generator
 │   ├── login.html  client.html  bibliothek.html  upload.html  vorschau.html
 │   └── assets/style.css  Design-2 (Gold/Weiß), kochfabrik-logo.png, bg/
-├── engine/phase0/        ⚙️ VENDORED Engine-Bundle (generiert!)
+├── engine/               ⚙️ Engine repo-intern (subtree, eigene Historie)
 │   ├── scripts/*.py      assemble.py, compose_offer.py, angebot_*.py,
 │   │                     kf_classify.py, pg_shim.py, _deckpipe.py …
 │   ├── spike-pptxgenjs/  reconstruct.js + lib/ + node_modules/ (pptxgenjs)
-│   └── data/             cover/ausstattung/angebot_template.elements.json,
-│                         pgbundle.npz (DB-Snapshot), static_slide.json,
-│                         cache/<ref-slug>/  (1 Referenz-Slug; Voll-Cache
-│                                             = Server-Volume, s. Deploy)
+│   ├── data/             cover/ausstattung/angebot_template.elements.json,
+│   │                     pgbundle.npz (DB-Snapshot), static_slide.json,
+│   │                     cache/<ref-slug>/  (1 Referenz-Slug; Voll-Cache
+│   │                                         = Server-Volume, s. Deploy)
+│   ├── tests/            Engine-Tests (ex phase0/tests)
+│   └── upstream/         Engine-Repo-Reste (docs/, design/, fixtures …)
 ├── Dockerfile            python:3.12-slim + nodejs + LibreOffice + poppler-utils + COPY engine
 ├── requirements.txt      fastapi uvicorn pydantic anthropic python-pptx numpy
-├── vendor.sh             ⭐ Ein-Befehl Engine-Sync (s.u.)
 └── README.md             dieses Dokument
 ```
 
-**Single Source der Engine:** `~/work/03 AKARA Solutions GmbH/kochfabrik/pptxgenerator_v2/phase0/`
-(eigenes GitHub-Repo `jantristan-hb/pptxgenerator_v2`, EPIC-001 dort).
+**Engine-Historie:** als Subtree aus `jantristan-hb/pptxgenerator_v2`
+(branch `main`) eingezogen — `git log -- engine/` zeigt die volle
+Engine-Historie. Upstream-Reste (docs/, design/) liegen unter
+`engine/upstream/`.
 
 ---
 
-## Engine-Sync
+## Engine im Monorepo
 
-Die Engine lebt in `pptxgenerator_v2`. Studio enthält eine **vendored
-Kopie** (~13 MB) unter `engine/`, weil der Coolify-Container kein
-Schwester-Repo / kein Postgres / kein Nextcloud hat.
+Die Engine liegt repo-intern unter `engine/` (git-subtree, ADR-002) mit
+eigener Git-Historie. **Kein Vendoring, kein Schwester-Repo, kein
+`vendor.sh` mehr** — Engine-Änderungen werden direkt in `engine/`
+committet und mit dem Studio-Code gemeinsam versioniert.
 
 **Bei JEDER Engine-Änderung (Präsentations-/Angebotsgenerator):**
 
 ```
-1. In pptxgenerator_v2/phase0/ entwickeln  (= Single Source)
-2. cd kochfabrik-studio && ./vendor.sh      # re-vendor + pgbundle-Regen
-                                            # + Container-Pfad-Sim-GATE
-3. git add engine && git commit && git push
-4. ./vendor.sh --deploy                     # ODER Coolify force-deploy
+1. Direkt in engine/scripts/ (bzw. engine/spike-pptxgenjs/) entwickeln
+2. Tests grün halten: tools/.venv/bin/python -m pytest backend/tests -q
+3. git add engine backend && git commit && git push   # Feature-Branch
+4. Coolify force-deploy (s.u.) — Push triggert NICHT
 ```
 
-`vendor.sh` kopiert Scripts + spike + Templates + Referenz-Cache-Slug,
-**regeneriert `pgbundle.npz` aus der Live-DB** und fährt ein
-Container-Pfad-Sim (`HOME=/nonexistent`, `PPTX_PGSHIM=1`) gegen den
-vollen lokalen Cache — schlägt der fehl, **NICHT deployen**.
+> Die Engine kann optional via `git subtree push`/`pull` mit dem
+> Upstream-Repo `jantristan-hb/pptxgenerator_v2` synchronisiert bleiben;
+> für den Studio-Betrieb ist `engine/` aber autark.
 
 ### Zwei Snapshot-Fallen (sonst stille Drift)
 
-1. **`engine/phase0/data/pgbundle.npz`** = eingefrorener Snapshot von
+1. **`engine/data/pgbundle.npz`** = eingefrorener Snapshot von
    `pptxgen-pg` (`menu_composition` + `static_slide` + Embeddings).
-   Ändert sich die DB → `vendor.sh` neu laufen lassen (regeneriert es).
-   Im Container ersetzt `pg_shim.py` Postgres 1:1 (Picks byte-identisch
-   verifiziert) — **kein DB-Zugriff zur Laufzeit**, `PPTX_PGSHIM=1`.
+   Ändert sich die DB → `pgbundle.npz` neu aus der Live-DB regenerieren
+   und committen. Im Container ersetzt `pg_shim.py` Postgres 1:1 (Picks
+   byte-identisch verifiziert) — **kein DB-Zugriff zur Laufzeit**,
+   `PPTX_PGSHIM=1`.
 2. **Korpus-Cache (~4,8 GB, 200 Deck-Dirs)** liegt NICHT im Image,
    sondern als **Coolify-Volume** auf dem Server (s. Deployment). Neue
    Korpus-Decks → zusätzlich rsync, sonst rendert der
@@ -91,7 +95,7 @@ alle derselbe Mechanismus, alles an einem Ort:
   UNIQUE(`deck`,`page`). `inclusion='pflicht'` ⇒ `assemble.py`
   `pick_frame` zieht sie deterministisch (kunden-stabil) und rendert
   das zugehörige Cache-Deck **verbatim**.
-- **Cache-Deck** `pptxgenerator_v2/phase0/data/cache/<slug>/`:
+- **Cache-Deck** `engine/data/cache/<slug>/`:
   `elements.json` (`{"1":[…],"_meta":{"w_pt":960,"h_pt":540,
   "deck":"<slug>"}}`), `assets/<bild>`, `logos.json` (`{}` reicht →
   `resolve(src)=src`). Bild-`src` = `"<slug>/assets/<datei>"`.
@@ -102,29 +106,30 @@ alle derselbe Mechanismus, alles an einem Ort:
 **Bereitstellen (end-to-end, genau dieser Ablauf):**
 
 ```
-1. Cache-Deck bauen in pptxgenerator_v2/phase0/data/cache/<slug>/
-   (data/ ist gitignored → lebt nur lokal + DB + Server-Volume)
+1. Cache-Deck bauen in engine/data/cache/<slug>/
+   (cache/ ist gitignored → lebt nur lokal + DB + Server-Volume;
+    der eine Referenz-Slug ist getrackt, der Voll-Korpus nicht)
 2. static_slide-Row in pptxgen-pg setzen/ändern, z.B.:
    UPDATE static_slide SET deck='<slug>',page=1,inclusion='pflicht',
      tier='T',is_golden=true,skel_pos=0.78 WHERE category='…';
    (DB-Creds aus ~/work/.env — nie im Repo)
-3. vendor.sh: STATIC_DECKS=(<slug> …) eintragen (autoriertes Deck,
-   KEIN Korpus — gehört INS Bundle + aufs Volume)
-4. ./vendor.sh           # regeneriert pgbundle.npz + static_slide.json
-                         # in SRC *und* DST (Sim testete sonst stale),
-                         # vendort Cache-Deck, Container-Pfad-Sim-GATE
-5. ./vendor.sh --push-static   # rsync Static-Decks aufs Server-Volume
-   # PFLICHT: data/cache ist Coolify Directory Mount → das vendorte
+3. pgbundle.npz + static_slide.json aus der Live-DB regenerieren
+   (engine/data/) und das autorisierte Static-Deck nach
+   engine/data/cache/<slug>/ legen (KEIN Korpus — gehört INS Repo)
+4. rsync das Static-Deck aufs Server-Volume:
+   # PFLICHT: data/cache ist Coolify Directory Mount → das committete
    # Deck wird zur Laufzeit ÜBERLAGERT; authoritativ ist das Volume
-6. git add engine vendor.sh && git commit && git push   # master
-7. ./vendor.sh --deploy        # ODER Coolify force-deploy (s.u.)
-8. Verify am Server (auth-frei, autoritativ):
+   rsync -a -e "ssh -i ~/.ssh/hetzner_id" engine/data/cache/<slug>/ \
+     root@188.245.110.5:/data/coolify/applications/yu2fqx0twmtqcp6zyx2e59si/cache/<slug>/
+5. git add engine && git commit && git push   # Feature-Branch, NICHT master
+6. Coolify force-deploy (s.u.)
+7. Verify am Server (auth-frei, autoritativ):
    ssh -i ~/.ssh/hetzner_id root@188.245.110.5
    CID=$(docker ps -q --filter name=<APP-UUID>)
    docker exec $CID python3 -c "import json;print([x for x in \
-     json.load(open('/app/engine/phase0/data/static_slide.json')) \
+     json.load(open('/app/engine/data/static_slide.json')) \
      if x['category']=='<CAT>'])"
-   docker exec $CID ls /app/engine/phase0/data/cache/<slug>/assets/
+   docker exec $CID ls /app/engine/data/cache/<slug>/assets/
 ```
 
 > **Secrets:** DB-Creds (`pptxgen-pg`), `COOLIFY_TOKEN`,
@@ -160,12 +165,12 @@ Add Directory Mount**:
 | Feld | Wert |
 |---|---|
 | Source (Host) | `/data/coolify/applications/yu2fqx0twmtqcp6zyx2e59si/cache` |
-| Destination (Container) | `/app/engine/phase0/data/cache` |
+| Destination (Container) | `/app/engine/data/cache` |
 
 Daten auf den Host bringen / aktualisieren:
 ```
 rsync -a -e "ssh -i ~/.ssh/hetzner_id" \
-  "<pptxgenerator_v2>/phase0/data/cache/" \
+  "engine/data/cache/" \
   root@188.245.110.5:/data/coolify/applications/yu2fqx0twmtqcp6zyx2e59si/cache/
 ```
 Mount persistiert über Deploys. Fehlt er → `/api/praesentation/health`
@@ -185,13 +190,13 @@ harmlos. `_key()` in der Engine ist env-first (Container) mit
 ## Lokal entwickeln / laufen
 
 ```
-# Studio lokal (vendored Engine wird vendored-first geladen):
+# Studio lokal (Engine wird repo-intern aus engine/scripts geladen):
 KF_SESSION_SECRET=dev KF_USERS="t@t|s|x" \
   uvicorn backend.app:app --port 8000
 # Login-Cookie: python -c "from backend.app import make_cookie;print(make_cookie('t@t'))"
 
-# Engine direkt (Single Source, volle DB+Cache):
-cd <pptxgenerator_v2>/phase0/scripts
+# Engine direkt (repo-intern, volle DB+Cache):
+cd engine/scripts
 python3 assemble.py <offer.md|pdf> -o out.pptx        # Präsentation
 python3 angebot_render.py <angebot.json> -o out.pdf   # Angebot
 PPTX_PGSHIM=1 python3 assemble.py …                   # DB-frei (wie Container)
@@ -267,16 +272,18 @@ auf StaticFiles-Mount) ⇒ neuer Build noch nicht geswappt → warten/force.
 | `ModuleNotFoundError: numpy` (502) | Dep fehlt im Image | `requirements.txt` ergänzen → rebuild |
 | `FileNotFoundError ~/work/.env` in `_key` | Host-Pfad im Container | `_key()` env-first (schon gefixt); API-Key als Coolify-ENV |
 | `os.listdir(CORPUS_DIR)` crash | Nextcloud fehlt im Container | CORPUS_DIR-Guard (gefixt) — Cache-Hits brauchen Quelle nicht |
-| `cover_template.elements.json` not found | Template nicht vendored | gehört in `engine/phase0/data/` → `vendor.sh` |
+| `cover_template.elements.json` not found | Template fehlt im Repo | gehört committet in `engine/data/` |
 | `copyfile('')` / Cache-Miss | `cached_deck(src)` slugifizierte Nextcloud-Pfad | `load()` löst über **deck-Slug** auf (gefixt) |
 | PDF-Upload 502 `subprocess FileNotFoundError` | `pdftotext` fehlt | `poppler-utils` ins Dockerfile |
 | `korpus:false`, Präsentation 503 | 4,8-GB-Cache-Volume nicht gemountet | Coolify Directory Mount (s. Deployment) |
 | `405` auf neuem Endpoint | alter Container (kein Auto-Deploy) | Coolify force-deploy, Build abwarten |
 | Studio-Modul down nach Push | — kann nicht passieren | atomarer Build; alte Version bleibt live |
 
-**Goldene Regel:** vor jedem Deploy `./vendor.sh` (fährt Container-
-Pfad-Sim `HOME=/nonexistent PPTX_PGSHIM=1` gegen vollen lokalen Cache
-— fängt genau diese Fehler VOR dem ~Minuten-Deploy-Zyklus).
+**Goldene Regel:** vor jedem Deploy den Container-Pfad-Sim laufen
+lassen (`HOME=/nonexistent PPTX_PGSHIM=1` gegen vollen lokalen Cache)
+— fängt genau diese Fehler VOR dem ~Minuten-Deploy-Zyklus. Das
+eigenständige Sim-Gate (`tools/sim_gate.sh`, Nachfolger der
+vendor.sh-Logik) kommt mit US-050.
 
 ## Host-Zugriff / Debug
 
@@ -319,8 +326,8 @@ POST /api/praesentation/from-pdf  (multipart file) → Deck (PDF-Upload)
 
 - **Graceful Degradation:** fehlt Engine/Cache → 503 mit Klartext,
   App + andere Module laufen weiter. Nie harter Crash.
-- **Single Source:** Engine-Logik nur in `pptxgenerator_v2`. `engine/`
-  ist Build-Artefakt (`vendor.sh`).
+- **Single Source:** Engine-Logik lebt repo-intern in `engine/`
+  (subtree mit eigener Historie) — eine Quelle, kein Vendoring.
 - **Container-tauglich:** keine fixen Host-Pfade (env-first Keys,
   CORPUS_DIR/Nextcloud-Guards, Cache über deck-Slug statt src-Pfad).
 - **Pixel-Treue:** `extract.py`/`reconstruct.js`/`lib/` unverändert

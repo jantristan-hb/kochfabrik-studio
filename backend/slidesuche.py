@@ -9,7 +9,7 @@ Routes:
 - GET  /api/slidesuche/preview/{deck}/{page}.png  — PNG aus cache/<deck>/preview
 - POST /api/slidesuche/download      — 1-PPTX-Bundle aus Liste {deck,page}
 
-Vorschau-PNGs werden vorab via phase0/scripts/render_previews.py erzeugt
+Vorschau-PNGs werden vorab via engine/scripts/render_previews.py erzeugt
 und liegen unter cache/<deck>/preview/p<page>.png im Coolify-Volume.
 """
 import base64
@@ -30,11 +30,9 @@ router = APIRouter(prefix="/api/slidesuche", tags=["slidesuche"])
 
 # Engine-Pfade analog backend/app.py — späte Imports, damit Module ohne
 # Engine nicht crashen (graceful — Routen geben dann 503 statt 500).
+# Engine liegt repo-intern unter engine/ (subtree, ADR-002).
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_VEND = os.path.join(_ROOT, "engine", "phase0", "scripts")
-_SIB = os.path.join(os.path.dirname(_ROOT), "pptxgenerator_v2",
-                    "phase0", "scripts")
-_ENG = _VEND if os.path.isdir(_VEND) else _SIB
+_ENG = os.path.join(_ROOT, "engine", "scripts")
 _CACHE = os.path.join(os.path.dirname(_ENG), "data", "cache")
 _SPIKE = os.path.join(os.path.dirname(_ENG), "spike-pptxgenjs")
 
@@ -63,7 +61,7 @@ def _ensure_engine():
 
 def _load_dedup():
     """Lädt dedup_manifest.json (vom render+dedup-Pipeline lokal
-    erzeugt, via vendor.sh hier reinkopiert). Graceful: wenn nicht
+    erzeugt, liegt repo-intern unter engine/data/). Graceful: wenn nicht
     da, läuft die Suche ohne Dedup (alle PNGs werden gerendert/served
     falls vorhanden)."""
     global _DEDUP
@@ -150,7 +148,7 @@ def search(r: SearchReq, request: Request):
         return JSONResponse({"error": "embed: " + str(e)[:160]},
                             status_code=502)
 
-    # ANN direkt gegen das vendored Bundle (umgeht pg_shim, das nur
+    # ANN direkt gegen das repo-interne Bundle (umgeht pg_shim, das nur
     # die spezifische LIMIT-8-Form aus assemble.py unterstützt).
     # 4x oversampling — nach Dedup-Redirect + PNG-Existenz-Filter
     # bleiben so genug Treffer für `limit`.
