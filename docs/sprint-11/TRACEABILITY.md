@@ -47,3 +47,11 @@ EPIC-009 Sprint 12; R-REF-2/3/5 + M4–M7 → Sprint 12.
 
 **Summe: 4/4 WPs, 11/11 sprint-relevante R-IDs, 5/5 Kriterien
 adressiert (2 bewusst teilweise → Sprint 12). Nichts verloren.**
+
+## Erfüllungs-Stand (Review 2026-06-10)
+
+8/8 Stories DONE. Alle EARS-Verifies grün (Agents + Lead-Re-Check);
+Sim-Gate grün @ f1f8fa1 (Delta bis c3c67a8 doc-only), Live-Verify
+Pre-Cutover gegen Prod grün. Cutover ausgeführt im Review (PR #31).
+Offen → Sprint 12: M4–M7, B1-Zyklus + B3-Restore-Probe,
+Engine-Repo read-only archivieren (ADR-002-Konsequenz).

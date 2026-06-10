@@ -1,6 +1,6 @@
 ---
 key: KOCHFABRIK-FEATURE-004
-status: approved
+status: implemented
 title: "Monorepo-Merge: Engine via subtree, Pfade repo-intern, Vendoring weg"
 created: 2026-06-09
 project: kochfabrik

@@ -1,3 +1,6 @@
 __pycache__/
 *.pyc
 .env
+
+.claude-active
+**/.claude-active

@@ -107,3 +107,12 @@ REQUIREMENTS §2-Befund (Render-Pfad). **Offen markiert, Owner: M7.**
 
 **Nichts verloren. Offene Entscheidungen sind als Q5-ADRs bzw.
 Sprint-Schnitt-Punkte explizit verankert.**
+
+## Erfüllungs-Stand Sprint 11 (Review 2026-06-10)
+
+EPIC-004 M1–M3 geliefert (Monorepo via subtree, vendor.sh weg,
+Dockerfile+alembic.ini, Sim-Gate, Cutover nach Runbook — PRs #29–#31);
+R-REF-1 erfüllt, R-NF-2 erfüllt (Cutover ohne Pipeline-Umbau),
+R-BAK-1/2 teilweise (Einmal-Dump + Inventar; Zyklus + Restore-Probe
+→ Sprint 12). F-E-10 + F-S-01-Voraussetzung gefixt (R-QA-3 Teil).
+Offen: M4–M7 (R-REF-3/4/5-Anteile), EPIC-009-Rest.

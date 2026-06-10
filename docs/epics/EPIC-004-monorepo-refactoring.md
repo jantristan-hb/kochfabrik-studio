@@ -4,7 +4,7 @@ title: "Monorepo & Refactoring (Verhalten strikt erhalten)"
 status: IN_PROGRESS
 created: 2026-06-09
 project: kochfabrik-studio
-sprints: [11]
+sprints: [11, 12]
 ---
 
 # EPIC-004: Monorepo & Refactoring
@@ -60,7 +60,12 @@ Stand — bei **strikt erhaltenem Verhalten** (Prod = Truth, jede
 | Sprint 11 | M1–M3 (Monorepo + Deploy) | L |
 | Sprint 12 | M4–M7 (Code-Struktur + Docs) | M |
 
-> **Fortschritt:** wird von /sprint-review aktualisiert.
+> **Fortschritt:** Sprint 11 = M1–M3 ✅ DONE (2026-06-10, PRs #29–#31,
+> 8/8 Stories inkl. B1-Vorzug): Monorepo via subtree (Historie erhalten),
+> vendor.sh weg, Pfade repo-intern, Dockerfile+alembic.ini, Sim-Gate,
+> Cutover nach Runbook. Akzeptanzkriterien 1+2 erfüllt, 3 laufend,
+> 4 teilweise (alembic.ini im Image; Versionstracking-Verify → M6),
+> 5 offen (M7). Rest: M4–M7 in Sprint 12.
 
 ## Akzeptanzkriterien
 

@@ -54,8 +54,9 @@ wurde, ist keins.
 
 > **B1 teilweise vorgezogen → Sprint 11 (US-044):** Einmal-Dump
 > off-host + Volume-Inventar als Cutover-Sicherheitsnetz
-> (Cross-Epic-Pull, 2026-06-09). Automatischer Zyklus + Restore-Probe
-> bleiben Sprint 12.
+> (Cross-Epic-Pull, 2026-06-09). ✅ Erledigt in Sprint 11 (US-044, PR #29:
+> Dump off-host verifiziert, Volume-Inventar 201 Decks/5,2 GB).
+> Automatischer Zyklus + Restore-Probe bleiben Sprint 12.
 
 > **Fortschritt:** wird von /sprint-review aktualisiert.
 

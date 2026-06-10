@@ -1,6 +1,6 @@
 ---
 key: KOCHFABRIK-FEATURE-005
-status: approved
+status: implemented
 title: "Deploy-Cutover: Backup, Dockerfile, Sim-Gate, Live-Verify"
 created: 2026-06-09
 project: kochfabrik

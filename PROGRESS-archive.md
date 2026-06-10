@@ -140,3 +140,13 @@ _(Keine FAILED-Stories — Sprint 1 vollständig.)_
 | DB | keine (S1 führt Postgres ein) |
 | Auth | KF_USERS-Env + signiertes Cookie (kf_sess) |
 | Persistenz | keine (Angebot nur client-seitig) — S1 behebt das |
+
+## Sprint 6 — EPIC-002 v2 Frontend (2026-05-20) — **DONE**
+
+| Story | Titel | Status |
+|-------|-------|--------|
+| US-022a | web/praesentation_v2/index.html (Drei-Spalten CSS-Grid) | DONE |
+| US-022b | assets/editor.js (State, API-Wrapper, Live-Edit-Debounce, Kat-Picker) | DONE |
+| US-022c | Slide-Vorschlags-Karten (Klick = Auswahl, persistiert) | DONE |
+| US-022d | 15 FE-Smoke-Tests (Layout-Marker, 7 Kategorien, kein Alt-API-Leak) | DONE |
+
