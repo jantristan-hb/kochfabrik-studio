@@ -14,6 +14,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY backend ./backend
 COPY web ./web
 COPY engine ./engine
+# Alembic-Config: backend/migrate.py ruft `alembic -c alembic.ini` (cwd /app);
+# fehlt sie, scheitert die Migration mit rc≠0 (F-S-01).
+COPY alembic.ini .
 
 ENV KF_IMG_MODEL=gemini-3-pro-image-preview
 EXPOSE 8000

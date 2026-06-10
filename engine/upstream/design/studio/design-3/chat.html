@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KOCHfabrik Studio — Im Gespräch</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="top">
+  <a class="logo" href="index.html"><img src="assets/kochfabrik-logo.png" alt="KOCHfabrik Studio"></a>
+  <nav>
+    <a href="index.html">Start</a>
+    <a href="bildgenerator.html">Bilder</a>
+    <a href="client.html">Recherche</a>
+    <a href="bibliothek.html">Bibliothek</a>
+  </nav>
+</header>
+
+<main class="stage" style="justify-content:flex-start;padding-top:30px">
+  <div class="step-mark r r1">Im Gespräch entwerfen</div>
+  <h1 class="giant r r2" style="font-size:clamp(1.8rem,4vw,2.8rem)">Erzählen Sie vom <span class="accent">Event.</span></h1>
+
+  <div class="chat-wrap r r3" style="margin-top:34px">
+    <div class="stream" id="stream">
+      <div class="msg bot"><div class="who">Studio</div>Womit darf ich beginnen? Anlass, Kundin, Stimmung — oder einfach das Menü.</div>
+      <div class="msg me">Sommerfest Lürssen Werft, 120 Gäste, draußen am Wasser. Edel-maritim, Hauptlinie BIG BBQ.</div>
+      <div class="msg bot"><div class="who">Studio</div>Verstanden. Ich schlage 14 Slides vor: Titel, Anlass, BIG-BBQ-Menüfolge, Live-Cooking, Getränke, Service, Investition, Referenzen. „Sweet Dreams" als Dessertbühne ergänzen?</div>
+      <div class="msg me">Ja, Sweet Dreams als eigene Station.</div>
+      <div class="msg bot"><div class="who">Studio</div>Eingefügt — 15 Slides im Markenlayout, Speisenbilder zugeordnet. Das Deck ist bereit.</div>
+    </div>
+    <div class="bar-in">
+      <input type="text" id="ci" placeholder="Antworten oder Änderung beschreiben …" aria-label="Nachricht">
+      <button class="go" id="sb" aria-label="Senden">&rarr;</button>
+    </div>
+    <div class="hints">
+      <span class="hint">+ Veggie-Linie</span><span class="hint">+ Weinbegleitung</span>
+      <span class="hint">+ Zeitplan</span><span class="hint">+ Allergene</span>
+    </div>
+  </div>
+
+  <div class="cta-wrap" style="margin-top:38px">
+    <a class="cta" href="vorschau.html">Deck ansehen <span class="a">&rarr;</span></a>
+  </div>
+</main>
+
+<footer class="foot">KOCHfabrik Studio — by Patrick Diehr</footer>
+
+<script>
+  var ci=document.getElementById('ci'),sb=document.getElementById('sb'),st=document.getElementById('stream');
+  function add(){if(!ci.value.trim())return;var m=document.createElement('div');m.className='msg me';m.textContent=ci.value;st.appendChild(m);ci.value='';st.scrollTop=st.scrollHeight;
+    setTimeout(function(){var b=document.createElement('div');b.className='msg bot';b.innerHTML='<div class="who">Studio</div>Übernommen — das Deck wird angepasst.';st.appendChild(b);st.scrollTop=st.scrollHeight;},650);}
+  sb.addEventListener('click',add);ci.addEventListener('keydown',function(e){if(e.key==='Enter')add()});
+  document.querySelectorAll('.hint').forEach(function(h){h.addEventListener('click',function(){ci.value=h.textContent.replace('+ ','')+' ergänzen';ci.focus()})});
+</script>
+</body>
+</html>

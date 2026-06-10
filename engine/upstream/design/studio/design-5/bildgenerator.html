@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KOCHfabrik Studio — Bilder</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="bar">
+  <div class="bar-1">
+    <a class="brand" href="index.html"><img src="assets/kochfabrik-logo.png" alt="KOCHfabrik Studio"></a>
+    <div class="cmd">&#9906; Deck, Kunde oder Befehl … <span class="k">⌘K</span></div>
+    <a class="btn btn-primary btn-new" href="upload.html">+ Neues Deck <span class="kbd">N</span></a>
+    <div class="who"><span class="av">PD</span><span class="nm">P. Diehr</span></div>
+  </div>
+  <div class="tabs">
+    <a class="tab" href="index.html"><span class="ic">&#9632;</span> Übersicht</a>
+    <a class="tab" href="upload.html"><span class="ic">&#8682;</span> Upload</a>
+    <a class="tab" href="chat.html"><span class="ic">&#9993;</span> Chat</a>
+    <a class="tab active" href="bildgenerator.html"><span class="ic">&#9788;</span> Bilder</a>
+    <a class="tab" href="client.html"><span class="ic">&#9906;</span> Research</a>
+    <a class="tab" href="bibliothek.html"><span class="ic">&#9783;</span> Bibliothek</a>
+  </div>
+</div>
+
+<main class="main">
+  <div class="pg-h">
+    <div><div class="crumb">studio / bildgenerator</div><h1>Speisenbilder</h1></div>
+    <div class="acts"><a class="btn btn-primary btn-sm" href="vorschau.html">Auswahl ins Deck &rarr;</a></div>
+  </div>
+
+  <div class="gen-grid">
+    <div class="panel r r1">
+      <div class="panel-h"><h2>Briefing</h2></div>
+      <div class="panel-b">
+        <div class="field"><label>Gericht</label><input type="text" value="Pulled-Beef-Brisket, Maiscreme, Röstzwiebel" id="dish"></div>
+        <div class="field"><label>Linie</label><select><option>BIG BBQ</option><option>Sweet Dreams</option><option>Fingerfood Deluxe</option><option>Greenline Veggie</option></select></div>
+        <div class="field"><label>Anrichtung</label><select><option>Schiefer, rustikal-edel</option><option>Porzellan, puristisch</option><option>Holzbrett, Live-Station</option></select></div>
+        <div class="field"><label>Stimmung</label><input type="text" value="warmes Licht, Eventcatering"></div>
+        <button class="btn btn-primary" id="gen" style="width:100%;justify-content:center">Generieren <span class="kbd">⏎</span></button>
+      </div>
+    </div>
+
+    <div class="panel r r2">
+      <div class="panel-h"><h2>Vorschläge — 4 Varianten</h2><span class="mono" id="cnt">2 sel.</span></div>
+      <div class="panel-b">
+        <div class="gallery">
+          <div class="shot" onclick="sel(this)"><span class="pk">&#10003;</span><span class="cap">schiefer-nah</span></div>
+          <div class="shot" onclick="sel(this)"><span class="pk">&#10003;</span><span class="cap">live-station</span></div>
+          <div class="shot" onclick="sel(this)"><span class="pk">&#10003;</span><span class="cap">porzellan-pur</span></div>
+          <div class="shot" onclick="sel(this)"><span class="pk">&#10003;</span><span class="cap">buffet-weit</span></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
+          <a class="btn btn-primary btn-sm" href="vorschau.html">Ins Deck übernehmen</a>
+          <button class="btn btn-ghost btn-sm" id="gen2">Neue Varianten</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  document.querySelectorAll('.shot')[0].classList.add('sel');
+  document.querySelectorAll('.shot')[2].classList.add('sel');
+  function cnt(){var n=document.querySelectorAll('.shot.sel').length;document.getElementById('cnt').textContent=n+' sel.'}
+  function sel(el){el.classList.toggle('sel');cnt()}
+  function flash(b){var o=b.innerHTML;b.textContent='…';b.disabled=true;setTimeout(function(){b.innerHTML=o;b.disabled=false},1000)}
+  document.getElementById('gen').addEventListener('click',function(){flash(this)});
+  document.getElementById('gen2').addEventListener('click',function(){flash(this)});
+</script>
+</body>
+</html>

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KOCHfabrik Studio — Angebot-Upload</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="side-logo"><a href="index.html"><img src="assets/kochfabrik-logo.png" alt="KOCHfabrik Studio"></a></div>
+    <nav class="side-nav">
+      <div class="nav-label">Arbeiten</div>
+      <a class="nav-item" href="index.html"><span class="ic">&#9632;</span> Dashboard</a>
+      <a class="nav-item active" href="upload.html"><span class="ic">&#8682;</span> Angebot-Upload</a>
+      <a class="nav-item" href="chat.html"><span class="ic">&#9993;</span> Chat-Konzeption</a>
+      <a class="nav-item" href="bildgenerator.html"><span class="ic">&#9788;</span> Bildgenerator</a>
+      <div class="nav-label">Wissen</div>
+      <a class="nav-item" href="client.html"><span class="ic">&#9906;</span> Client Research</a>
+      <a class="nav-item" href="bibliothek.html"><span class="ic">&#9783;</span> Bibliothek</a>
+    </nav>
+    <div class="side-foot"><div class="avatar">PD</div><div><div class="nm">Patrick Diehr</div><div class="rl">KOCHfabrik</div></div></div>
+  </aside>
+
+  <main class="view">
+    <div class="topbar">
+      <div><h1>Angebot-Upload</h1><div class="sub">Schritt 1 von 3 · PDF einlesen</div></div>
+      <a class="btn btn-ghost" href="chat.html">Lieber per Chat?</a>
+    </div>
+
+    <div class="content">
+      <div class="cols">
+        <div>
+          <div class="panel r r1" id="dzpanel">
+            <div class="dropzone" id="dz">
+              <div class="dz-ic">&#8682;</div>
+              <div class="dz-t">Angebots-PDF hier ablegen</div>
+              <div class="dz-s">PDF bis 25 MB · Gänge, Preise, Eventdaten werden automatisch gelesen</div>
+              <button class="btn btn-primary" id="pick">Datei auswählen</button>
+            </div>
+          </div>
+
+          <div class="panel r r2" id="prog" style="display:none">
+            <div class="panel-h">
+              <div class="name-cell"><span class="thumb" style="width:38px;height:48px">PDF</span><div>Angebot_BIG-BBQ_Hamester.pdf<div class="ss" style="font-size:.8rem;color:var(--ink-soft);font-weight:400">3,2 MB · 4 Seiten</div></div></div>
+              <span class="badge draft" id="pbadge">Wird verarbeitet …</span>
+            </div>
+            <div class="ptrack"><div class="pbar" id="bar" style="width:8%"></div></div>
+            <div class="steps">
+              <div class="step done"><span class="sd">&#10003;</span><div><div class="st">Dokument gelesen</div><div class="ss">4 Seiten, Layout erkannt</div></div></div>
+              <div class="step active" id="s2"><span class="sd">2</span><div><div class="st">Gänge &amp; Preise extrahiert</div><div class="ss">BIG BBQ · 6 Komponenten · 48 Gäste · 4.320 € netto</div></div></div>
+              <div class="step" id="s3"><span class="sd">3</span><div><div class="st">Speisenbilder zugeordnet</div><div class="ss">KOCHfabrik-Bildwelt aus Bibliothek</div></div></div>
+              <div class="step" id="s4"><span class="sd">4</span><div><div class="st">Deck im Markenlayout gesetzt</div><div class="ss">14 Slides, editierbar (PPTX)</div></div></div>
+            </div>
+            <a class="btn btn-primary" id="go" href="vorschau.html" style="display:none;margin-top:20px">Deck-Vorschau öffnen &rarr;</a>
+          </div>
+        </div>
+
+        <div class="panel r r3">
+          <div class="panel-h"><h2>Was gelesen wird</h2></div>
+          <div class="src"><span class="fav">G</span><div><div class="st">Menüfolge &amp; Gänge</div><div class="sd">BIG BBQ, Sweet Dreams, Beilagen</div></div></div>
+          <div class="src"><span class="fav">€</span><div><div class="st">Preise &amp; Kalkulation</div><div class="sd">pro Person, Pauschalen, Optionen</div></div></div>
+          <div class="src"><span class="fav">i</span><div><div class="st">Eventdaten</div><div class="sd">Datum, Ort, Personenzahl, Anlass</div></div></div>
+          <div class="src"><span class="fav">K</span><div><div class="st">Kundenbezug</div><div class="sd">Verknüpft mit Client Research</div></div></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  var dz=document.getElementById('dz'),pick=document.getElementById('pick');
+  function run(){
+    document.getElementById('dzpanel').style.display='none';
+    document.getElementById('prog').style.display='block';
+    var p=8,bar=document.getElementById('bar');
+    var t=setInterval(function(){
+      p+=7;if(p>100)p=100;bar.style.width=p+'%';
+      if(p>=34){var s=document.getElementById('s2');s.className='step done';s.querySelector('.sd').innerHTML='&#10003;'}
+      if(p>=58){var s=document.getElementById('s3');s.className='step active';s.querySelector('.sd').textContent='3'}
+      if(p>=80){var s=document.getElementById('s3');s.className='step done';s.querySelector('.sd').innerHTML='&#10003;';document.getElementById('s4').className='step active'}
+      if(p>=100){clearInterval(t);var s4=document.getElementById('s4');s4.className='step done';s4.querySelector('.sd').innerHTML='&#10003;';document.getElementById('go').style.display='inline-flex';var b=document.getElementById('pbadge');b.textContent='Fertig';b.className='badge done'}
+    },420);
+  }
+  dz.addEventListener('click',run);pick.addEventListener('click',function(e){e.stopPropagation();run()});
+  dz.addEventListener('dragover',function(e){e.preventDefault();dz.style.borderColor='#AA8339'});
+  dz.addEventListener('drop',function(e){e.preventDefault();run()});
+</script>
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KOCHfabrik Studio — Angebot einlesen</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="site-inner">
+    <a class="brand" href="index.html">
+      <img src="assets/kochfabrik-logo.png" alt="KOCHfabrik">
+      <span class="studio">Studio</span>
+    </a>
+    <nav class="main">
+      <a href="index.html">Atelier</a>
+      <a href="upload.html" class="active">Angebot</a>
+      <a href="chat.html">Konzeption</a>
+      <a href="bildgenerator.html">Bildatelier</a>
+      <a href="client.html">Recherche</a>
+    </nav>
+    <div class="acct" title="Patrick Diehr">PD</div>
+  </div>
+</header>
+
+<main>
+  <section class="hero" style="padding:70px 0 40px">
+    <div class="wrap">
+      <p class="eyebrow r r1">Schritt 1 von 3 · Quelle</p>
+      <h1 class="display r r2" style="font-size:clamp(2.2rem,4vw,3.2rem)">Das Angebot wird<br><em>zum Deck.</em></h1>
+      <p class="lead r r3">Ziehen Sie das Angebots-PDF hierher. Gänge, Preise, Personenzahl und Eventdaten werden gelesen — Sie prüfen nur noch.</p>
+    </div>
+  </section>
+
+  <section class="block" style="padding-top:24px">
+    <div class="wrap">
+      <div class="grid-2" style="grid-template-columns:1.4fr .9fr;align-items:start">
+
+        <div class="r r4">
+          <div class="dropzone" id="dz">
+            <div class="dz-icon">&#8682;</div>
+            <div class="dz-title">Angebot hier ablegen</div>
+            <div class="dz-sub">PDF bis 25 MB · oder Datei auswählen</div>
+            <button class="btn btn-primary" id="pick">Datei wählen</button>
+          </div>
+
+          <div id="afterUp" style="display:none;margin-top:34px">
+            <div class="card" style="cursor:default">
+              <div style="display:flex;align-items:center;gap:18px;margin-bottom:8px">
+                <div class="deck-thumb" style="width:48px;height:60px;font-size:.78rem">PDF</div>
+                <div>
+                  <div class="deck-name" style="font-size:1.05rem">Angebot_BIG-BBQ_Hamester.pdf</div>
+                  <div class="deck-meta">3,2 MB · 4 Seiten</div>
+                </div>
+              </div>
+              <div class="progress-track" style="margin-top:18px"><div class="progress-bar" id="bar" style="width:8%"></div></div>
+              <div class="steps">
+                <div class="step done"><span class="dot">&#10003;</span><div><div class="st-t">Dokument gelesen</div><div class="st-s">4 Seiten erkannt</div></div></div>
+                <div class="step active" id="s2"><span class="dot">2</span><div><div class="st-t">Gänge &amp; Preise extrahiert</div><div class="st-s">BIG BBQ · 6 Komponenten · 48 Gäste</div></div></div>
+                <div class="step" id="s3"><span class="dot">3</span><div><div class="st-t">Speisenbilder zugeordnet</div><div class="st-s">KOCHfabrik-Bildwelt</div></div></div>
+                <div class="step" id="s4"><span class="dot">4</span><div><div class="st-t">Deck gesetzt</div><div class="st-s">14 Slides im Markenlayout</div></div></div>
+              </div>
+              <a class="btn btn-primary" id="toPrev" href="vorschau.html" style="display:none;margin-top:26px">Deck ansehen <span class="ar">&rarr;</span></a>
+            </div>
+          </div>
+        </div>
+
+        <aside class="r r5">
+          <div class="aside-card">
+            <h4>Was gelesen wird</h4>
+            <div class="chip-set" style="flex-direction:column;align-items:stretch">
+              <div class="src" style="padding:14px 0"><span class="favi">G</span><div><div class="s-t">Gänge &amp; Menüfolge</div><div class="s-d">BIG BBQ, Sweet Dreams …</div></div></div>
+              <div class="src" style="padding:14px 0"><span class="favi">€</span><div><div class="s-t">Preise &amp; Kalkulation</div><div class="s-d">pro Person, Pauschalen</div></div></div>
+              <div class="src" style="padding:14px 0;border-bottom:0"><span class="favi">i</span><div><div class="s-t">Eventdaten</div><div class="s-d">Datum, Ort, Gästezahl</div></div></div>
+            </div>
+            <p style="font-size:.85rem;color:var(--ink-soft);margin-top:18px">Kein Angebot zur Hand? <a href="chat.html" style="color:var(--gold-deep)">Im Gespräch entwerfen &rarr;</a></p>
+          </div>
+        </aside>
+
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site">
+  <div class="wrap"><div class="foot-inner">
+    <span>KOCHfabrik Studio — by Patrick Diehr</span>
+    <div class="fb"><a href="index.html">Atelier</a><a href="bibliothek.html">Bibliothek</a><a href="client.html">Recherche</a></div>
+  </div></div>
+</footer>
+
+<script>
+  var dz=document.getElementById('dz'),pick=document.getElementById('pick');
+  function run(){
+    document.getElementById('afterUp').style.display='block';
+    dz.style.display='none';
+    var p=8,bar=document.getElementById('bar');
+    var t=setInterval(function(){
+      p+=7; if(p>100)p=100; bar.style.width=p+'%';
+      if(p>=32){var s=document.getElementById('s2');s.className='step done';s.querySelector('.dot').innerHTML='&#10003;'}
+      if(p>=58){var s=document.getElementById('s3');s.className='step active';s.querySelector('.dot').textContent='3'}
+      if(p>=78){var s=document.getElementById('s3');s.className='step done';s.querySelector('.dot').innerHTML='&#10003;';var s4=document.getElementById('s4');s4.className='step active'}
+      if(p>=100){clearInterval(t);var s4=document.getElementById('s4');s4.className='step done';s4.querySelector('.dot').innerHTML='&#10003;';document.getElementById('toPrev').style.display='inline-flex'}
+    },420);
+  }
+  dz.addEventListener('click',run); pick.addEventListener('click',function(e){e.stopPropagation();run()});
+  dz.addEventListener('dragover',function(e){e.preventDefault();dz.style.borderColor='#AA8339'});
+  dz.addEventListener('drop',function(e){e.preventDefault();run()});
+</script>
+</body>
+</html>

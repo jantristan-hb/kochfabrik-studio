@@ -1,0 +1,32 @@
+# Image schlank halten. ACHTUNG: engine/data + engine/spike-pptxgenjs/node_modules
+# MÜSSEN ins Image (kein npm install / kein Korpus-Download im Build) — daher
+# KEIN pauschales node_modules/-Pattern hier.
+
+# Test-/Dev-venvs (lokal, nicht eingecheckt)
+.venv/
+tools/.venv/
+
+# Doku + Sprint-Artefakte (nicht laufzeitrelevant)
+docs/
+*.md
+
+# Tests + Engine-Reste (keine Laufzeit-Abhängigkeit)
+backend/tests
+engine/upstream
+engine/tests
+
+# Git
+.git/
+.gitignore
+
+# Python-Cruft
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+
+# Lokale Secrets / Env (nie ins Image)
+.env
+
+# Editor/OS
+.DS_Store
+.claude-active

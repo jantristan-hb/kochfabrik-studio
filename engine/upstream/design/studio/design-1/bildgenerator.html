@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KOCHfabrik Studio — Bildatelier</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="site-inner">
+    <a class="brand" href="index.html">
+      <img src="assets/kochfabrik-logo.png" alt="KOCHfabrik">
+      <span class="studio">Studio</span>
+    </a>
+    <nav class="main">
+      <a href="index.html">Atelier</a>
+      <a href="upload.html">Angebot</a>
+      <a href="chat.html">Konzeption</a>
+      <a href="bildgenerator.html" class="active">Bildatelier</a>
+      <a href="client.html">Recherche</a>
+    </nav>
+    <div class="acct" title="Patrick Diehr">PD</div>
+  </div>
+</header>
+
+<main>
+  <section class="hero" style="padding:64px 0 30px">
+    <div class="wrap">
+      <p class="eyebrow r r1">Bildatelier · Speisen visualisieren</p>
+      <h1 class="display r r2" style="font-size:clamp(2.2rem,4vw,3rem)">Vom Gericht zur<br><em>Bildwelt.</em></h1>
+      <p class="lead r r3">Benennen Sie eine Speise — vier Vorschläge in der visuellen Handschrift der KOCHfabrik. Auswählen, ins Deck übernehmen.</p>
+    </div>
+  </section>
+
+  <section class="block" style="padding-top:18px">
+    <div class="wrap">
+      <div class="imggen">
+        <aside class="r r4">
+          <div class="aside-card">
+            <div class="field">
+              <label>Gericht</label>
+              <input type="text" value="Pulled-Beef-Brisket, Maiscreme, Röstzwiebel" id="dish">
+            </div>
+            <div class="field">
+              <label>Linie</label>
+              <select><option>BIG BBQ</option><option>Sweet Dreams</option><option>Fingerfood Deluxe</option><option>Greenline Veggie</option></select>
+            </div>
+            <div class="field">
+              <label>Anrichtung</label>
+              <select><option>Schiefer, rustikal-edel</option><option>Porzellan, puristisch</option><option>Holzbrett, Live-Station</option></select>
+            </div>
+            <div class="field">
+              <label>Stimmung</label>
+              <input type="text" value="warmes Licht, Eventcatering">
+            </div>
+            <button class="btn btn-primary" id="gen" style="width:100%;justify-content:center">Bilder erzeugen</button>
+          </div>
+        </aside>
+
+        <div class="r r5">
+          <div class="sec-head" style="margin-bottom:22px"><h2 class="sec">Vorschläge</h2><a href="vorschau.html">Ins Deck &rarr;</a></div>
+          <div class="gallery">
+            <div class="shot" onclick="sel(this)"><span class="pick">&#10003;</span><span class="cap">Schiefer · Nahaufnahme</span></div>
+            <div class="shot" onclick="sel(this)"><span class="pick">&#10003;</span><span class="cap">Live-Station · Holz</span></div>
+            <div class="shot" onclick="sel(this)"><span class="pick">&#10003;</span><span class="cap">Porzellan · puristisch</span></div>
+            <div class="shot" onclick="sel(this)"><span class="pick">&#10003;</span><span class="cap">Buffet · Übersicht</span></div>
+          </div>
+          <div style="display:flex;gap:16px;margin-top:28px;align-items:center">
+            <a class="btn btn-primary" href="vorschau.html">Auswahl ins Deck übernehmen</a>
+            <button class="btn btn-ghost" id="gen2">Neue Varianten</button>
+            <span style="font-size:.85rem;color:var(--ink-soft)" id="selinfo">2 Bilder ausgewählt</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site">
+  <div class="wrap"><div class="foot-inner">
+    <span>KOCHfabrik Studio — by Patrick Diehr</span>
+    <div class="fb"><a href="index.html">Atelier</a><a href="bibliothek.html">Bibliothek</a><a href="client.html">Recherche</a></div>
+  </div></div>
+</footer>
+
+<script>
+  document.querySelectorAll('.shot')[0].classList.add('sel');
+  document.querySelectorAll('.shot')[2].classList.add('sel');
+  function cnt(){var n=document.querySelectorAll('.shot.sel').length;document.getElementById('selinfo').textContent=n+' Bild'+(n===1?'':'er')+' ausgewählt'}
+  function sel(el){el.classList.toggle('sel');cnt()}
+  function flash(b){var o=b.textContent;b.textContent='Erzeuge …';b.disabled=true;setTimeout(function(){b.textContent=o;b.disabled=false},1100)}
+  document.getElementById('gen').addEventListener('click',function(){flash(this)});
+  document.getElementById('gen2').addEventListener('click',function(){flash(this)});
+</script>
+</body>
+</html>
