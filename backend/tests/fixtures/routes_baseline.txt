@@ -28,3 +28,5 @@
 ['POST'] /api/praesentation/generate
 ['POST'] /api/slidesuche/download
 ['POST'] /api/slidesuche/search
+['GET'] /api/designer/health
+['POST'] /api/designer/suggest
