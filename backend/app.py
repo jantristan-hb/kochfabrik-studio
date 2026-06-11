@@ -44,6 +44,7 @@ from backend.routers.bildgenerator import (  # noqa: E402
 from backend.routers.angebot import router as _angebot_router  # noqa: E402
 from backend.routers.praesentation import (  # noqa: E402
     router as _praesentation_router)
+from backend.routers.designer import router as _designer_router  # noqa: E402
 
 app.include_router(_slidesuche_router)
 
@@ -81,6 +82,7 @@ app.include_router(_auth_router)            # login/logout/oauth
 app.include_router(_bildgenerator_router)   # cats/image
 app.include_router(_angebot_router)         # angebot/kunden/stats
 app.include_router(_praesentation_router)   # praesentation
+app.include_router(_designer_router)        # designer (US-061)
 
 
 @app.get("/")
