@@ -98,3 +98,41 @@ def test_at_least_five_pages_link_designer():
              if "designer.html" in p.read_text(encoding="utf-8")]
     assert len(pages) >= 5, (
         f"Nur {len(pages)} Seiten verlinken designer.html (>=5 erwartet)")
+
+
+# --- US-065: Storyboard (Add/Reorder/Remove/Session) -----------------------
+# Marker-basiert (FE-Smoke nach EPIC-002-Muster): die Board-Funktionen
+# leben in designer.js. EARS 3 (FEATURE-012): Reorder + Remove + Reload-feste
+# Persistenz via sessionStorage unter dem versionierten Key.
+
+def _designer_js():
+    return (WEB / "assets" / "designer.js").read_text(encoding="utf-8")
+
+
+def test_board_persists_to_versioned_session_key():
+    js = _designer_js()
+    assert "sessionStorage" in js, "Persistenz via sessionStorage fehlt"
+    assert "kfDesigner.v1" in js, "versionierter State-Key fehlt"
+
+
+def test_board_add_remove_reorder_handlers_present():
+    js = _designer_js()
+    for fn in ("addToBoard", "removeFromBoard", "moveBoardItem"):
+        assert fn in js, f"Board-Handler fehlt: {fn}"
+
+
+def test_board_dedup_by_deck_page():
+    # Duplikat-Schutz: gleiche deck/page nur 1× (Identitaet via deck/page).
+    js = _designer_js()
+    assert "boardKey" in js and "deck" in js and "page" in js
+
+
+def test_board_renders_into_board_container():
+    js = _designer_js()
+    assert "dz-board" in js, "Board-Render-Ziel (#dz-board) nicht referenziert"
+
+
+def test_board_restores_on_load():
+    # Restore beim Laden: renderBoard wird im init-Hook aufgerufen.
+    js = _designer_js()
+    assert "renderBoard" in js
