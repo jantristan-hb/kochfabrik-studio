@@ -25,6 +25,9 @@ import os
 from fastapi import APIRouter, File, Request, UploadFile
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+# request.form() liefert Starlette-UploadFiles (Elternklasse); die
+# FastAPI-Subklasse matcht dort NIE — Bug #60 (Upload immer 400).
+from starlette.datastructures import UploadFile as StarletteUploadFile
 
 from ..engine_glue import (ENGINE_OK, ENGINE_ERR, _ENG, _ang2md,
                            _gemini_key, _owner)
@@ -228,7 +231,7 @@ async def designer_suggest(request: Request):
     if ctype.startswith("multipart/form-data"):
         form = await request.form()
         up = form.get("file")
-        if not isinstance(up, UploadFile):
+        if not isinstance(up, StarletteUploadFile):
             return JSONResponse({"error": "kein PDF im Upload"},
                                 status_code=400)
         raw = await up.read()
