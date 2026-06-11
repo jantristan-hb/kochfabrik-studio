@@ -5,9 +5,10 @@ US-053 legt die ersten beiden Tests an:
   US-054 erweitert um angebot.py/praesentation.py + app.py-<200-Z.-Grenze)
 - test_routen_inventar_unveraendert
 
-Die weiteren Tests aus docs/sprint-12/TEST.md (test_eine_bundle_ladestelle,
-test_tooling_split, test_sim_gate_db_block, test_claude_md) kommen mit den
-Folge-Stories US-055/056/057/059.
+US-055 ergänzt test_eine_bundle_ladestelle (TEST.md) + test_bundle_ranking_gold
+(Gold-Diff gegen ranking_gold.json — bit-identisches Ranking, Pitfall 4).
+Die restlichen TEST.md-Tests (test_tooling_split, test_sim_gate_db_block,
+test_claude_md) kommen mit US-056/057/059.
 
 HINWEIS Mount-Route: Die StaticFiles-Mount-Route (StaticFiles auf "/") ist
 ein starlette.routing.Mount und hat KEIN .methods-Attribut. Der TEST.md-
@@ -44,3 +45,55 @@ def test_routen_inventar_unveraendert():
                              "routes_baseline.txt"),
                 encoding="utf-8").read().splitlines()
     assert rs == sorted(base)
+
+
+# FEATURE-006 EARS 2 — genau EINE pgbundle-Ladestelle (US-055)
+def test_eine_bundle_ladestelle():
+    # HINWEIS: Die Testdatei selbst nennt sowohl "pgbundle" (grep-Arg)
+    # als auch den Filter-String "np.load" und würde sich sonst selbst
+    # matchen — Tests werden daher ausgeschlossen (verhaltensneutral,
+    # gemeint sind Produktionsmodule unter backend/ + engine/scripts/).
+    import subprocess
+    out = subprocess.run(
+        ["grep", "-rl", "pgbundle", "--include=*.py",
+         "backend", "engine/scripts"],
+        cwd=ROOT, capture_output=True, text=True).stdout.splitlines()
+    out = [f for f in out if "tests/" not in f]
+    loaders = [f for f in out if "np.load" in open(
+        os.path.join(ROOT, f), encoding="utf-8").read()]
+    assert loaders == ["engine/scripts/bundle.py"], loaders
+
+
+# FEATURE-006 EARS 2 — Ranking bit-identisch (Pitfall 4, Gold-Diff).
+# ranking_gold.json wurde aus dem Pre-Refactor-Stand (zwei getrennte
+# Loader) erzeugt; bundle.rank() muss byte-gleiche Reihenfolgen liefern
+# für slidesuche- (global top-20) UND pg_shim-Pfad (global + restringiert
+# top-8). Fixe Seed-Query (kein Gemini-Call) → reproduzierbar.
+def test_bundle_ranking_gold():
+    import json
+    import sys
+    import numpy as np
+    eng = os.path.join(ROOT, "engine", "scripts")
+    if eng not in sys.path:
+        sys.path.insert(0, eng)
+    import bundle
+    if not bundle.available():
+        import pytest
+        pytest.skip("pgbundle.npz nicht vorhanden")
+    gold = json.load(open(os.path.join(
+        ROOT, "backend", "tests", "fixtures", "ranking_gold.json"),
+        encoding="utf-8"))
+    b = bundle.load()
+    _, D = b["emb"].shape
+    qv = bundle.normalize_query(
+        np.random.default_rng(gold["seed"]).standard_normal(D))
+    ss = [[str(b["deck"][i]), int(b["page"][i]),
+           str(b["module_label"][i])] for i in bundle.rank(qv, None, 20)]
+    pg = [[str(b["deck"][j]), int(b["page"][j]),
+           str(b["src_pdf"][j])] for j in bundle.rank(qv, None, 8)]
+    idx = np.where(b["module_type"] == gold["module_type_pick"])[0]
+    rr = [[str(b["deck"][j]), int(b["page"][j]),
+           str(b["src_pdf"][j])] for j in bundle.rank(qv, idx, 8)]
+    assert ss == [list(x) for x in gold["slidesuche_top20"]]
+    assert pg == [list(x) for x in gold["pg_shim_global_top8"]]
+    assert rr == [list(x) for x in gold["pg_shim_restr_top8"]]

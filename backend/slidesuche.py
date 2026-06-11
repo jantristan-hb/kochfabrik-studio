@@ -90,27 +90,14 @@ def _dedup_key(deck, page):
         return deck, int(page)
 
 
-_BUNDLE = None
-
-
 def _bundle():
-    """Direkter Lade pgbundle.npz — umgeht pg_shim für unsere
-    ANN-Query. pg_shim ist für assemble.py-spezifische
-    LIMIT-8-deck/page/src_pdf-Queries gebaut, unterstützt weder
-    LIMIT %s noch SELECT module_label. Direkter numpy-Zugriff ist
-    auch performanter (kein SQL-Parsing zur Laufzeit)."""
-    global _BUNDLE
-    if _BUNDLE is not None:
-        return _BUNDLE
-    import numpy as np
-    path = os.path.join(os.path.dirname(_ENG), "data", "pgbundle.npz")
-    z = np.load(path, allow_pickle=True)
-    b = {k: z[k] for k in z.files}
-    e = b["emb"].astype(np.float32)
-    b["_normemb"] = e / (np.linalg.norm(e, axis=1,
-                                        keepdims=True) + 1e-9)
-    _BUNDLE = b
-    return _BUNDLE
+    """Bundle über die gemeinsame Schicht (US-055/ADR-003). pg_shim ist
+    für assemble.py-spezifische LIMIT-8-Queries gebaut (kein LIMIT %s,
+    kein module_label); unsere ANN nutzt deshalb direkt bundle.load()/
+    bundle.rank() — dieselbe einzige Ladestelle, kein eigener Load mehr.
+    Cache + Normalisierung liegen in `bundle`."""
+    import bundle as _b
+    return _b.load()
 
 
 def _auth_or_401(request):
@@ -148,17 +135,15 @@ def search(r: SearchReq, request: Request):
         return JSONResponse({"error": "embed: " + str(e)[:160]},
                             status_code=502)
 
-    # ANN direkt gegen das repo-interne Bundle (umgeht pg_shim, das nur
-    # die spezifische LIMIT-8-Form aus assemble.py unterstützt).
+    # ANN über die gemeinsame Bundle-Schicht (US-055/ADR-003) — gleiche
+    # EINE Ladestelle wie pg_shim, Ranking bit-identisch (bundle.rank).
     # 4x oversampling — nach Dedup-Redirect + PNG-Existenz-Filter
     # bleiben so genug Treffer für `limit`.
-    import numpy as np
+    import bundle as _b
     b = _bundle()
-    qv = np.asarray(vec, np.float32)
-    qv = qv / (np.linalg.norm(qv) + 1e-9)
-    sim = b["_normemb"] @ qv
+    qv = _b.normalize_query(vec)
     over = limit * 4
-    order = np.argsort(-sim)[:over]
+    order = _b.rank(qv, None, over)
     rows = [(str(b["deck"][i]),
              int(b["page"][i]),
              str(b["module_label"][i])) for i in order]
