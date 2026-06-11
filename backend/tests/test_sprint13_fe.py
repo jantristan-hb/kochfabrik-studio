@@ -136,3 +136,41 @@ def test_board_restores_on_load():
     # Restore beim Laden: renderBoard wird im init-Hook aufgerufen.
     js = _designer_js()
     assert "renderBoard" in js
+
+
+# --- US-064: Quelle + Vorschlags-Karten (FEATURE-012 EARS 1+5) -------------
+# Quelle (Upload + Angebots-Dropdown) -> suggest -> klickbare PNG-Karten je
+# Gruppe. Karten-Klick dockt via designer:add ans Board (US-065). EARS 5:
+# fehlt das Preview-PNG, zeigt die Karte einen Platzhalter (onerror), statt
+# den Kandidaten zu verwerfen.
+
+def _designer_html():
+    return (WEB / "designer.html").read_text(encoding="utf-8")
+
+
+def test_designer_js_wires_suggest():
+    # designer.js ruft suggest + die Angebots-Liste auf.
+    js = _designer_js()
+    assert "/api/designer/suggest" in js, "suggest-Endpoint nicht verdrahtet"
+    assert "/api/angebote" in js, "Angebots-Liste nicht verdrahtet"
+
+
+def test_designer_js_preview_fallback_marker():
+    # EARS 5: Platzhalter-/onerror-Pfad für fehlende Preview-PNGs.
+    js = _designer_js()
+    assert "onerror" in js
+    assert ("placeholder" in js.lower() or "platzhalter" in js.lower())
+
+
+def test_designer_js_renders_groups():
+    # Vorschlags-Gruppen werden in den Gruppen-Container gerendert.
+    js = _designer_js()
+    assert "dz-groups" in js, "Gruppen-Render-Ziel (#dz-groups) fehlt"
+    assert "renderGroups" in js
+
+
+def test_designer_source_panel_markers():
+    # Quelle-Panel: Upload-Input, Angebots-Dropdown.
+    html = _designer_html()
+    assert 'id="dz-upload"' in html
+    assert 'id="dz-offer"' in html

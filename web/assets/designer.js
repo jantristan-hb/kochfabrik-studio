@@ -58,10 +58,33 @@ async function apiJson(path, opts) {
   try { return await r.json(); } catch (e) { return null; }
 }
 
-// API-Stubs — Endpunkte (Designer-Router) kommen in der API-Kette;
-// die Verdrahtung der UI-Handler folgt in US-064 ff.
-async function fetchOffers() { return apiJson("/api/angebote"); }       // stub
-async function fetchSuggestions(_payload) { return null; }              // stub
+// --- Designer-API (US-064) ------------------------------------------------
+// Angebots-Liste fürs Dropdown (gleiche Route wie bibliothek.html).
+async function fetchOffers() {
+  const d = await apiJson("/api/angebote");
+  return (d && d.offers) || [];
+}
+
+// suggest: drei Input-Zweige (FormData-PDF | {offer_id} | {offer}).
+// Liefert {offer, groups[]}; wirft bei !ok mit gekürzter Server-Meldung,
+// gibt null zurück, wenn 401 schon zum Login umgeleitet hat.
+async function fetchSuggestions(payload) {
+  const opts = (payload instanceof FormData)
+    ? { method: "POST", body: payload }
+    : { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload) };
+  const r = await api("/api/designer/suggest", opts);
+  if (!r) return null;                       // 401 -> Redirect bereits erfolgt
+  const data = await r.json().catch(() => null);
+  if (!r.ok) {
+    const err = new Error((data && data.error) || `Fehler ${r.status}`);
+    err.status = r.status;
+    throw err;
+  }
+  return data;
+}
+
+// Freitext-Suche (US-066) — Verdrahtung folgt dort, Wrapper schon hier.
 async function search(_q) { return null; }                              // stub
 
 // --- Storyboard-Modul (US-065) --------------------------------------------
@@ -192,12 +215,155 @@ function onDesignerAdd(ev) {
   if (ev && ev.detail) addToBoard(ev.detail);
 }
 
+// --- Vorschlags-Karten (US-064) -------------------------------------------
+// Eine Kandidaten-Karte: PNG (onerror -> Platzhalter statt verwerfen,
+// EARS 5), Label, Score. Klick dockt via designer:add ans Board (US-065).
+// `card()` ist die gemeinsame Render-Funktion, die US-066 (Suche) mitnutzt.
+
+function card(cand) {
+  const c = el("button", "dz-card");
+  c.type = "button";
+  c.dataset.deck = cand.deck;
+  c.dataset.page = cand.page;
+
+  const img = document.createElement("img");
+  img.loading = "lazy";
+  img.src = cand.preview || cand.preview_url || "";
+  img.alt = cand.label || cand.headline || "";
+  // EARS 5: fehlt das Preview-PNG (404), Platzhalter setzen statt Karte killen.
+  img.onerror = () => {
+    img.classList.add("dz-thumb-missing");
+    img.removeAttribute("src");
+    c.classList.add("dz-card-placeholder");
+  };
+  c.appendChild(img);
+
+  const cap = el("div", "dz-cap");
+  cap.appendChild(el("span", "dz-cap-label",
+    cand.label || cand.headline || `${cand.deck} / ${cand.page}`));
+  if (typeof cand.score === "number") {
+    cap.appendChild(el("span", "dz-cap-score", cand.score.toFixed(2)));
+  }
+  c.appendChild(cap);
+
+  const detail = {
+    deck: cand.deck, page: cand.page,
+    png_url: cand.preview || cand.preview_url || "",
+    label: cand.label || cand.headline || "",
+  };
+  const sync = () => c.classList.toggle("dz-card-on", isOnBoard(detail));
+  c.addEventListener("click", () => {
+    c.dispatchEvent(new CustomEvent("designer:add",
+      { bubbles: true, detail }));
+    sync();                                  // „im Deck"-Markierung
+  });
+  sync();
+  return c;
+}
+
+// Vorschlags-Gruppen rendern: Spalte je Gruppe (Gang/Pflicht), Karten-Grid.
+function renderGroups(groups) {
+  const host = document.getElementById("dz-groups");
+  const empty = document.getElementById("dz-groups-empty");
+  if (!host) return;
+  host.innerHTML = "";
+  const list = groups || [];
+  if (empty) empty.style.display = list.length ? "none" : "";
+  list.forEach((g) => {
+    const sec = el("div", "dz-group");
+    sec.appendChild(el("div", "dz-group-h",
+      g.label + (g.kind === "pflicht" ? " (Pflicht)" : "")));
+    const grid = el("div", "dz-cards");
+    (g.candidates || []).forEach((cand) => grid.appendChild(card(cand)));
+    sec.appendChild(grid);
+    host.appendChild(sec);
+  });
+}
+
+// --- Quelle-Panel (US-064): Upload + Angebots-Dropdown -> suggest ---------
+
+function setStatus(msg, kind) {
+  const elS = document.getElementById("dz-source-status");
+  if (!elS) return;
+  elS.textContent = msg || "";
+  elS.className = "dz-status" + (kind ? " dz-status-" + kind : "");
+}
+
+async function runSuggest(payload) {
+  setStatus("Vorschläge werden geladen …", "load");
+  try {
+    const data = await fetchSuggestions(payload);
+    if (data === null) return;               // 401 -> Redirect lief schon
+    state.groups = data.groups || [];
+    saveState(state);
+    renderGroups(state.groups);
+    setStatus("", "");
+  } catch (e) {
+    renderGroups([]);
+    // 503 = Korpus in diesem Deploy nicht verfügbar (Infra-Hinweis).
+    const hint = e.status === 503
+      ? "Korpus derzeit nicht verfügbar — bitte später erneut versuchen."
+      : (e.message || "Vorschläge konnten nicht geladen werden.");
+    setStatus(hint, "error");
+  }
+}
+
+async function loadOfferOptions() {
+  const sel = document.getElementById("dz-offer");
+  if (!sel) return;
+  const offers = await fetchOffers();
+  offers.forEach((o) => {
+    const opt = document.createElement("option");
+    opt.value = o.offer_id;
+    opt.textContent = `${o.kunde || "?"} — ${o.anlass || o.angebotsnummer || o.offer_id}`;
+    sel.appendChild(opt);
+  });
+}
+
+function wireSource() {
+  const sel = document.getElementById("dz-offer");
+  if (sel) {
+    sel.addEventListener("change", () => {
+      const id = sel.value;
+      if (id) runSuggest({ offer_id: Number(id) });
+    });
+  }
+
+  // Upload: Drop-Zone klickbar + Datei-Input (PDF -> FormData -> suggest).
+  const drop = document.getElementById("dz-upload");
+  const file = document.getElementById("dz-file");
+  if (drop && file) {
+    drop.addEventListener("click", () => file.click());
+    file.addEventListener("change", () => {
+      const f = file.files && file.files[0];
+      if (!f) return;
+      const fd = new FormData();
+      fd.append("file", f);
+      runSuggest(fd);
+    });
+    drop.addEventListener("dragover", (ev) => {
+      ev.preventDefault(); drop.classList.add("dz-drop-over");
+    });
+    drop.addEventListener("dragleave", () => drop.classList.remove("dz-drop-over"));
+    drop.addEventListener("drop", (ev) => {
+      ev.preventDefault(); drop.classList.remove("dz-drop-over");
+      const f = ev.dataTransfer && ev.dataTransfer.files[0];
+      if (!f) return;
+      const fd = new FormData();
+      fd.append("file", f);
+      runSuggest(fd);
+    });
+  }
+}
+
 // --- Init-Hook ------------------------------------------------------------
 
 function init() {
-  // US-064 ff. verdrahten Quelle/Suche/Karten/Download hier.
   document.addEventListener("designer:add", onDesignerAdd);
-  renderBoard();        // Restore: Board aus sessionStorage rekonstruieren
+  wireSource();
+  loadOfferOptions();
+  renderGroups(state.groups);   // Restore: zuletzt geladene Vorschläge
+  renderBoard();                // Restore: Board aus sessionStorage
   saveState(state);
 }
 
@@ -210,4 +376,4 @@ if (document.readyState === "loading") {
 export { STATE_KEY, loadState, saveState, emptyState, api, apiJson,
   fetchOffers, fetchSuggestions, search,
   addToBoard, removeFromBoard, moveBoardItem, isOnBoard, renderBoard,
-  boardKey };
+  boardKey, card, renderGroups, runSuggest };
