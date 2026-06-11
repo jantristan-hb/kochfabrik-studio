@@ -2,6 +2,20 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/)
 
+## [Sprint 12] — 2026-06-11 — EPIC-004-Abschluss + EPIC-009
+
+### Hinzugefügt
+- **US-052:** Täglicher Backup-Zyklus auf dem Host (Cron 03:30, 14-Tage-Rotation, Off-Host-Pull) → `docs/ops/BACKUP-CYCLE.md`
+- **US-055:** `engine/scripts/bundle.py` — die EINE pgbundle-Schicht (ADR-003); Ranking bit-identisch, als Gold-Regressionstest festgenagelt
+- **US-057:** Alembic-Container-Abnahme — Migrations-Schritt rc=0 + `alembic_version`-Stamp bewiesen, `SIM_GATE_DB=1`-Block im Sim-Gate (F-S-01 endgültig zu)
+- **US-058:** Restore-Probe real durchgespielt (alle Kern-Tabellen + Rowcounts) + Korpus-Wiederaufbau-Doku → `docs/ops/RESTORE-RUNBOOK.md`
+- **US-059:** Projekt-`CLAUDE.md` (Stack, Gates, Deploy-Wahrheit „kein Auto-Deploy", Architektur-Regeln, Sprint-Tabelle)
+
+### Geändert
+- **US-053/054:** Backend modularisiert — `backend/routers/{auth,bildgenerator,angebot,praesentation}.py` + `engine_glue.py`; `app.py` 936→91 Zeilen, Routen-Inventar byte-identisch
+- **US-056:** Engine-Tooling-Split per Import-Graph — 13 Runtime-Module bleiben `engine/scripts/`, 33 Build-Tools nach `engine/tooling/` (inkl. Anti-Namensraten-Befunde gen_fiktiv + build_angebot_template)
+- **US-060:** Engine-Repo `pptxgenerator_v2` auf GitHub archiviert (read-only, Verweis aufs Monorepo)
+
 ## [Sprint 11] — 2026-06-10 — EPIC-004 Monorepo-Schnitt (M1–M3)
 
 ### Hinzugefügt
