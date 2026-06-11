@@ -305,7 +305,7 @@ function renderGroups(groups) {
   list.forEach((g) => {
     const sec = el("div", "dz-group");
     sec.appendChild(el("div", "dz-group-h",
-      g.label + (g.kind === "pflicht" ? " (Pflicht)" : "")));
+      g.label + (g.kind === "pflicht" ? " (Pflicht)" : g.kind === "konzept" ? " (aus Konzept)" : "")));
     const grid = el("div", "dz-cards");
     (g.candidates || []).forEach((cand) => grid.appendChild(card(cand)));
     sec.appendChild(grid);
@@ -379,7 +379,17 @@ async function runSuggest(payload) {
     state.groups = data.groups || [];
     saveState(state);
     renderGroups(state.groups);
-    setStatus("", "");
+    // Pauschal-Angebot ohne Menü-Gänge (#62): erklären statt schweigen.
+    const hasGang = state.groups.some((g) => g.kind === "gang");
+    const hasKonzept = state.groups.some((g) => g.kind === "konzept");
+    if (!hasGang && hasKonzept) {
+      setStatus("Keine Menü-Gänge im Angebot erkannt (Pauschal-Angebot) — "
+        + "Vorschläge basieren auf dem Catering-Konzept; ergänze per Suche.", "load");
+    } else if (!hasGang) {
+      setStatus("Keine Menü-Gänge im Angebot erkannt — nutze die Freitext-Suche.", "load");
+    } else {
+      setStatus("", "");
+    }
   } catch (e) {
     renderGroups([]);
     // 503 = Korpus in diesem Deploy nicht verfügbar (Infra-Hinweis).

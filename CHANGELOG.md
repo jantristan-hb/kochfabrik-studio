@@ -5,6 +5,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/)
 ## [Unreleased]
 
 ### Bugfixes
+- **Fixed:** Designer ohne Vorschläge bei Pauschal-Angeboten — Fallback-Konzept-Gruppe aus Speisen-Positionen + Cateringkonzept (gleiche Ranking-Maschinerie) + FE-Hinweis (#62)
 - **Fixed:** Designer-PDF-Upload lieferte immer 400 (isinstance gegen FastAPI-UploadFile-Subklasse; request.form() liefert Starlette-Instanzen) (#60)
 
 ## [Sprint 13] — 2026-06-11 — Präsentationsdesigner (EPIC-006)

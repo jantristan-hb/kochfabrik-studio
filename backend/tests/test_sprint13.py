@@ -211,3 +211,30 @@ def test_suggest_pdf_upload_multipart(auth_client, monkeypatch):
     assert r.status_code != 400, r.text   # Bug #60: 400 "kein PDF im Upload"
     assert r.status_code == 200, r.text
     assert r.json()["offer"]["kunde"] == "Upload GmbH"
+
+
+# Bug #62 — Pauschal-Angebote (0 Menü-Gänge) bekamen nur die Pflicht-
+# Gruppe. Fallback: EINE kind=konzept-Gruppe aus Speisen-Positionen +
+# Cateringkonzept, gleiche Ranking-Maschinerie.
+def test_suggest_pauschal_konzept_fallback(auth_client, monkeypatch):
+    import assemble
+    import compose_offer
+    import backend.routers.designer as d
+    _prep_ranking(d, monkeypatch)
+    monkeypatch.setattr(assemble, "parse_header",
+                        lambda src, **kw: ("Howden GmbH", "11. Juni 2025"))
+    monkeypatch.setattr(compose_offer, "parse_offer_dishes",
+                        lambda src, **kw: [])          # Pauschal: 0 Gänge
+    monkeypatch.setattr(d, "_konzept_text",
+                        lambda src: "Einweihungsfeier Flying Dinner",
+                        raising=False)
+    r = auth_client.post(
+        "/api/designer/suggest",
+        files={"file": ("angebot.pdf", b"%PDF-1.4 fake",
+                        "application/pdf")})
+    assert r.status_code == 200, r.text
+    kinds = [g["kind"] for g in r.json()["groups"]]
+    assert "konzept" in kinds, kinds          # Bug #62: nur ["pflicht"]
+    kg = [g for g in r.json()["groups"] if g["kind"] == "konzept"][0]
+    assert kg["candidates"], "Konzept-Gruppe ohne Kandidaten"
+    assert "konzept" not in r.json()["offer"], "internes Feld geleakt"
