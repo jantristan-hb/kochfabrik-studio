@@ -12,7 +12,8 @@ Erzeugt phase0/data/dedup_manifest.json:
   }
 
 Lokal: alle 1023 PNGs bleiben unangetastet (Master-Set).
-Server-Volume: vendor.sh --push-previews rsynct nur die `kept`-PNGs.
+Server-Volume: das Deploy (Coolify-Volume, Monorepo) hält nur die
+`kept`-PNGs — Repräsentanten-Set, nicht das volle Master-Set.
 slidesuche.py Search nutzt `redirect` um ANN-Treffer auf den
 Repräsentanten umzulenken + dedup'd dann nach (deck, page).
 
@@ -31,6 +32,10 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# US-056: Tooling lebt jetzt unter engine/tooling/ — Runtime-Module
+# (engine/scripts/) zusätzlich auf den Pfad (KEINE Logikänderung).
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                "..", "scripts"))
 from _deckpipe import CACHE                                       # noqa
 
 DATA = os.path.dirname(CACHE)

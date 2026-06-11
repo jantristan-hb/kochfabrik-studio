@@ -17,6 +17,10 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# US-056: Tooling lebt jetzt unter engine/tooling/ — Runtime-Module
+# (engine/scripts/) zusätzlich auf den Pfad (KEINE Logikänderung).
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                "..", "scripts"))
 from kf_classify import is_kochfabrik, classify, pdf_text   # noqa
 from compose_offer import parse_offer_dishes                 # noqa
 
