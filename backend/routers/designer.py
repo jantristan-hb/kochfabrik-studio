@@ -199,53 +199,66 @@ def _konzept_text(src: str) -> str:
     return " ".join(out)[:600]
 
 
-def _pflicht_group(kunde: str) -> dict:
-    """EINE Pflicht-Gruppe: je Pflicht-Kategorie eine kunden-stabile
-    Frame-Instanz (compose_offer.pick_frame). Quelle = static_slide.json,
-    Auswahl identisch zur pg_shim-static_slide-Query (inclusion=pflicht,
-    ohne COVER)."""
+def _frame_groups(kunde: str):
+    """Frame-Slots in DECK-Reihenfolge (skel_pos aus static_slide.json:
+    COVER 0.0 / CREW 0.1 vor den Gängen; PERSONAL 0.76 / AUSSTATTUNG
+    0.78 / WERTSCHÄTZUNG 0.89 / KONTAKT 1.0 danach). Je Kategorie ALLE
+    Alternativen als Kandidaten — die kunden-stabile pick_frame-Wahl
+    zuerst (Default), Rest in stabiler deck/page-Reihenfolge (#64)."""
     ss_path = os.path.join(os.path.dirname(_ENG), "data",
                            "static_slide.json")
-    candidates = []
     try:
         rows = json.load(open(ss_path, encoding="utf-8"))
     except Exception:                                           # noqa
         rows = []
     by_cat: dict = {}
+    pos: dict = {}
     for r in rows:
-        if r.get("inclusion") == "pflicht" and r.get("category") != "COVER":
-            by_cat.setdefault(r["category"], []).append(r)
-    for cat in sorted(by_cat):
-        opts = by_cat[cat]
-        chosen = pick_frame(cat, opts, kunde) if pick_frame else opts[0]
-        if not chosen:
+        if r.get("inclusion") != "pflicht":
             continue
-        candidates.append({
-            "deck": str(chosen["deck"]),
-            "page": int(chosen["page"]),
+        by_cat.setdefault(r["category"], []).append(r)
+        sp = r.get("skel_pos")
+        pos[r["category"]] = 0.99 if sp is None else float(sp)
+    before, after = [], []
+    for cat in sorted(by_cat, key=lambda c: pos[c]):
+        opts = sorted(by_cat[cat],
+                      key=lambda r: (str(r["deck"]), int(r["page"])))
+        chosen = pick_frame(cat, opts, kunde) if pick_frame else opts[0]
+        if chosen in opts:
+            ordered = [chosen] + [o for o in opts if o is not chosen]
+        else:
+            ordered = opts
+        cands = [{
+            "deck": str(o["deck"]),
+            "page": int(o["page"]),
             "score": 1.0,                            # Pflicht = gesetzt
-            "preview": f"{_PREVIEW_BASE}/{chosen['deck']}"
-                       f"/{int(chosen['page'])}.png",
-            "label": str(chosen.get("category") or ""),
-        })
-    return {"label": "Pflicht-Slides", "kind": "pflicht",
-            "candidates": candidates}
+            "preview": f"{_PREVIEW_BASE}/{o['deck']}"
+                       f"/{int(o['page'])}.png",
+            "label": str(o.get("category") or ""),
+        } for o in ordered]
+        group = {"label": cat,
+                 "kind": "cover" if cat == "COVER" else "pflicht",
+                 "candidates": cands}
+        (before if pos[cat] < 0.5 else after).append(group)
+    return before, after
 
 
 def _build_response(offer: dict, n: int = _DEFAULT_N) -> dict:
     """Response-Schema FEATURE-011 §3: offer + groups (je Gang eine
     gang-Gruppe Top-N, plus genau EINE pflicht-Gruppe)."""
     konzept = offer.pop("konzept", None)
-    groups = _gang_groups(offer.get("gaenge", []), n)
-    if not groups and konzept:
+    food = _gang_groups(offer.get("gaenge", []), n)
+    if not food and konzept:
         # Pauschal-Angebot (#62): eine Konzept-Gruppe über dieselbe
         # Ranking-Maschinerie statt einer leeren Vorschlagsliste.
-        groups = _gang_groups(
+        food = _gang_groups(
             [{"label": "Catering-Konzept",
               "dishes": [{"name": konzept, "desc": ""}]}], n)
-        for g in groups:
+        for g in food:
             g["kind"] = "konzept"
-    groups.append(_pflicht_group(offer.get("kunde", "")))
+    # Slots in DECK-Reihenfolge (#64): Cover/Crew → Food → Frame-Rest.
+    before, after = _frame_groups(offer.get("kunde", ""))
+    groups = before + food + after
     return {"offer": offer, "groups": groups}
 
 

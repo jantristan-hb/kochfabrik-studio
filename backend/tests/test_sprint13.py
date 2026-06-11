@@ -153,15 +153,26 @@ def test_suggest_groups_topn(auth_client, monkeypatch):
 
 
 def test_suggest_pflicht_gruppe(auth_client, monkeypatch):
-    """Response enthält genau eine Gruppe kind=pflicht (EARS 1)."""
+    """Slot-Semantik (#64): Frame-Kategorien als EIGENE Gruppen in
+    DECK-Reihenfolge — COVER zuerst, KONTAKT zuletzt, Gänge dazwischen
+    (zwischen CREW und PERSONAL). Ersetzt die alte Sammel-Pflicht-Gruppe."""
     import backend.routers.designer as d
     _prep_ranking(d, monkeypatch)
     r = auth_client.post("/api/designer/suggest",
                          json={"offer": _OFFER_MD})
     assert r.status_code == 200
-    pflicht = [g for g in r.json()["groups"] if g["kind"] == "pflicht"]
-    assert len(pflicht) == 1
-    assert pflicht[0]["candidates"]                # nicht leer
+    groups = r.json()["groups"]
+    kinds = [g["kind"] for g in groups]
+    labels = [g["label"] for g in groups]
+    assert kinds[0] == "cover" and labels[0] == "COVER"
+    assert labels[-1] == "KONTAKT"
+    assert kinds.count("pflicht") >= 4             # Crew/Personal/Ausst./Wert./Kontakt
+    gang_idx = [i for i, k in enumerate(kinds) if k == "gang"]
+    crew_idx = labels.index("DEINE CATERING- & EVENT-CREW IM NORDEN")
+    personal_idx = labels.index("PERSONAL")
+    assert gang_idx and crew_idx < gang_idx[0] and gang_idx[-1] < personal_idx
+    for g in groups:
+        assert g["candidates"]                     # kein leerer Slot
 
 
 def test_suggest_embed_fail_502(auth_client, monkeypatch):

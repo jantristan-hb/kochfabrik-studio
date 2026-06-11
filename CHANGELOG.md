@@ -4,6 +4,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/)
 
 ## [Unreleased]
 
+### Hinzugefügt
+- **Designer Slot-Ansicht:** Vorschläge als nummerierte Slides in Deck-Reihenfolge (Cover → Crew → Gänge → Personal → Ausstattung → Wertschätzung → Kontakt), je Slot 2–3 Alternativen nebeneinander (+N weitere), Mehrfachauswahl; Board sortiert Slot-Karten automatisch in Deck-Reihenfolge ein (#64)
+
 ### Bugfixes
 - **Fixed:** Designer ohne Vorschläge bei Pauschal-Angeboten — Fallback-Konzept-Gruppe aus Speisen-Positionen + Cateringkonzept (gleiche Ranking-Maschinerie) + FE-Hinweis (#62)
 - **Fixed:** Designer-PDF-Upload lieferte immer 400 (isinstance gegen FastAPI-UploadFile-Subklasse; request.form() liefert Starlette-Instanzen) (#60)

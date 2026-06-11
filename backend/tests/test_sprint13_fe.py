@@ -274,3 +274,19 @@ def test_designer_js_pauschal_hint():
               encoding="utf-8").read()
     assert "Pauschal-Angebot" in js
     assert '"konzept"' in js
+
+
+# #64 — Slot-Ansicht: nummerierte Slides, max 3 nebeneinander,
+# Slot-bewusstes Einsortieren ins Board.
+def test_designer_js_slot_view():
+    import os
+    root = os.path.join(os.path.dirname(__file__), "..", "..")
+    js = open(os.path.join(root, "web", "assets", "designer.js"),
+              encoding="utf-8").read()
+    assert '"Slide " + slot' in js               # Nummerierung
+    assert "slice(0, 3)" in js                   # 2-3 nebeneinander
+    assert "weitere" in js                       # +N weitere
+    assert "b.slot != null && b.slot <= entry.slot" in js  # Board-Einsortierung
+    html = open(os.path.join(root, "web", "designer.html"),
+                encoding="utf-8").read()
+    assert "dz-cards-row" in html

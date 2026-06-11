@@ -137,12 +137,23 @@ function boardIndexOf(item) {
 function addToBoard(item) {
   if (!item || item.deck == null || item.page == null) return false;
   if (boardIndexOf(item) !== -1) return false;
-  state.board.push({
+  const entry = {
     deck: item.deck,
     page: item.page,
     png_url: item.png_url || item.preview || "",
     label: item.label || `${item.deck} / ${item.page}`,
-  });
+    slot: item.slot || null,
+  };
+  // #64: Slot-Karten in Deck-Reihenfolge einsortieren — hinter den
+  // letzten Eintrag mit slot <= eigenem; Slide ohne Slot (Suche) ans Ende.
+  let at = state.board.length;
+  if (entry.slot != null) {
+    at = 0;
+    state.board.forEach((b, i) => {
+      if (b.slot != null && b.slot <= entry.slot) at = i + 1;
+    });
+  }
+  state.board.splice(at, 0, entry);
   persistAndRender();
   return true;
 }
@@ -253,7 +264,7 @@ function onDesignerAdd(ev) {
 // EARS 5), Label, Score. Klick dockt via designer:add ans Board (US-065).
 // `card()` ist die gemeinsame Render-Funktion, die US-066 (Suche) mitnutzt.
 
-function card(cand) {
+function card(cand, slot) {
   const c = el("button", "dz-card");
   c.type = "button";
   c.dataset.deck = cand.deck;
@@ -283,6 +294,7 @@ function card(cand) {
     deck: cand.deck, page: cand.page,
     png_url: cand.preview || cand.preview_url || "",
     label: cand.label || cand.headline || "",
+    slot: slot || null,                      // Deck-Position (#64)
   };
   const sync = () => c.classList.toggle("dz-card-on", isOnBoard(detail));
   c.addEventListener("click", () => {
@@ -302,12 +314,31 @@ function renderGroups(groups) {
   host.innerHTML = "";
   const list = groups || [];
   if (empty) empty.style.display = list.length ? "none" : "";
-  list.forEach((g) => {
-    const sec = el("div", "dz-group");
+  // Slot-Ansicht (#64): Gruppen kommen vom Server in DECK-Reihenfolge —
+  // als "Slide N: …" nummerieren, 2-3 Alternativen nebeneinander,
+  // weitere hinter "+N weitere" (Mehrfachauswahl bleibt Karten-Klick).
+  list.forEach((g, gi) => {
+    const slot = gi + 1;
+    const sec = el("div", "dz-group dz-slot");
+    const suffix = g.kind === "pflicht" ? " (Pflicht)"
+      : g.kind === "konzept" ? " (aus Konzept)"
+      : g.kind === "cover" ? " (Cover)" : "";
     sec.appendChild(el("div", "dz-group-h",
-      g.label + (g.kind === "pflicht" ? " (Pflicht)" : g.kind === "konzept" ? " (aus Konzept)" : "")));
-    const grid = el("div", "dz-cards");
-    (g.candidates || []).forEach((cand) => grid.appendChild(card(cand)));
+      "Slide " + slot + ": " + g.label + suffix));
+    const grid = el("div", "dz-cards dz-cards-row");
+    const cands = g.candidates || [];
+    cands.slice(0, 3).forEach((cand) => grid.appendChild(card(cand, slot)));
+    if (cands.length > 3) {
+      const more = el("button", "dz-more",
+        "+" + (cands.length - 3) + " weitere");
+      more.type = "button";
+      more.addEventListener("click", () => {
+        cands.slice(3).forEach((cand) =>
+          grid.insertBefore(card(cand, slot), more));
+        more.remove();
+      });
+      grid.appendChild(more);
+    }
     sec.appendChild(grid);
     host.appendChild(sec);
   });
