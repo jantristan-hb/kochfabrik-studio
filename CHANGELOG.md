@@ -2,6 +2,17 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/)
 
+## [Sprint 13] — 2026-06-11 — Präsentationsdesigner (EPIC-006)
+
+### Hinzugefügt
+- **US-061/062: Designer-Vorschlags-API** — `POST /api/designer/suggest`: Angebot (PDF-Upload, gespeichert oder JSON) → pro Gang Top-5 Slide-Kandidaten (1 Embed-Batch + bundle-Ranking, ADR-003-konform) + Pflicht-Slide-Gruppe, je mit Score und Preview-URL; Live-Smoke semantisch bewiesen (Vorspeise→„Finger Bites" 0.869 …)
+- **US-063: Designer-Seite** — `web/designer.html` + `designer.js` (Design-2, 3-Bereichs-Layout), Nav-Eintrag auf allen Seiten
+- **US-065: Storyboard** — Klick-Übernahme, Reorder (↑/↓), Entfernen, Duplikat-Schutz, sessionStorage-Persistenz (`kfDesigner.v1`, reload-fest)
+- **US-064: Vorschlags-Karten** — Upload/Angebots-Auswahl → Vorschlags-Spalten mit PNG-Karten (404→Platzhalter), „im Deck"-Markierung
+- **US-066: Freitext-Suche im Designer** — Slidesuche-Treffer als gleichartige Karten neben den Vorschlägen, gleiche Board-Übernahme
+- **US-067: PPTX-Download + E2E** — Storyboard → `/api/slidesuche/download`; E2E-Beweis suggest→Kandidat→Download→valide PPTX (reconstruct.js, 2,4 MB)
+- **US-068: live_verify Deep-Check** — `LIVE_DEEP=1` prüft engine/korpus hinter dem Auth-Gate (Nacharbeit Korpus-Mount-Incident 2026-06-11)
+
 ## [Sprint 12] — 2026-06-11 — EPIC-004-Abschluss + EPIC-009
 
 ### Hinzugefügt
