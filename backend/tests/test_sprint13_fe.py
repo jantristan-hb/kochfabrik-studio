@@ -174,3 +174,24 @@ def test_designer_source_panel_markers():
     html = _designer_html()
     assert 'id="dz-upload"' in html
     assert 'id="dz-offer"' in html
+
+
+# --- US-066: Freitext-Suche im Designer (FEATURE-012 EARS 2) ---------------
+# Slidesuche-Treffer landen im selben Storyboard, im selben Karten-Format
+# wie die Vorschläge (gemeinsame card()-Render-Funktion). Eigener Treffer-
+# Bereich, der die Vorschlags-Gruppen nicht ersetzt.
+
+def test_designer_js_wires_search():
+    js = _designer_js()
+    assert "/api/slidesuche/search" in js, "search-Endpoint nicht verdrahtet"
+
+
+def test_designer_js_search_renders_results():
+    js = _designer_js()
+    # Eigener Treffer-Bereich (#dz-results) — koexistiert mit #dz-groups.
+    assert "dz-results" in js, "Such-Treffer-Bereich (#dz-results) fehlt"
+
+
+def test_designer_search_panel_marker():
+    html = _designer_html()
+    assert 'id="dz-search"' in html

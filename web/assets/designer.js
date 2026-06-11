@@ -84,8 +84,23 @@ async function fetchSuggestions(payload) {
   return data;
 }
 
-// Freitext-Suche (US-066) — Verdrahtung folgt dort, Wrapper schon hier.
-async function search(_q) { return null; }                              // stub
+// Freitext-Suche (US-066): Slidesuche-ANN über den Korpus.
+// Liefert das Treffer-Array (results) oder null bei 401-Redirect.
+async function search(q) {
+  const r = await api("/api/slidesuche/search", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query: q, limit: 5 }),
+  });
+  if (!r) return null;                       // 401 -> Redirect bereits erfolgt
+  const data = await r.json().catch(() => null);
+  if (!r.ok) {
+    const err = new Error((data && data.error) || `Fehler ${r.status}`);
+    err.status = r.status;
+    throw err;
+  }
+  return (data && data.results) || [];
+}
 
 // --- Storyboard-Modul (US-065) --------------------------------------------
 // Identität einer Board-Karte = deck/page (Dedup-Schlüssel; deckt sich mit
@@ -280,6 +295,55 @@ function renderGroups(groups) {
   });
 }
 
+// --- Freitext-Suche (US-066) ----------------------------------------------
+// Treffer im selben Karten-Format (card()), eigener Bereich #dz-results, der
+// die Vorschlags-Gruppen NICHT ersetzt (EARS 2). Klick dockt wie Vorschläge
+// ans Board (designer:add).
+
+function renderResults(results, msg) {
+  const host = document.getElementById("dz-results");
+  if (!host) return;
+  host.innerHTML = "";
+  const list = results || [];
+  if (!list.length) {
+    host.appendChild(el("div", "dz-empty", msg || "Keine Treffer."));
+    return;
+  }
+  const head = el("div", "dz-group-h", "Suchtreffer");
+  host.appendChild(head);
+  const grid = el("div", "dz-cards");
+  list.forEach((hit) => grid.appendChild(card(hit)));
+  host.appendChild(grid);
+}
+
+async function runSearch(q) {
+  const query = (q || "").trim();
+  if (!query) { renderResults([], "Suchbegriff eingeben."); return; }
+  renderResults([], "Suche läuft …");
+  try {
+    const results = await search(query);
+    if (results === null) return;            // 401 -> Redirect lief schon
+    state.query = query;
+    saveState(state);
+    renderResults(results);
+  } catch (e) {
+    renderResults([], e.message || "Suche fehlgeschlagen.");
+  }
+}
+
+function wireSearch() {
+  const inp = document.getElementById("dz-search");
+  if (!inp) return;
+  let t = null;
+  inp.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") { clearTimeout(t); runSearch(inp.value); }
+  });
+  inp.addEventListener("input", () => {
+    clearTimeout(t);
+    t = setTimeout(() => { if (inp.value.trim()) runSearch(inp.value); }, 350);
+  });
+}
+
 // --- Quelle-Panel (US-064): Upload + Angebots-Dropdown -> suggest ---------
 
 function setStatus(msg, kind) {
@@ -361,6 +425,7 @@ function wireSource() {
 function init() {
   document.addEventListener("designer:add", onDesignerAdd);
   wireSource();
+  wireSearch();
   loadOfferOptions();
   renderGroups(state.groups);   // Restore: zuletzt geladene Vorschläge
   renderBoard();                // Restore: Board aus sessionStorage
@@ -376,4 +441,4 @@ if (document.readyState === "loading") {
 export { STATE_KEY, loadState, saveState, emptyState, api, apiJson,
   fetchOffers, fetchSuggestions, search,
   addToBoard, removeFromBoard, moveBoardItem, isOnBoard, renderBoard,
-  boardKey, card, renderGroups, runSuggest };
+  boardKey, card, renderGroups, runSuggest, renderResults, runSearch };
