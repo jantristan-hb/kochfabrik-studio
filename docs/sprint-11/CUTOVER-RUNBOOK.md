@@ -125,6 +125,17 @@ Repo.
 ## Nach grünem Cutover
 
 - `./tools/live_verify.sh` grün gegen die neue Revision (Soll-Signatur oben)
+- **PFLICHT: `LIVE_DEEP=1 ./tools/live_verify.sh` grün** (US-068). Der
+  Standard-Lauf sieht hinter dem Auth-Gate nur 401 und kann daher nicht
+  zwischen „Route lebt mit Korpus" und „Route lebt ohne Korpus" unterscheiden
+  — beim Incident 2026-06-11 mountete Coolify das Korpus-Volume nach dem
+  Monorepo-Cutover auf den alten Pfad, der Präsentationsgenerator lief ohne
+  Korpus, und genau das war für beide Gates unsichtbar (401 verdeckt das
+  korpus-Flag, Sim-Gate wertet `korpus:false` als graceful-ok). `LIVE_DEEP=1`
+  mintet via SSH+`docker exec` ein Session-Cookie und ruft die Health-Routen
+  authentifiziert auf; FAIL (exit 1), wenn `praesentation` nicht
+  `engine:true`+`korpus:true` bzw. `angebot` nicht `engine:true` meldet. Ein
+  POST-Cutover-Deploy gilt erst mit grünem Deep-Check als bestätigt.
 - Korpus-Volume weiter gemountet (`/api/praesentation/health` `korpus:true`
   in Prod — anders als im Sim, wo bewusst kein Volume hängt)
 - Sprint-Abschluss via `/sprint-review` (Docs, RETRO, /integrate)
