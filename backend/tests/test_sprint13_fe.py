@@ -290,3 +290,18 @@ def test_designer_js_slot_view():
     html = open(os.path.join(root, "web", "designer.html"),
                 encoding="utf-8").read()
     assert "dz-cards-row" in html
+
+
+# #65 — Cover-Bild-Generator: Button über dem Storyboard, /api/image-
+# Wiring (category=cover), Prompt aus Angebots-Kontext.
+def test_designer_js_cover_generator():
+    import os
+    root = os.path.join(os.path.dirname(__file__), "..", "..")
+    js = open(os.path.join(root, "web", "assets", "designer.js"),
+              encoding="utf-8").read()
+    assert "/api/image" in js
+    assert '"cover"' in js and "coverPrompt" in js
+    html = open(os.path.join(root, "web", "designer.html"),
+                encoding="utf-8").read()
+    assert 'id="dz-genbild"' in html
+    assert html.index('id="dz-genbild"') < html.index('id="dz-board"')

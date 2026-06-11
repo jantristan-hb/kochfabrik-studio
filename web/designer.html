@@ -46,6 +46,9 @@
   .dz-cards-row { display: flex; flex-wrap: nowrap; gap: 10px; overflow-x: auto; align-items: stretch; }
   .dz-cards-row .dz-card { flex: 0 0 31%; min-width: 150px; }
   .dz-more { flex: 0 0 auto; align-self: center; border: 1px dashed #c9a227; background: none; color: #8a6d1d; border-radius: 8px; padding: 8px 10px; cursor: pointer; font: inherit; }
+  .dz-cover { margin-bottom: 12px; }
+  .dz-cover img { width: 100%; border-radius: 8px; display: block; margin-top: 8px; }
+  .dz-cover-actions { display: flex; gap: 8px; margin-top: 6px; }
 </style>
 </head>
 <body>
@@ -102,6 +105,18 @@
         <!-- Rechts: Storyboard (Reihenfolge / Entfernen / Download) -->
         <section id="designer-board" class="panel dz-col">
           <div class="dz-col-h">Storyboard</div>
+          <!-- Cover-Bild-Generator (#65): Gemini-Bild für Slide 1 -->
+          <div class="dz-cover" id="dz-cover-wrap">
+            <button class="btn" id="dz-genbild" type="button">✨ Cover-Bild generieren</button>
+            <div id="dz-cover-status" class="dz-status"></div>
+            <div id="dz-cover" hidden>
+              <img id="dz-cover-img" alt="Generiertes Cover-Bild" />
+              <div class="dz-cover-actions">
+                <a id="dz-cover-save" class="btn" download="kochfabrik-cover.png">PNG sichern</a>
+                <button id="dz-cover-again" class="btn" type="button">Neu generieren</button>
+              </div>
+            </div>
+          </div>
           <div class="dz-empty" id="dz-board-empty">Storyboard leer. Karten hinzufügen.</div>
           <div id="dz-board"></div>
           <button class="btn btn-primary" id="dz-download" disabled>Download</button>
