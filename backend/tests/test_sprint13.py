@@ -187,3 +187,27 @@ def test_designer_uses_bundle_layer():
     code = open(src, encoding="utf-8").read()
     assert "np.load" not in code
     assert "import bundle" in code
+
+
+
+# Bug #60 — Regression: request.form() liefert STARLETTE-UploadFiles;
+# isinstance gegen die FastAPI-Subklasse war immer False → JEDER echte
+# multipart-Upload bekam 400 "kein PDF im Upload". Der US-061-Test
+# deckte den Upload-Zweig nie mit files= ab (Testlücke).
+def test_suggest_pdf_upload_multipart(auth_client, monkeypatch):
+    import assemble
+    import compose_offer
+    import backend.routers.designer as d
+    _prep_ranking(d, monkeypatch)
+    monkeypatch.setattr(assemble, "parse_header",
+                        lambda src, **kw: ("Upload GmbH", "1. Juli 2026"))
+    monkeypatch.setattr(compose_offer, "parse_offer_dishes",
+                        lambda src, **kw: [("Vorspeise",
+                                            [("Suppe", "klar")])])
+    r = auth_client.post(
+        "/api/designer/suggest",
+        files={"file": ("angebot.pdf", b"%PDF-1.4 fake",
+                        "application/pdf")})
+    assert r.status_code != 400, r.text   # Bug #60: 400 "kein PDF im Upload"
+    assert r.status_code == 200, r.text
+    assert r.json()["offer"]["kunde"] == "Upload GmbH"
