@@ -264,3 +264,13 @@ def test_e2e_suggest_to_pptx(auth_client, monkeypatch):
     raw = base64.b64decode(pptx.split(",", 1)[1])
     assert raw[:2] == b"PK", "kein gültiges PPTX (PK-Magic fehlt)"
     assert len(raw) > 10 * 1024, "PPTX < 10 KB"
+
+
+# Bug #62 — FE erklärt Pauschal-Angebote statt stumm nur Pflicht zu zeigen.
+def test_designer_js_pauschal_hint():
+    import os
+    root = os.path.join(os.path.dirname(__file__), "..", "..")
+    js = open(os.path.join(root, "web", "assets", "designer.js"),
+              encoding="utf-8").read()
+    assert "Pauschal-Angebot" in js
+    assert '"konzept"' in js

@@ -21,6 +21,7 @@ Router lädt den Korpus nie selbst.
 """
 import json
 import os
+import re
 
 from fastapi import APIRouter, File, Request, UploadFile
 from fastapi.responses import JSONResponse
@@ -157,6 +158,47 @@ def _gang_groups(gaenge: list, n: int) -> list:
     return out
 
 
+# Abschnitts-Enden der Speisen-Positionstabelle (Pauschal-Angebote, #62).
+_SPEISEN_STOP = ("GETRÄNKE", "GETRAENKE", "EQUIPMENT", "PERSONAL",
+                 "LOGISTIK", "SONSTIGES", "GESAMT", "AGB")
+
+
+def _konzept_text(src: str) -> str:
+    """Pauschal-Fallback (#62): Hat ein Angebot keine Menü-Gänge
+    (Positions-/Pauschal-Layout wie „Streetfood 500 Pax"), liefert das
+    hier den Query-Text für EINE Konzept-Vorschlagsgruppe:
+    Cateringkonzept + Veranstaltungsanlass + Speisen-Positionstexte
+    (erste Spalte, Preis-/Mengen-Spalten abgeschnitten)."""
+    import subprocess
+    txt = subprocess.run(["pdftotext", "-layout", src, "-"],
+                         capture_output=True, text=True).stdout
+    parts, in_speisen = [], False
+    for raw in txt.splitlines():
+        s = raw.strip()
+        m = re.match(r"(?:Cateringkonzept|Veranstaltungsanlass):\s*(.+)", s)
+        if m:
+            parts.append(m.group(1).strip())
+            continue
+        if re.match(r"Speisen(?:\s{2,}|$)", s):
+            in_speisen = True
+            continue
+        if in_speisen:
+            if not s:
+                continue
+            if any(s.upper().startswith(x) for x in _SPEISEN_STOP):
+                break
+            cell = re.split(r"\s{2,}", s)[0].strip()
+            if (cell and re.search(r"[A-Za-zÄÖÜäöüß]", cell)
+                    and not re.match(r"^[\d.,\s]+$", cell)):
+                parts.append(cell)
+    seen, out = set(), []
+    for x in parts:
+        if x not in seen:
+            seen.add(x)
+            out.append(x)
+    return " ".join(out)[:600]
+
+
 def _pflicht_group(kunde: str) -> dict:
     """EINE Pflicht-Gruppe: je Pflicht-Kategorie eine kunden-stabile
     Frame-Instanz (compose_offer.pick_frame). Quelle = static_slide.json,
@@ -193,7 +235,16 @@ def _pflicht_group(kunde: str) -> dict:
 def _build_response(offer: dict, n: int = _DEFAULT_N) -> dict:
     """Response-Schema FEATURE-011 §3: offer + groups (je Gang eine
     gang-Gruppe Top-N, plus genau EINE pflicht-Gruppe)."""
+    konzept = offer.pop("konzept", None)
     groups = _gang_groups(offer.get("gaenge", []), n)
+    if not groups and konzept:
+        # Pauschal-Angebot (#62): eine Konzept-Gruppe über dieselbe
+        # Ranking-Maschinerie statt einer leeren Vorschlagsliste.
+        groups = _gang_groups(
+            [{"label": "Catering-Konzept",
+              "dishes": [{"name": konzept, "desc": ""}]}], n)
+        for g in groups:
+            g["kind"] = "konzept"
     groups.append(_pflicht_group(offer.get("kunde", "")))
     return {"offer": offer, "groups": groups}
 
@@ -256,6 +307,12 @@ async def designer_suggest(request: Request):
                                   for n, de in items]}
                       for c, items in dishes]
             offer = {"kunde": kunde, "datum": datum, "gaenge": gaenge}
+            if not gaenge:
+                # Pauschal-Angebot ohne Menü-Gänge (#62) → Konzept-Text
+                # als Fallback-Query (Speisen-Positionen + Konzept).
+                kt = _konzept_text(src)
+                if kt:
+                    offer["konzept"] = kt
         except Exception as e:                                      # noqa
             return JSONResponse({"error": "Parsing: " + str(e)[:200]},
                                 status_code=502)
