@@ -1,5 +1,8 @@
 # KOCHfabrik Studio
 
+> 🤖 **Du bist ein Claude-Agent?** Lies zuerst [`CLAUDE.md`](./CLAUDE.md) —
+> Stack, Befehle (inkl. Gates + manueller Deploy-Trigger) und Architektur-Regeln.
+
 Web-App (FastAPI + Design-2-Frontend) mit drei Modulen, live auf
 **https://kochfabrik-studio.flinkbase.com** (Coolify, Standard-Hetzner).
 
