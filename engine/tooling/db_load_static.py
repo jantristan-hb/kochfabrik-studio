@@ -28,6 +28,10 @@ from psycopg2.extras import execute_values
 from pptx import Presentation
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# US-056: Tooling lebt jetzt unter engine/tooling/ — Runtime-Module
+# (engine/scripts/) zusätzlich auf den Pfad (KEINE Logikänderung).
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                "..", "scripts"))
 from _deckpipe import slugify                                  # noqa
 from analyze_structure import deck_elements, headline           # noqa
 from build_category_samples import full_text, img_sig           # noqa

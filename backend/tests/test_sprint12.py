@@ -97,3 +97,27 @@ def test_bundle_ranking_gold():
     assert ss == [list(x) for x in gold["slidesuche_top20"]]
     assert pg == [list(x) for x in gold["pg_shim_global_top8"]]
     assert rr == [list(x) for x in gold["pg_shim_restr_top8"]]
+
+
+# FEATURE-006 EARS 3 — Tooling-Split (US-056)
+# Klassifikation per Import-Graph (US-056), NICHT per Namen — gen_fiktiv
+# ist Runtime (engine_glue:349, angebot_chat:18), build_angebot_template
+# ist Runtime (subprocess aus angebot_render). TEST.md-Sample wurde per
+# Namensraten geschrieben (selbst das Pitfall-3-Beispiel) → hier korrigiert
+# auf die EARS-Wahrheit (Option A, vom team-lead genehmigt).
+def test_tooling_split():
+    assert os.path.isdir(os.path.join(ROOT, "engine", "tooling"))
+    # Stichprobe: reine Build-Tools sind NICHT mehr unter scripts/
+    for tool in ("build_korpus.py", "recon_food_reuse.py",
+                 "embed_cluster.py"):
+        assert not os.path.exists(
+            os.path.join(ROOT, "engine", "scripts", tool)), tool
+        assert os.path.exists(
+            os.path.join(ROOT, "engine", "tooling", tool)), tool
+    # Runtime-Kern bleibt scripts/ — inkl. gen_fiktiv + build_angebot_template
+    # (Anti-Namensraten: beide trotz Build-Anmutung Runtime-Dependencies).
+    for rt in ("assemble.py", "compose_offer.py", "pg_shim.py",
+               "bundle.py", "_deckpipe.py", "gen_fiktiv.py",
+               "build_angebot_template.py"):
+        assert os.path.exists(
+            os.path.join(ROOT, "engine", "scripts", rt)), rt

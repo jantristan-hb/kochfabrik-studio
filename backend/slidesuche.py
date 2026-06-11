@@ -9,7 +9,7 @@ Routes:
 - GET  /api/slidesuche/preview/{deck}/{page}.png  — PNG aus cache/<deck>/preview
 - POST /api/slidesuche/download      — 1-PPTX-Bundle aus Liste {deck,page}
 
-Vorschau-PNGs werden vorab via engine/scripts/render_previews.py erzeugt
+Vorschau-PNGs werden vorab via engine/tooling/render_previews.py erzeugt
 und liegen unter cache/<deck>/preview/p<page>.png im Coolify-Volume.
 """
 import base64

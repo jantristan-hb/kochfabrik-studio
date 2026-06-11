@@ -19,6 +19,10 @@ import tempfile
 import psycopg2
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# US-056: Tooling lebt jetzt unter engine/tooling/ — Runtime-Module
+# (engine/scripts/) zusätzlich auf den Pfad (KEINE Logikänderung).
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                "..", "scripts"))
 from _deckpipe import cached_deck, slugify                     # noqa
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
