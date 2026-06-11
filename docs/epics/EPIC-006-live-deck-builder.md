@@ -1,10 +1,10 @@
 ---
 id: EPIC-006
 title: "Live-Deck-Builder: Präsentationen aus PNG-Slides zusammenklicken"
-status: OPEN
+status: IN_PROGRESS
 created: 2026-06-09
 project: kochfabrik-studio
-sprints: []
+sprints: [13]
 ---
 
 # EPIC-006: Live-Deck-Builder
@@ -42,6 +42,15 @@ Referenz-Cache — Font-Treue (EPIC-005) gilt damit automatisch.
   als Startpunkt ins Arbeits-Deck laden und ergänzen
 - **D5** *(Ausbaustufe ❓)* Text-Anpassung auf übernommenen Slides
   (z.B. Kundenname tauschen)
+- **D6** *(Scope-Erweiterung 2026-06-11, Jan: „Präsentationsdesigner —
+  man lädt ein Angebot hoch und bekommt Vorschläge für Slides, eine
+  Kombination aus Suche und Präsentationserstellung")*: Angebots-Upload
+  (PDF/gespeichertes Angebot) → pro Gang/Kategorie Top-N Slide-Vorschläge
+  aus der Generator-Pipeline (Parsing + Embedding + bundle-Ranking) +
+  Pflicht-Frame-Gruppe — als Vorschlagsquelle im Builder neben der
+  Freitext-Suche. Konkretisiert/ersetzt D4 für die erste Ausbaustufe.
+  ❗ R-ID-Nachtrag (R-DECK-6) gehört /epic — hier annotiert, nicht
+  in REQUIREMENTS geschrieben (Regel: sprint-plan ändert REQUIREMENTS nie).
 
 ### Was NICHT drin ist
 
@@ -53,8 +62,11 @@ Referenz-Cache — Font-Treue (EPIC-005) gilt damit automatisch.
 
 | Sprint | Scope | Aufwand |
 |--------|-------|---------|
-| Sprint 15 (Teil) | D1–D3 (Builder-MVP) | M |
-| später | D4–D5 nach Scope-Entscheid | M |
+| Sprint 13 | D1–D3 + D6 (Präsentationsdesigner komplett) | L |
+| später | D5 (Text-Edit) nach Scope-Entscheid | M |
+
+> Vorgezogen von S15 → S13 (Jan-Priorisierung 2026-06-11);
+> EPIC-007/008 verschieben sich auf S14.
 
 > **Fortschritt:** wird von /sprint-review aktualisiert.
 

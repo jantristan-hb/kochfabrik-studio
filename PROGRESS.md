@@ -8,8 +8,31 @@
 > (subtree). Ältere Sprints (1–7): `PROGRESS-archive.md`.
 
 **Projekt:** kochfabrik-studio (Monorepo: FastAPI-Backend + web/ + engine/)
-**Aktueller Sprint:** Sprint 12 **DONE** — EPIC-004 + EPIC-009 abgeschlossen (Backend modular, eine Bundle-Schicht, Backups + geprobter Restore)
+**Aktueller Sprint:** Sprint 13 **GEPLANT** — Präsentationsdesigner (EPIC-006 D1–D3+D6) · Sprint 12 DONE
 **Status:** 12 Sprints done · Stack: FastAPI + PostgreSQL + SQLAlchemy2 async + Alembic + OAuth2-ready
+
+---
+
+## Sprint 13 — Präsentationsdesigner (geplant 2026-06-11)
+
+| Story | Titel | Status |
+|-------|-------|--------|
+| US-061 | Designer-Router + Angebots-Parsing (D6) | TODO |
+| US-062 | Vorschlags-Ranking Top-N je Gang + Pflicht-Gruppe (D6) | TODO |
+| US-063 | Designer-Seite Grundgerüst + Navigation (D1) | TODO |
+| US-064 | Quelle + Vorschlags-Karten (D1+D6) | TODO |
+| US-065 | Storyboard: Reorder/Remove/Session (D1+D2) | TODO |
+| US-066 | Freitext-Suche im Designer (D1+D6) | TODO |
+| US-067 | Download + E2E-Beweis (D3) | TODO |
+| US-068 | live_verify Deep-Check (Incident-Nacharbeit) | TODO |
+
+Feature-getrieben (Jan): „Präsentationsdesigner — Angebot hochladen,
+Vorschläge für Slides, Kombination aus Suche und Präsentationserstellung"
+= EPIC-006 D1–D3+D6 (vorgezogen S15→S13; EPIC-007/008 → S14, Seed liegt).
+Issues #47–#54 · 3 Stränge: API-Kette (sprint-13-api), UI-Kette
+(sprint-13-ui, Wartepunkt nach US-065), Solo US-068. Docs: `docs/sprint-13/`.
+
+**Neue Seite:** web/designer.html · **Neuer Router:** /api/designer/*
 
 ---
 
@@ -145,13 +168,21 @@ aktiv. **111 Tests grün.**
 | EPIC-003 | Analyse-Fundament & Entscheidungen | DONE | S10 ✅ — ADRs accepted 2026-06-09 |
 | EPIC-004 | Monorepo & Refactoring | DONE | S11–S12 ✅ |
 | EPIC-005 | Font-Treue | OPEN | S14–S15 (geplant, gated: ADR-001) |
-| EPIC-006 | Live-Deck-Builder | OPEN | S15 (geplant) |
-| EPIC-007 | Render-Treue-Harness | OPEN | S13, S15 (geplant) |
-| EPIC-008 | CI/Delivery | OPEN | S13 (geplant) |
+| EPIC-006 | Live-Deck-Builder / Präsentationsdesigner | IN_PROGRESS | S13 (vorgezogen, +D6) |
+| EPIC-007 | Render-Treue-Harness | OPEN | S14 (geschoben) |
+| EPIC-008 | CI/Delivery | OPEN | S14 (geschoben, Seed: docs/sprint-14/) |
 | EPIC-009 | Backup & Resilienz | DONE | S11 (B1-Vorzug) + S12 ✅ |
 | EPIC-010 | Security & DSGVO-Light | OPEN | S16 (geplant, gated: Q1-Findings ✅ liegen vor) |
 
 Roadmap + WP-Master-Liste: `docs/epics/README.md` · Abdeckung: `docs/epics/TRACEABILITY.md`
+
+## Incident-Log
+
+- **2026-06-11 Korpus-Mount:** Coolify-Volume zeigte nach dem
+  Monorepo-Cutover (S11) noch auf `/app/engine/phase0/data/cache` —
+  Präsentationsgenerator/Previews ohne Voll-Korpus. Fix: mount_path in
+  Coolify-Config korrigiert + Redeploy; Beweis korpus:true, 202 Decks.
+  Gate-Lücke (live_verify sieht nur 401) → US-068.
 
 ## Aktueller Zustand (2026-06-11)
 
