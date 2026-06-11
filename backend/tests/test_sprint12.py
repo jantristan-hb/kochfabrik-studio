@@ -23,10 +23,13 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(
 
 # FEATURE-006 EARS 1 — Routen identisch + app.py ist Komposition (US-053/054)
 def test_router_layout():
-    # US-053: auth + bildgenerator extrahiert. angebot.py/praesentation.py +
-    # app.py-<200-Z.-Grenze ergänzt US-054.
-    for f in ("auth.py", "bildgenerator.py"):
+    # US-053: auth + bildgenerator. US-054: angebot + praesentation +
+    # app.py-<200-Z.-Grenze (app.py ist reine Komposition).
+    for f in ("auth.py", "bildgenerator.py", "angebot.py",
+              "praesentation.py"):
         assert os.path.isfile(os.path.join(ROOT, "backend", "routers", f)), f
+    assert sum(1 for _ in open(os.path.join(ROOT, "backend", "app.py"),
+                               encoding="utf-8")) < 200
 
 
 def test_routen_inventar_unveraendert():
