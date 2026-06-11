@@ -1,17 +1,25 @@
-"""Designer-Router (US-061) — Slide-Designer-Vorschläge.
+"""Designer-Router (US-061/062) — Slide-Designer-Vorschläge.
 
 POST /api/designer/suggest nimmt drei Input-Zweige (multipart-PDF |
 {offer_id} | {offer}-md), parst das Angebot über die Engine-Kette
 (parse_header/parse_offer_dishes, Muster praes_from_angebot) zu
 {kunde, datum, gaenge[]} und liefert das Response-Schema aus
-FEATURE-011 §3. Das Ranking (groups[]) ist hier noch ein Stub ([]) —
-es kommt in US-062.
+FEATURE-011 §3.
+
+US-062 — Ranking: pro Gang ein Gemini-Embed (1 Batch über alle Gänge,
+wie assemble.py), dann je Gang Top-N Kandidaten über die zentrale
+Bundle-Schicht (bundle.normalize_query + bundle.rank, k=N — NICHT die
+assemble-Top-1-Logik umbauen, nur die Bausteine neu kombinieren,
+Pitfall 2). Plus EINE Pflicht-Gruppe aus static_slide.json
+(inclusion=pflicht, ohne COVER — gleiche Auswahl wie pg_shim), je
+Kategorie eine kunden-stabile Frame-Instanz via compose_offer.pick_frame.
 
 Engine-Glue aus backend.engine_glue (kein Import auf app.py — kein
-Import-Zyklus). Graceful: fehlt Engine/Korpus → 503 Klartext, kein
-500. Korpus wird über bundle.available() ermittelt (EINE Bundle-
-Schicht, ADR-003) — der Router lädt den Korpus nie selbst.
+Import-Zyklus). Graceful: fehlt Engine/Korpus → 503 Klartext, embed-
+Fehler → 502. Rankings ausschließlich über bundle (ADR-003) — der
+Router lädt den Korpus nie selbst.
 """
+import json
 import os
 
 from fastapi import APIRouter, File, Request, UploadFile
@@ -22,6 +30,22 @@ from ..engine_glue import (ENGINE_OK, ENGINE_ERR, _ENG, _ang2md,
                            _gemini_key, _owner)
 
 router = APIRouter()
+
+# Default Top-N je Gang (FEATURE-011 §3).
+_DEFAULT_N = 5
+# Preview-Route der Slidesuche (Previews liegen vorab im Volume; fehlt
+# eine, liefern wir den Kandidaten trotzdem — Pitfall 3, FE-Platzhalter).
+_PREVIEW_BASE = "/api/slidesuche/preview"
+
+# Engine-Funktionen (embed = Gemini-Batch, pick_frame = kunden-stabile
+# Frame-Wahl) graceful binden — Modul-Attribute, damit Tests sie auf
+# Modul-Ebene mocken können (Pitfall 1: NIE echte Gemini-Calls im Test).
+embed = pick_frame = None
+if ENGINE_OK:
+    try:
+        from compose_offer import embed, pick_frame             # noqa
+    except Exception:                                           # noqa
+        embed = pick_frame = None
 
 
 def _korpus_ok() -> bool:
@@ -89,10 +113,86 @@ async def _load_offer_md(owner: str, offer_id: int) -> str | None:
     return _ang2md(full["angebot"])
 
 
-def _build_response(offer: dict) -> dict:
-    """Response-Schema FEATURE-011 §3. groups[] = Stub (US-061);
-    das Ranking pro Gang + Pflicht-Gruppe liefert US-062."""
-    return {"offer": offer, "groups": []}
+def _gang_query(gang: dict) -> str:
+    """Gang → Embed-Text (Label + Gerichte), gleiche Form wie
+    compose_offer (`f"{course} — {body}"`)."""
+    body = " ".join(
+        f"{d['name']} {d.get('desc', '')}".strip()
+        for d in gang.get("dishes", []))
+    return f"{gang['label']} — {body}".strip(" —")
+
+
+def _gang_groups(gaenge: list, n: int) -> list:
+    """Je Gang Top-N Kandidaten über die zentrale Bundle-Schicht.
+    EIN Embed-Batch über alle Gänge (wie assemble.py), dann je Gang
+    bundle.rank(k=N). Embed-Fehler propagiert (→ 502 im Endpoint)."""
+    if not gaenge:
+        return []
+    import bundle as _b
+    texts = [_gang_query(g) for g in gaenge]
+    vecs = embed(texts)                              # 1 Batch (Pitfall 2)
+    b = _b.load()
+    out = []
+    for g, vec in zip(gaenge, vecs):
+        qv = _b.normalize_query(vec)
+        order = _b.rank(qv, None, n)                 # global, Top-N
+        sims = b["_normemb"][order] @ qv
+        candidates = []
+        for j, i in enumerate(order):
+            # Pitfall 3: Kandidat IMMER liefern (kein PNG-Existenz-Filter
+            # — fehlt das Preview-PNG, zeigt das FE einen Platzhalter).
+            candidates.append({
+                "deck": str(b["deck"][i]),
+                "page": int(b["page"][i]),
+                "score": round(float(sims[j]), 4),
+                "preview": f"{_PREVIEW_BASE}/{b['deck'][i]}"
+                           f"/{int(b['page'][i])}.png",
+                "label": str(b["module_label"][i] or ""),
+            })
+        out.append({"label": g["label"], "kind": "gang",
+                    "candidates": candidates})
+    return out
+
+
+def _pflicht_group(kunde: str) -> dict:
+    """EINE Pflicht-Gruppe: je Pflicht-Kategorie eine kunden-stabile
+    Frame-Instanz (compose_offer.pick_frame). Quelle = static_slide.json,
+    Auswahl identisch zur pg_shim-static_slide-Query (inclusion=pflicht,
+    ohne COVER)."""
+    ss_path = os.path.join(os.path.dirname(_ENG), "data",
+                           "static_slide.json")
+    candidates = []
+    try:
+        rows = json.load(open(ss_path, encoding="utf-8"))
+    except Exception:                                           # noqa
+        rows = []
+    by_cat: dict = {}
+    for r in rows:
+        if r.get("inclusion") == "pflicht" and r.get("category") != "COVER":
+            by_cat.setdefault(r["category"], []).append(r)
+    for cat in sorted(by_cat):
+        opts = by_cat[cat]
+        chosen = pick_frame(cat, opts, kunde) if pick_frame else opts[0]
+        if not chosen:
+            continue
+        candidates.append({
+            "deck": str(chosen["deck"]),
+            "page": int(chosen["page"]),
+            "score": 1.0,                            # Pflicht = gesetzt
+            "preview": f"{_PREVIEW_BASE}/{chosen['deck']}"
+                       f"/{int(chosen['page'])}.png",
+            "label": str(chosen.get("category") or ""),
+        })
+    return {"label": "Pflicht-Slides", "kind": "pflicht",
+            "candidates": candidates}
+
+
+def _build_response(offer: dict, n: int = _DEFAULT_N) -> dict:
+    """Response-Schema FEATURE-011 §3: offer + groups (je Gang eine
+    gang-Gruppe Top-N, plus genau EINE pflicht-Gruppe)."""
+    groups = _gang_groups(offer.get("gaenge", []), n)
+    groups.append(_pflicht_group(offer.get("kunde", "")))
+    return {"offer": offer, "groups": groups}
 
 
 @router.get("/api/designer/health")
@@ -101,10 +201,20 @@ def designer_health():
             "embed": bool(_gemini_key())}
 
 
+def _respond(offer: dict):
+    """offer → Response (200) ODER 502, wenn der Gemini-Embed bzw. das
+    Ranking fehlschlägt (EARS 3, gekürzte Meldung)."""
+    try:
+        return _build_response(offer)
+    except Exception as e:                                          # noqa
+        return JSONResponse({"error": "Embed/Ranking: " + str(e)[:200]},
+                            status_code=502)
+
+
 @router.post("/api/designer/suggest")
 async def designer_suggest(request: Request):
     """Drei Input-Zweige: multipart-PDF | {offer_id} | {offer}-md →
-    Response-Schema. Ranking-Stub (groups: []) bis US-062."""
+    Response-Schema (offer + Top-N-Gang-Gruppen + Pflicht-Gruppe)."""
     owner = _owner(request)
     if not owner:
         return JSONResponse({"error": "auth"}, status_code=401)
@@ -146,7 +256,7 @@ async def designer_suggest(request: Request):
         except Exception as e:                                      # noqa
             return JSONResponse({"error": "Parsing: " + str(e)[:200]},
                                 status_code=502)
-        return _build_response(offer)
+        return _respond(offer)
 
     # Zweig 2/3: JSON-Body ({offer_id} ODER {offer}).
     try:
@@ -181,4 +291,4 @@ async def designer_suggest(request: Request):
     except Exception as e:                                          # noqa
         return JSONResponse({"error": "Parsing: " + str(e)[:200]},
                             status_code=502)
-    return _build_response(offer)
+    return _respond(offer)
