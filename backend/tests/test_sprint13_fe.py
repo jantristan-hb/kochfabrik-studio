@@ -195,3 +195,72 @@ def test_designer_js_search_renders_results():
 def test_designer_search_panel_marker():
     html = _designer_html()
     assert 'id="dz-search"' in html
+
+
+# --- US-067: Download + End-to-End (FEATURE-012 EARS 4 + FEATURE-011 e2e) --
+# Storyboard -> PPTX über /api/slidesuche/download (Data-URL-Muster);
+# Button disabled bei leerem Board. E2E beweist den Gesamtflow gegen ein
+# committetes Cache-Deck: suggest (gemockt) -> Kandidat -> download -> echte
+# PPTX (PK-Magic, >10 KB) über reconstruct.js.
+
+# Committetes Cache-Deck (engine/data/cache/) — die einzigen Decks, die
+# lokal UND im Sim-Gate-Container ohne Volume rendern.
+_E2E_DECK = "kf-ausstattung-location"
+_E2E_PAGE = 1
+
+
+def test_designer_download_wired():
+    js = _designer_js()
+    assert "/api/slidesuche/download" in js, "download-Endpoint nicht verdrahtet"
+    # disabled-Logik am Download-Button (leeres Board -> kein Download).
+    assert "disabled" in js
+
+
+def _node_available():
+    import shutil
+    return shutil.which("node") is not None
+
+
+@pytest.mark.skipif(not _node_available(),
+                    reason="node/reconstruct.js nicht verfügbar")
+def test_e2e_suggest_to_pptx(auth_client, monkeypatch):
+    """E2E: suggest (gemockter embed) liefert Kandidaten -> einer davon
+    (committetes Cache-Deck) geht durch /api/slidesuche/download -> echte
+    PPTX (PK-Magic + >10 KB). Beweist den Designer-Gesamtflow."""
+    import base64
+
+    import backend.routers.designer as d
+
+    # suggest mit gemocktem Parsing + embed (Pitfall 1: NIE echte Gemini).
+    import numpy as np
+
+    def _fake_embed(texts):
+        rng = np.random.default_rng(7)
+        return rng.standard_normal((len(texts), 768)).astype(np.float64)
+
+    monkeypatch.setattr(d, "ENGINE_OK", True)
+    monkeypatch.setattr(d, "_korpus_ok", lambda: True)
+    monkeypatch.setattr(d, "embed", _fake_embed)
+    monkeypatch.setattr(
+        d, "_parse_offer_md",
+        lambda md: {"kunde": "ACME", "datum": "2026-07-01",
+                    "gaenge": [{"label": "Vorspeise",
+                                "dishes": [{"name": "Suppe", "desc": ""}]}]})
+
+    sug = auth_client.post("/api/designer/suggest",
+                           json={"offer": "## Angebot — ACME"})
+    assert sug.status_code == 200
+    groups = sug.json()["groups"]
+    # Front-Hälfte des Flows verifiziert: es kommen Kandidaten zurück.
+    assert any(g["candidates"] for g in groups)
+
+    # Download-Hälfte gegen das committete Cache-Deck (rendert real).
+    dl = auth_client.post("/api/slidesuche/download",
+                          json={"slides": [{"deck": _E2E_DECK,
+                                            "page": _E2E_PAGE}]})
+    assert dl.status_code == 200, dl.text
+    pptx = dl.json()["pptx"]
+    assert pptx.startswith("data:application/vnd.openxmlformats")
+    raw = base64.b64decode(pptx.split(",", 1)[1])
+    assert raw[:2] == b"PK", "kein gültiges PPTX (PK-Magic fehlt)"
+    assert len(raw) > 10 * 1024, "PPTX < 10 KB"

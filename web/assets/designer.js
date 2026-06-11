@@ -84,6 +84,24 @@ async function fetchSuggestions(payload) {
   return data;
 }
 
+// Download (US-067): Storyboard -> PPTX-Bundle (Data-URL-Muster).
+// Liefert das pptx-Data-URL oder null bei 401-Redirect; wirft bei !ok.
+async function downloadDeck(slides) {
+  const r = await api("/api/slidesuche/download", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ slides }),
+  });
+  if (!r) return null;                       // 401 -> Redirect bereits erfolgt
+  const data = await r.json().catch(() => null);
+  if (!r.ok) {
+    const err = new Error((data && data.error) || `Fehler ${r.status}`);
+    err.status = r.status;
+    throw err;
+  }
+  return data && data.pptx;
+}
+
 // Freitext-Suche (US-066): Slidesuche-ANN über den Korpus.
 // Liefert das Treffer-Array (results) oder null bei 401-Redirect.
 async function search(q) {
@@ -420,12 +438,47 @@ function wireSource() {
   }
 }
 
+// --- Download-Button (US-067) ---------------------------------------------
+// Storyboard -> PPTX. disabled bei leerem Board (renderBoard setzt das);
+// Klick lädt das Bundle als Data-URL (bestehendes Anker-Muster).
+
+function triggerDataUrlDownload(dataUrl, filename) {
+  const a = document.createElement("a");
+  a.href = dataUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+function wireDownload() {
+  const btn = document.getElementById("dz-download");
+  if (!btn) return;
+  btn.addEventListener("click", async () => {
+    if (!state.board.length) return;         // disabled-Logik (Doppel-Absicherung)
+    const slides = state.board.map((b) => ({ deck: b.deck, page: b.page }));
+    const prev = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Erzeuge PPTX …";
+    try {
+      const pptx = await downloadDeck(slides);
+      if (pptx) triggerDataUrlDownload(pptx, "kochfabrik-designer.pptx");
+    } catch (e) {
+      setStatus(e.message || "Download fehlgeschlagen.", "error");
+    } finally {
+      btn.textContent = prev;
+      btn.disabled = state.board.length === 0;
+    }
+  });
+}
+
 // --- Init-Hook ------------------------------------------------------------
 
 function init() {
   document.addEventListener("designer:add", onDesignerAdd);
   wireSource();
   wireSearch();
+  wireDownload();
   loadOfferOptions();
   renderGroups(state.groups);   // Restore: zuletzt geladene Vorschläge
   renderBoard();                // Restore: Board aus sessionStorage
@@ -441,4 +494,5 @@ if (document.readyState === "loading") {
 export { STATE_KEY, loadState, saveState, emptyState, api, apiJson,
   fetchOffers, fetchSuggestions, search,
   addToBoard, removeFromBoard, moveBoardItem, isOnBoard, renderBoard,
-  boardKey, card, renderGroups, runSuggest, renderResults, runSearch };
+  boardKey, card, renderGroups, runSuggest, renderResults, runSearch,
+  downloadDeck };
