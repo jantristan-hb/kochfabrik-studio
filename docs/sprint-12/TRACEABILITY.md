@@ -53,3 +53,11 @@ beide gehen im Review auf DONE.
 
 **Summe: 7/7 WPs, 10/10 sprint-relevante R-IDs, 6/6 offene
 Epic-Kriterien, 4/4 Carry-Over-Items. Nichts verloren.**
+
+## Erfüllungs-Stand (Review 2026-06-11)
+
+9/9 Stories DONE (PRs #43–#46; US-060 repo-extern, Issue #41 zu).
+Alle EARS-Verifies grün; Sim-Gate inkl. SIM_GATE_DB grün; Ranking-
+Gold-Test dauerhaft in der Suite. Crash-Recovery US-056 durch Lead
+(gestageter Agenten-Stand verifiziert + abgeschlossen).
+**EPIC-004 und EPIC-009 vollständig — beide DONE.**

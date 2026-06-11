@@ -1,8 +1,9 @@
 ---
 id: EPIC-009
 title: "Backup & Resilienz: Postgres + Korpus-Volume wiederherstellbar"
-status: OPEN
+status: DONE
 created: 2026-06-09
+completed: 2026-06-11
 project: kochfabrik-studio
 sprints: []
 ---
@@ -58,7 +59,11 @@ wurde, ist keins.
 > Dump off-host verifiziert, Volume-Inventar 201 Decks/5,2 GB).
 > Automatischer Zyklus + Restore-Probe bleiben Sprint 12.
 
-> **Fortschritt:** wird von /sprint-review aktualisiert.
+> **Fortschritt:** B1 ✅ S11 (Einmal-Dump) + S12 US-052 (Cron-Zyklus,
+> Rotation, Off-Host-Pull). B2+B3 ✅ S12 US-058 (Restore real geprobt,
+> Rowcounts bewiesen; Korpus-Wiederaufbau dokumentiert,
+> docs/ops/RESTORE-RUNBOOK.md). **Alle 3 Akzeptanzkriterien erfüllt —
+> EPIC DONE (2026-06-11).**
 
 ## Akzeptanzkriterien
 

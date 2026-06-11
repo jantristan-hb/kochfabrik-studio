@@ -150,3 +150,17 @@ _(Keine FAILED-Stories — Sprint 1 vollständig.)_
 | US-022c | Slide-Vorschlags-Karten (Klick = Auswahl, persistiert) | DONE |
 | US-022d | 15 FE-Smoke-Tests (Layout-Marker, 7 Kategorien, kein Alt-API-Leak) | DONE |
 
+
+## Sprint 7 — EPIC-002 v2 Kohärenz + Chat (2026-05-20) — **DONE**
+
+| Story | Titel | Status |
+|-------|-------|--------|
+| US-026 | praesentation_v2_coherence: offer_context, defaults_for (7 Kat), merge_overrides | DONE |
+| US-027 | GET /api/praesentation_v2/offer/{id}/context Endpoint | DONE |
+| US-028 | POST /api/praesentation_v2/chat (Anthropic LLM, graceful) | DONE |
+| US-029 | FE editor.js: Offer-Context-Merge + Chat-Endpunkt + Form-Refresh | DONE |
+
+**Akzeptanzkriterium 5 erfüllt:** Slide-Overrides werden mit Offer-Defaults
+(Kunde/Anlass/Konzept/Block-Bullets) gemergt — Präsentation matched das
+verknüpfte Angebot.
+

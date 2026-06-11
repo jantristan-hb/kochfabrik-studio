@@ -1,6 +1,6 @@
 ---
 key: KOCHFABRIK-FEATURE-006
-status: approved
+status: implemented
 title: "Code-Ordnung: app.py-Modularisierung, Bundle-Schicht, Tooling-Split, Alembic-Verify"
 created: 2026-06-10
 project: kochfabrik

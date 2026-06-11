@@ -1,6 +1,6 @@
 ---
 key: KOCHFABRIK-FEATURE-007
-status: approved
+status: implemented
 title: "Backup-Zyklus + Restore-Probe (EPIC-009 B1–B3)"
 created: 2026-06-10
 project: kochfabrik

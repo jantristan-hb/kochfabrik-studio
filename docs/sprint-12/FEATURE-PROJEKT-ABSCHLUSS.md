@@ -1,6 +1,6 @@
 ---
 key: KOCHFABRIK-FEATURE-008
-status: approved
+status: implemented
 title: "Projekt-Docs (CLAUDE.md) + Engine-Repo-Archivierung"
 created: 2026-06-10
 project: kochfabrik

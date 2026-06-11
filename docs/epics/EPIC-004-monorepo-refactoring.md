@@ -1,8 +1,9 @@
 ---
 id: EPIC-004
 title: "Monorepo & Refactoring (Verhalten strikt erhalten)"
-status: IN_PROGRESS
+status: DONE
 created: 2026-06-09
+completed: 2026-06-11
 project: kochfabrik-studio
 sprints: [11, 12]
 ---
@@ -66,6 +67,10 @@ Stand — bei **strikt erhaltenem Verhalten** (Prod = Truth, jede
 > Cutover nach Runbook. Akzeptanzkriterien 1+2 erfüllt, 3 laufend,
 > 4 teilweise (alembic.ini im Image; Versionstracking-Verify → M6),
 > 5 offen (M7). Rest: M4–M7 in Sprint 12.
+> Sprint 12 = M4–M7 ✅ DONE (2026-06-11, PRs #43–#46): app.py 936→91 Z.
+> (4 Router + engine_glue), EINE Bundle-Schicht (ADR-003, Gold-Test),
+> Tooling-Split 13/33 per Import-Graph, Alembic-Abnahme rc=0 (F-S-01 zu),
+> CLAUDE.md. **Alle 5 Akzeptanzkriterien erfüllt — EPIC DONE.**
 
 ## Akzeptanzkriterien
 

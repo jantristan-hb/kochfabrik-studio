@@ -116,3 +116,12 @@ R-REF-1 erfüllt, R-NF-2 erfüllt (Cutover ohne Pipeline-Umbau),
 R-BAK-1/2 teilweise (Einmal-Dump + Inventar; Zyklus + Restore-Probe
 → Sprint 12). F-E-10 + F-S-01-Voraussetzung gefixt (R-QA-3 Teil).
 Offen: M4–M7 (R-REF-3/4/5-Anteile), EPIC-009-Rest.
+
+## Erfüllungs-Stand Sprint 12 (Review 2026-06-11)
+
+EPIC-004 DONE (M4–M7: Router-Modularisierung, Bundle-Schicht/ADR-003,
+Tooling-Split, Alembic-Abnahme, CLAUDE.md) · EPIC-009 DONE (B1–B3:
+Cron-Zyklus, Restore-Probe, Korpus-Doku). R-REF-3/4/5 erfüllt,
+R-BAK-1/2/3 erfüllt, R-QA-3 (F-E-03 + F-S-01) geschlossen.
+Offen bleiben: EPIC-007/008 (S13), EPIC-005 (S14), EPIC-006 (S15),
+EPIC-010 (S16) + Jan-Entscheid Alt-Ordner (ADR-002-Inventar).
