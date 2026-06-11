@@ -1,0 +1,30 @@
+['GET', 'HEAD'] /docs
+['GET', 'HEAD'] /docs/oauth2-redirect
+['GET', 'HEAD'] /openapi.json
+['GET', 'HEAD'] /redoc
+['GET'] 
+['GET'] /
+['GET'] /api/angebot/health
+['GET'] /api/angebot/{offer_id}
+['GET'] /api/angebote
+['GET'] /api/cats
+['GET'] /api/health
+['GET'] /api/kunde/{customer_id}
+['GET'] /api/kunden
+['GET'] /api/oauth/providers
+['GET'] /api/oauth/{provider}/callback
+['GET'] /api/oauth/{provider}/login
+['GET'] /api/praesentation/health
+['GET'] /api/slidesuche/preview/{deck}/{page}.png
+['GET'] /api/stats
+['POST'] /api/angebot/chat
+['POST'] /api/angebot/pdf
+['POST'] /api/angebot/save
+['POST'] /api/image
+['POST'] /api/login
+['POST'] /api/logout
+['POST'] /api/praesentation/from-angebot
+['POST'] /api/praesentation/from-pdf
+['POST'] /api/praesentation/generate
+['POST'] /api/slidesuche/download
+['POST'] /api/slidesuche/search
