@@ -13,6 +13,12 @@ set -euo pipefail
 IMG="kf-studio-sim"
 PORT="${SIM_GATE_PORT:-18000}"
 CID=""
+# Optionaler DB-Block (US-057, FEATURE-006 EARS 4): nur mit SIM_GATE_DB=1.
+# Eigener Wegwerf-Postgres auf 15432 (NIE 5432/5434 — 5434 ist die lokale
+# Build-Korpus-DB). PGCID wird im cleanup mit abgeräumt.
+PGCID=""
+PG_CONTAINER="kf-sim-alembic-pg"
+PG_PORT="${SIM_GATE_DB_PORT:-15432}"
 # Auth-Gate: nur /api/health ist public, die Modul-Health-Routen brauchen ein
 # gültiges Cookie. Wir minten es im Container selbst via make_cookie (gleicher
 # KF_SESSION_SECRET) — das KF_USERS-Login-Format (email|salt|sha256hex) müssen
@@ -24,7 +30,10 @@ KF_USERS_VAL="${USER_EMAIL}|s|x"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-cleanup() { [ -n "$CID" ] && docker rm -f "$CID" >/dev/null 2>&1 || true; }
+cleanup() {
+  [ -n "$CID" ] && docker rm -f "$CID" >/dev/null 2>&1 || true
+  [ -n "$PGCID" ] && docker rm -f "$PG_CONTAINER" >/dev/null 2>&1 || true
+}
 trap cleanup EXIT INT TERM
 
 fail() { echo "❌ $1"; exit 1; }
@@ -37,6 +46,59 @@ docker info >/dev/null 2>&1 || fail "Docker-Daemon nicht erreichbar (BLOCKED)"
 echo "==> 1/5 Image bauen ($IMG)"
 docker build -q -t "$IMG" . >/dev/null || fail "docker build fehlgeschlagen"
 ok "Build grün"
+
+# 1b) Optionaler Alembic-Container-Abnahme-Block (US-057, FEATURE-006 EARS 4):
+#     WHEN der Container mit erreichbarem Postgres startet THE SYSTEM SHALL den
+#     Migrations-Schritt mit rc=0 abschließen und alembic_version SHALL
+#     gestampt/aktuell sein. Nur mit SIM_GATE_DB=1; ohne Env unverändertes
+#     Verhalten. Eigener Wegwerf-PG auf 15432, Migrate-Beweis, dann runter.
+if [ "${SIM_GATE_DB:-0}" = "1" ]; then
+  echo "==> 1b/5 Alembic-Container-Abnahme (SIM_GATE_DB, Wegwerf-PG :$PG_PORT)"
+  # Eventuell verwaisten Vorlauf-Container abräumen (idempotent).
+  docker rm -f "$PG_CONTAINER" >/dev/null 2>&1 || true
+  PGCID=$(docker run -d --rm --name "$PG_CONTAINER" \
+    -p "${PG_PORT}:5432" \
+    -e POSTGRES_USER=kfstudio -e POSTGRES_PASSWORD=kfstudio \
+    -e POSTGRES_DB=kfstudio postgres:16-alpine) \
+    || fail "Wegwerf-Postgres-Start fehlgeschlagen"
+
+  # Ready-Poll (reine bash-Schleife, kein GNU-Abbruch-Wrapper — macOS,
+  # Sprint-10-RETRO).
+  echo "    auf Postgres warten (max 30×1s)"
+  j=0
+  while [ "$j" -lt 30 ]; do
+    docker exec "$PG_CONTAINER" pg_isready -U kfstudio -d kfstudio \
+      >/dev/null 2>&1 && break
+    j=$((j + 1))
+    sleep 1
+  done
+  docker exec "$PG_CONTAINER" pg_isready -U kfstudio -d kfstudio \
+    >/dev/null 2>&1 || fail "Wegwerf-Postgres nicht ready nach ${j}s"
+  ok "Wegwerf-Postgres ready (nach ${j}s)"
+
+  # Migrate-Schritt im App-Image gegen den erreichbaren PG. Schema exakt wie
+  # backend/db.py erwartet (postgresql+asyncpg://). host.docker.internal auf
+  # macOS reicht — Container erreicht den gemappten Host-Port.
+  MIG_LOG=$(docker run --rm \
+    -e DATABASE_URL="postgresql+asyncpg://kfstudio:kfstudio@host.docker.internal:${PG_PORT}/kfstudio" \
+    "$IMG" python -m backend.migrate 2>&1)
+  mrc=$?
+  echo "$MIG_LOG" | sed 's/^/    /'
+  [ "$mrc" = "0" ] || fail "Migrate-Schritt rc=$mrc (kein rc=0)"
+  # Beweis-Marker im Log: entweder gestampt ODER upgrade head rc=0.
+  echo "$MIG_LOG" | grep -Eq "Alembic gestampt auf|alembic upgrade head rc=0" \
+    || fail "kein Alembic-Log-Marker (gestampt/upgrade head)"
+
+  # alembic_version muss existieren und auf head stehen (vom Host via psql).
+  AV=$(docker exec "$PG_CONTAINER" \
+    psql -U kfstudio -d kfstudio -tA -c \
+    "SELECT version_num FROM alembic_version" 2>/dev/null || true)
+  [ -n "$AV" ] || fail "alembic_version leer/fehlt (nicht gestampt)"
+  ok "Alembic-Abnahme: migrate rc=0, alembic_version=${AV}"
+
+  docker rm -f "$PG_CONTAINER" >/dev/null 2>&1 || true
+  PGCID=""
+fi
 
 # 2) Container starten — OHNE DATABASE_URL, OHNE Volume (= Prod-Worst-Case:
 #    DB-los + Korpus-Volume fehlt → graceful-Pfade müssen tragen).

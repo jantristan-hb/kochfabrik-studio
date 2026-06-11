@@ -121,3 +121,14 @@ def test_tooling_split():
                "build_angebot_template.py"):
         assert os.path.exists(
             os.path.join(ROOT, "engine", "scripts", rt)), rt
+
+
+# FEATURE-006 EARS 4 — Sim-Gate hat DB-Block (US-057)
+# Der optionale SIM_GATE_DB-Pfad fährt einen Wegwerf-Postgres hoch und
+# beweist den Container-Migrate-Schritt (rc=0 + gestempelte
+# alembic_version). Kein GNU `timeout`-Binary (macOS-Pitfall, Sprint-10).
+def test_sim_gate_db_block():
+    src = open(os.path.join(ROOT, "tools", "sim_gate.sh"),
+               encoding="utf-8").read()
+    assert "SIM_GATE_DB" in src
+    assert "timeout " not in src
