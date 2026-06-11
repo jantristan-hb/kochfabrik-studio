@@ -1,6 +1,6 @@
 # CLAUDE.md — kochfabrik-studio
 
-> Projekt-Kontext für Claude-Agents. Stand: Sprint 12 (in Arbeit). Dieses
+> Projekt-Kontext für Claude-Agents. Stand: Sprint 12 DONE (2026-06-11). Dieses
 > File ist die erste Anlaufstelle für jeden neuen Agent.
 
 ## Session-Start
@@ -78,7 +78,7 @@ Ablauf + Rollback: `docs/sprint-11/CUTOVER-RUNBOOK.md`.
 
 ### Backup / Restore
 
-Cron-Backup (Host) + Restore-Probe + Runbook: `docs/sprint-12/FEATURE-BACKUP-RESTORE.md`.
+Cron-Backup (Host) + Restore-Probe + Runbook: `docs/ops/BACKUP-CYCLE.md` + `docs/ops/RESTORE-RUNBOOK.md`.
 Täglicher Host-Cron (`pg_dump | gzip` → `/data/backups/kf-studio-pg/`, Rotation 14 Tage).
 
 ## Architektur-Regeln
@@ -130,4 +130,4 @@ gepusht sind.
 | 9 | EPIC-002 v2 Refactor (Legacy-Archiv, Backend unverändert für Rollback) | DONE |
 | 10 | EPIC-003 Analyse-Fundament (25 Findings, ADR-001…003) | DONE |
 | 11 | EPIC-004 Monorepo-Schnitt M1–M3 (subtree, Cutover live, Gates) | DONE |
-| 12 | EPIC-004-Abschluss M4–M7 + EPIC-009 (Router-Split, Bundle-Schicht, Tooling-Split, Alembic, Backup) | in Arbeit |
+| 12 | EPIC-004-Abschluss M4–M7 + EPIC-009 (Router-Split, Bundle-Schicht, Tooling-Split, Alembic, Backup) | DONE (2026-06-11) |
