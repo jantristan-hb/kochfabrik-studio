@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KOCHfabrik Studio — Designer</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  /* Designer-spezifische, additive Klassen (Layout §1/§4). */
+  .dz-cols{display:grid;grid-template-columns:300px 1fr 320px;gap:22px;align-items:start}
+  .dz-col{display:flex;flex-direction:column;gap:16px}
+  .dz-col-h{font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);font-weight:700}
+  .dz-field{display:flex;flex-direction:column;gap:6px}
+  .dz-field label{font-size:.78rem;font-weight:700;color:var(--ink-soft)}
+  .dz-field input,.dz-field select{border:1px solid var(--line);border-radius:8px;
+    padding:9px 12px;font:inherit;font-size:.9rem;outline:none}
+  .dz-field input:focus,.dz-field select:focus{border-color:var(--gold)}
+  .dz-drop{border:1.5px dashed var(--line);border-radius:var(--radius);padding:22px;
+    text-align:center;color:var(--ink-soft);font-size:.86rem;background:var(--gold-tint-2)}
+  .dz-empty{color:var(--ink-soft);font-size:.88rem;padding:18px 0}
+  .dz-group-h{font-size:.95rem;font-weight:800;margin:6px 0 2px}
+  .dz-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  .dz-card{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;
+    background:var(--panel);transition:.16s}
+  .dz-card:hover{border-color:var(--gold);box-shadow:var(--shadow)}
+  .dz-card img{width:100%;height:auto;display:block;aspect-ratio:16/9;object-fit:cover;background:var(--gold-tint)}
+  .dz-card .dz-cap{padding:8px 10px;font-size:.78rem;color:var(--ink-soft)}
+  .dz-board-item{display:flex;align-items:center;gap:10px;border:1px solid var(--line);
+    border-radius:10px;padding:8px 10px;background:var(--panel)}
+  .dz-board-item .dz-ix{font-weight:800;color:var(--gold-deep);flex:none}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="side-logo"><a href="index.html"><img src="assets/kochfabrik-logo.png" alt="KOCHfabrik Studio"></a></div>
+    <nav class="side-nav">
+      <div class="nav-label">Arbeiten</div>
+      <a class="nav-item" href="index.html"><span class="ic">&#9632;</span> Dashboard</a>
+      <a class="nav-item" href="chat.html"><span class="ic">&#9993;</span> Angebotsgenerator</a>
+      <a class="nav-item" href="slidesuche.html"><span class="ic">&#9906;</span> Slide Suche</a>
+      <a class="nav-item active" href="designer.html"><span class="ic">&#9998;</span> Designer</a>
+      <a class="nav-item" href="bildgenerator.html"><span class="ic">&#9788;</span> Bildgenerator</a>
+      <div class="nav-label">Wissen</div>
+      <a class="nav-item" href="kunden.html"><span class="ic">&#9787;</span> Kunden</a>
+      <a class="nav-item" href="client.html"><span class="ic">&#9906;</span> Client Research</a>
+      <a class="nav-item" href="bibliothek.html"><span class="ic">&#9783;</span> Bibliothek</a>
+    </nav>
+    <div class="side-foot"><div class="avatar">PD</div><div><div class="nm">Patrick Diehr</div><div class="rl">KOCHfabrik</div></div></div>
+  </aside>
+
+  <main class="view">
+    <div class="topbar">
+      <div><h1>Designer</h1><div class="sub">Storyboard aus Vorschlägen zusammenstellen</div></div>
+    </div>
+
+    <div class="content">
+      <div class="dz-cols">
+
+        <!-- Links: Quelle (Upload / Angebot) + Freitext-Suche -->
+        <section id="designer-source" class="panel dz-col">
+          <div class="dz-col-h">Quelle</div>
+          <div class="dz-drop" id="dz-upload">Datei hier ablegen oder klicken (folgt)</div>
+          <div class="dz-field">
+            <label for="dz-offer">Aus Angebot</label>
+            <select id="dz-offer"><option value="">Angebot wählen …</option></select>
+          </div>
+          <div class="dz-field">
+            <label for="dz-search">Freitext-Suche</label>
+            <input id="dz-search" type="search" placeholder="Begriff suchen …" autocomplete="off">
+          </div>
+        </section>
+
+        <!-- Mitte: Vorschlags-Gruppen (PNG-Karten) -->
+        <section id="designer-groups" class="panel dz-col">
+          <div class="dz-col-h">Vorschläge</div>
+          <div class="dz-empty" id="dz-groups-empty">Noch keine Vorschläge. Quelle wählen oder suchen.</div>
+          <div id="dz-groups"></div>
+        </section>
+
+        <!-- Rechts: Storyboard (Reihenfolge / Entfernen / Download) -->
+        <section id="designer-board" class="panel dz-col">
+          <div class="dz-col-h">Storyboard</div>
+          <div class="dz-empty" id="dz-board-empty">Storyboard leer. Karten hinzufügen.</div>
+          <div id="dz-board"></div>
+          <button class="btn btn-primary" id="dz-download" disabled>Download</button>
+        </section>
+
+      </div>
+    </div>
+  </main>
+</div>
+<script src="assets/designer.js" type="module"></script>
+</body>
+</html>

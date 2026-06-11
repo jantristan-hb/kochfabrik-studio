@@ -1,0 +1,100 @@
+"""Sprint 13 — Frontend-Smoke der Designer-UI-Kette (US-063 ff.).
+
+Marker-basierte FE-Smoke nach Vorbild der Charakterisierungs-Tests
+(`test_charakterisierung.py`: TestClient + Auth-Cookie) und der
+statischen read_text-Greps (`test_sprint10_us037.py`). DB-los.
+
+US-063 (Vorstufe): die Designer-Seite wird ausgeliefert (200, hinter
+dem Auth-Gate wie jede Modul-Seite), traegt die drei Bereichs-Marker
+(`designer-source`/`designer-groups`/`designer-board`), das JS-Modul
+ist erreichbar (200, /assets ist public) und versioniert den State
+unter `kfDesigner.v1`. Die Nav verlinkt designer.html aus mind. 5
+bestehenden Seiten. Klick-Verdrahtung folgt in US-064.
+
+DIESE Datei gehoert der UI-Kette (NICHT test_sprint13.py = API-Kette).
+"""
+import hashlib
+import secrets
+from pathlib import Path
+
+import pytest
+from fastapi.testclient import TestClient
+
+ROOT = Path(__file__).resolve().parents[2]
+WEB = ROOT / "web"
+
+# Bekannter KF_USERS-Eintrag zum Minten eines gueltigen Session-Cookies
+# (gleiche Mechanik wie test_charakterisierung.py).
+_EMAIL = "designer@kf.de"
+_SALT = "saltsalt"
+_PW = "pw-designer"
+_HASH = hashlib.sha256((_SALT + _PW).encode()).hexdigest()
+
+
+@pytest.fixture
+def app_module(monkeypatch):
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.setenv("KF_USERS", f"{_EMAIL}|{_SALT}|{_HASH}")
+    monkeypatch.setenv("KF_SESSION_SECRET", secrets.token_hex(16))
+    import backend.app as app
+    return app
+
+
+@pytest.fixture
+def auth_client(app_module):
+    """TestClient mit gueltigem Session-Cookie (passiert das Auth-Gate)."""
+    c = TestClient(app_module.app, follow_redirects=False)
+    c.cookies.set(app_module.COOKIE, app_module.make_cookie(_EMAIL))
+    return c
+
+
+@pytest.fixture
+def client(app_module):
+    return TestClient(app_module.app, follow_redirects=False)
+
+
+# --- US-063: Auslieferung + Marker -----------------------------------------
+
+def test_designer_page_served_200(auth_client):
+    r = auth_client.get("/designer.html")
+    assert r.status_code == 200
+    assert "text/html" in r.headers["content-type"]
+
+
+def test_designer_page_gated_without_cookie(client):
+    # Modul-Seite hinter dem Auth-Gate (IST: Nicht-API -> 302 /login.html).
+    r = client.get("/designer.html")
+    assert r.status_code == 302
+    assert r.headers["location"] == "/login.html"
+
+
+def test_designer_page_has_three_area_markers():
+    html = (WEB / "designer.html").read_text(encoding="utf-8")
+    for marker in ("designer-source", "designer-groups", "designer-board"):
+        assert marker in html, f"Bereichs-Marker fehlt: {marker}"
+
+
+def test_designer_js_served_200(client):
+    # /assets ist public (kein Cookie noetig).
+    r = client.get("/assets/designer.js")
+    assert r.status_code == 200
+
+
+def test_designer_js_versioned_state_key():
+    js = (WEB / "assets" / "designer.js").read_text(encoding="utf-8")
+    assert "kfDesigner.v1" in js, "sessionStorage-Key kfDesigner.v1 fehlt"
+
+
+def test_designer_js_has_login_redirect_pattern():
+    # 401 -> Login-Redirect nach chat.html-Muster.
+    js = (WEB / "assets" / "designer.js").read_text(encoding="utf-8")
+    assert "/login.html" in js
+
+
+# --- US-063: Navigation aus bestehenden Seiten -----------------------------
+
+def test_at_least_five_pages_link_designer():
+    pages = [p for p in WEB.glob("*.html")
+             if "designer.html" in p.read_text(encoding="utf-8")]
+    assert len(pages) >= 5, (
+        f"Nur {len(pages)} Seiten verlinken designer.html (>=5 erwartet)")
