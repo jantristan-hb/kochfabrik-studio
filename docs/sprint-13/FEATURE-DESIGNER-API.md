@@ -1,6 +1,6 @@
 ---
 key: KOCHFABRIK-FEATURE-011
-status: approved
+status: implemented
 title: "Präsentationsdesigner — Vorschlags-API (Angebot → Slide-Kandidaten)"
 created: 2026-06-11
 project: kochfabrik

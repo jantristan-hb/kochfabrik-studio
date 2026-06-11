@@ -1,6 +1,6 @@
 ---
 key: KOCHFABRIK-FEATURE-012
-status: approved
+status: implemented
 title: "Präsentationsdesigner — UI (Vorschläge + Suche + Storyboard + Download)"
 created: 2026-06-11
 project: kochfabrik

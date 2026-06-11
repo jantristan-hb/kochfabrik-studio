@@ -125,3 +125,12 @@ Cron-Zyklus, Restore-Probe, Korpus-Doku). R-REF-3/4/5 erfüllt,
 R-BAK-1/2/3 erfüllt, R-QA-3 (F-E-03 + F-S-01) geschlossen.
 Offen bleiben: EPIC-007/008 (S13), EPIC-005 (S14), EPIC-006 (S15),
 EPIC-010 (S16) + Jan-Entscheid Alt-Ordner (ADR-002-Inventar).
+
+## Erfüllungs-Stand Sprint 13 (Review 2026-06-11)
+
+EPIC-006 DONE (D1–D3+D6: Präsentationsdesigner — Vorschlags-API,
+Builder-UI, Storyboard, Download; vorgezogen S15→S13 auf Jan-Wunsch).
+R-DECK-1/2/3 erfüllt, R-DECK-4 als D6 konkretisiert erfüllt,
+R-DECK-5 (D5 Text-Edit) bewusst offen. R-NF-2-Nachtrag: live_verify
+Deep-Check (Incident 2026-06-11). Offen: EPIC-007/008 (S14, Seed liegt),
+EPIC-005 (S15), EPIC-010 (S16), D6-R-ID-Nachtrag via /epic.

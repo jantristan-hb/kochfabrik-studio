@@ -48,3 +48,11 @@ D6 (Scope-Erweiterung): US-061 + US-062. ⚠ Neues R-ID für D6 via
 **Verschoben (explizit):** EPIC-007 V1–V5 + EPIC-008 C1–C3 → Sprint 14
 (Seed liegt: `docs/sprint-14/FEATURE-CI-DELIVERY.md`); EPIC-005 → S15,
 EPIC-010 → S16 (Roadmap-Shift dokumentiert in EPIC-006).
+
+## Erfüllungs-Stand (Review 2026-06-11)
+
+8/8 DONE (PRs #56–#59). Alle 9 EARS-Kriterien (FEATURE-011 §8 Nr. 1–4,
+FEATURE-012 §8 Nr. 1–5) grün bewiesen; Feature-Prompt F1–F3 vollständig.
+Beweise: Live-Smoke mit echtem Embedding (semantisch korrekte Top-Treffer
+je Gang), E2E suggest→download→valide PPTX, Suite 143/0, Sim-Gate grün,
+US-068 LIVE_DEEP live gegen Prod. **EPIC-006 DONE** (D5 optional offen).

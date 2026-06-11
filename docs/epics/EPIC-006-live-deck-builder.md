@@ -1,8 +1,9 @@
 ---
 id: EPIC-006
 title: "Live-Deck-Builder: Präsentationen aus PNG-Slides zusammenklicken"
-status: IN_PROGRESS
+status: DONE
 created: 2026-06-09
+completed: 2026-06-11
 project: kochfabrik-studio
 sprints: [13]
 ---
@@ -68,7 +69,12 @@ Referenz-Cache — Font-Treue (EPIC-005) gilt damit automatisch.
 > Vorgezogen von S15 → S13 (Jan-Priorisierung 2026-06-11);
 > EPIC-007/008 verschieben sich auf S14.
 
-> **Fortschritt:** wird von /sprint-review aktualisiert.
+> **Fortschritt:** Sprint 13 ✅ DONE (2026-06-11, PRs #56–#58, 8/8):
+> Designer-Seite live — D1 (Karten+Board), D2 (Session-Persistenz),
+> D3 (Download verbatim, E2E-bewiesen via reconstruct.js), D6
+> (Suggest-API: Top-5 je Gang + Pflicht-Gruppe, Live-Smoke semantisch
+> bewiesen). **Alle 4 Akzeptanzkriterien erfüllt — EPIC DONE.**
+> D5 (Text-Edit) bleibt optionale Ausbaustufe (Backlog).
 
 ## Akzeptanzkriterien
 

@@ -1,6 +1,6 @@
 # CLAUDE.md — kochfabrik-studio
 
-> Projekt-Kontext für Claude-Agents. Stand: Sprint 12 DONE (2026-06-11). Dieses
+> Projekt-Kontext für Claude-Agents. Stand: Sprint 13 DONE (2026-06-11). Dieses
 > File ist die erste Anlaufstelle für jeden neuen Agent.
 
 ## Session-Start
@@ -11,7 +11,7 @@ Vor jeder Arbeit in dieser Reihenfolge lesen:
 2. **PROGRESS.md** — Status, Sprint-Tabelle, aktueller Zustand
 3. **REQUIREMENTS.md** — Produkt-These + Anforderungen (informelle SoT)
 4. **docs/epics/README.md** — Roadmap + Work-Packages (EPIC-001…010)
-5. **docs/sprint-12/** — aktueller Sprint: `USER-STORIES.md`, `EXECUTE.md`,
+5. **docs/sprint-13/** — letzter Sprint: `USER-STORIES.md`, `EXECUTE.md`,
    `TRACEABILITY.md`, die FEATURE-Specs (EARS/Pitfalls/Boundaries)
 
 ## Tech Stack
@@ -83,8 +83,8 @@ Täglicher Host-Cron (`pg_dump | gzip` → `/data/backups/kf-studio-pg/`, Rotati
 
 ## Architektur-Regeln
 
-- **Router-Layout:** Endpoints liegen in `backend/routers/` (4 Router: `auth`,
-  `bildgenerator`, `angebot`, `praesentation`). `backend/app.py` bleibt schlank
+- **Router-Layout:** Endpoints liegen in `backend/routers/` (5 Router: `auth`,
+  `bildgenerator`, `angebot`, `praesentation`, `designer`). `backend/app.py` bleibt schlank
   (~90 Z.) und montiert nur. Geteilter Kern (Auth-/Cookie-Helfer, Bild-Kern,
   Kategorie-/Prompt-Konstanten, Engine-Import) lebt in `backend/engine_glue.py`
   — Router importieren von dort, **nie** auf `app.py` (kein Import-Zyklus).
@@ -131,3 +131,4 @@ gepusht sind.
 | 10 | EPIC-003 Analyse-Fundament (25 Findings, ADR-001…003) | DONE |
 | 11 | EPIC-004 Monorepo-Schnitt M1–M3 (subtree, Cutover live, Gates) | DONE |
 | 12 | EPIC-004-Abschluss M4–M7 + EPIC-009 (Router-Split, Bundle-Schicht, Tooling-Split, Alembic, Backup) | DONE (2026-06-11) |
+| 13 | EPIC-006 Präsentationsdesigner (Suggest-API, Builder-UI, Storyboard, Download, LIVE_DEEP) | DONE (2026-06-11) |

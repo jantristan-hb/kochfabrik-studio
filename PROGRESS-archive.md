@@ -164,3 +164,12 @@ _(Keine FAILED-Stories — Sprint 1 vollständig.)_
 (Kunde/Anlass/Konzept/Block-Bullets) gemergt — Präsentation matched das
 verknüpfte Angebot.
 
+
+## Sprint 8 — EPIC-002 v2 FE-Switch (2026-05-20) — **DONE**
+
+| Story | Titel | Status |
+|-------|-------|--------|
+| US-030 | Alle Nav-Items (9 FE-Files) auf /praesentation_v2/ umgebogen | DONE |
+| US-031 | praesentationsgenerator.html: LEGACY-Badge + Gold-Banner zum neuen Editor | DONE |
+| US-032 | 7 Switch-Tests (Nav, Banner, kein Alt-href, v2-Route distinct) | DONE |
+
