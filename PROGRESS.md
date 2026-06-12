@@ -8,8 +8,38 @@
 > (subtree). Ältere Sprints (1–8): `PROGRESS-archive.md`.
 
 **Projekt:** kochfabrik-studio (Monorepo: FastAPI-Backend + web/ + engine/)
-**Aktueller Sprint:** Sprint 13 **DONE** — Präsentationsdesigner live (EPIC-006 abgeschlossen)
+**Aktueller Sprint:** Sprint 14 **GEPLANT** — Präsentations-Wizard (geführter Default-Einstieg) · Sprint 13 DONE + 5 Live-Iterationen
 **Status:** 13 Sprints done · Stack: FastAPI + PostgreSQL + SQLAlchemy2 async + Alembic + OAuth2-ready
+
+---
+
+## Sprint 14 — Präsentations-Wizard (geplant 2026-06-12)
+
+| Story | Titel | Status |
+|-------|-------|--------|
+| US-069 | Textfreie Korpus-Renders (render_notext) | TODO |
+| US-073 | Bild-Embeddings + rank_mixed (imgbundle) | TODO |
+| US-070 | Element-Geometrie-API + Notext-Route | TODO |
+| US-071 | Bild-Overrides im Download | TODO |
+| US-072 | Formulieren-Endpoint + Ranking-Mix | TODO |
+| US-074 | Wizard-Gerüst + Schritt 0 + Navigation | TODO |
+| US-075 | Wizard: Alternativen + Auswahl | TODO |
+| US-076 | Wizard: Overlay-Editor (Text + Bild) | TODO |
+| US-077 | Wizard: Filmstreifen + Download + E2E | TODO |
+
+Feature-getrieben (Jan): geführter Wizard — ein Schritt pro Slide,
+3–4 Alternativen, Overlay-Editing auf textfreien Renders, bildbewusstes
+Ranking, Bild-Overrides (Cover→PPTX), Formulieren im KOCHfabrik-Ton.
+Vertragsbezug: signiertes Angebot 2026-001 §3.2 (Gap-Analyse 2026-06-12,
+schließt 3 von 6 offenen Vertragspunkten). Issues #67–#75 · 4 Stränge ·
+Docs: `docs/sprint-14/` · CI/Treue-Seed → docs/sprint-15/.
+
+**Zwischen-Iterationen 11.–12.06. (nach S13, vor S14, alle live):**
+#60/61 Upload-Fix (isinstance) · #62/63 Pauschal-Konzept-Fallback ·
+#64 Slot-Ansicht · #65 Cover-Bild-Generator · #66 Texte-Editor mit
+Auto-Overrides. CHANGELOG [Unreleased]. Suite-Stand: 153/0.
+
+**Neue Seite:** web/wizard.html · **Neue Artefakte:** preview_notext/, imgbundle.npz
 
 ---
 
@@ -171,8 +201,8 @@ aktiv. **111 Tests grün.**
 | EPIC-004 | Monorepo & Refactoring | DONE | S11–S12 ✅ |
 | EPIC-005 | Font-Treue | OPEN | S14–S15 (geplant, gated: ADR-001) |
 | EPIC-006 | Live-Deck-Builder / Präsentationsdesigner | DONE | S13 ✅ (D5 optional offen) |
-| EPIC-007 | Render-Treue-Harness | OPEN | S14 (geschoben) |
-| EPIC-008 | CI/Delivery | OPEN | S14 (geschoben, Seed: docs/sprint-14/) |
+| EPIC-007 | Render-Treue-Harness | OPEN | S15 (geschoben) |
+| EPIC-008 | CI/Delivery | OPEN | S15 (geschoben, Seed: docs/sprint-15/) |
 | EPIC-009 | Backup & Resilienz | DONE | S11 (B1-Vorzug) + S12 ✅ |
 | EPIC-010 | Security & DSGVO-Light | OPEN | S16 (geplant, gated: Q1-Findings ✅ liegen vor) |
 
