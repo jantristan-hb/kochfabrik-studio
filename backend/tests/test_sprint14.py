@@ -163,3 +163,113 @@ def test_preview_notext_200_when_present(auth_client):
     r = auth_client.get(f"/api/slidesuche/preview-notext/{_DECK}/1.png")
     assert r.status_code == 200
     assert r.headers["content-type"] == "image/png"
+
+
+# ---------------- US-071 (FEATURE-014 EARS 2) ----------------
+# Download mit image_overrides (Data-URL): Bild landet im Bundle, src des
+# Elements wird ersetzt, PPTX trägt das neue Bild (ppt/media-Beweis); der
+# READ-ONLY-Cache bleibt unangetastet.
+
+# Deck mit einem image-Element (kf-ausstattung-location p1 hat eins).
+_IMG_DECK = "kf-ausstattung-location"
+
+
+def _png_bytes(marker: bytes = b"OVERRIDE!"):
+    """Gültiges Mini-PNG (1x1) mit eindeutigem tEXt-Marker-Chunk, ohne
+    Pillow — nur stdlib (struct/zlib). Der Marker erlaubt den ppt/media-
+    Nachweis im Zip, ohne auf Bildgleichheit zu prüfen."""
+    import struct
+    import zlib
+
+    def chunk(typ: bytes, data: bytes) -> bytes:
+        return (struct.pack(">I", len(data)) + typ + data
+                + struct.pack(">I", zlib.crc32(typ + data) & 0xFFFFFFFF))
+
+    sig = b"\x89PNG\r\n\x1a\n"
+    ihdr = struct.pack(">IIBBBBB", 1, 1, 8, 2, 0, 0, 0)   # 1x1 RGB
+    raw = b"\x00\xff\xff\xff"                              # 1 Zeile, weiß
+    idat = zlib.compress(raw)
+    text = b"Comment\x00" + marker
+    return (sig + chunk(b"IHDR", ihdr) + chunk(b"tEXt", text)
+            + chunk(b"IDAT", idat) + chunk(b"IEND", b""))
+
+
+def _data_url(png: bytes) -> str:
+    import base64
+    return "data:image/png;base64," + base64.b64encode(png).decode()
+
+
+def _image_idx(auth_client, deck, page):
+    """seq-Index des ersten image-Elements der Slide (über die US-070-API)."""
+    r = auth_client.post("/api/designer/texts", json={
+        "slides": [{"deck": deck, "page": page}], "offer": None})
+    imgs = r.json()["slides"][0]["images"]
+    return imgs[0]["i"] if imgs else None
+
+
+def _cache_snapshot():
+    """{relpath: mtime_ns} über den gesamten Cache — Beweis, dass der
+    Download nichts in den READ-ONLY-Cache schreibt (Symlink-Falle)."""
+    snap = {}
+    base = os.path.abspath(_CACHE)
+    for root, _, files in os.walk(base):
+        for f in files:
+            p = os.path.join(root, f)
+            snap[os.path.relpath(p, base)] = os.stat(p).st_mtime_ns
+    return snap
+
+
+def test_download_image_override_lands_in_media(auth_client):
+    """E2E: Override-Bild-Bytes liegen in ppt/media; Cache unverändert."""
+    import base64
+    import io
+    import shutil
+    import zipfile
+    if not shutil.which("node"):
+        pytest.skip("node fehlt")
+    idx = _image_idx(auth_client, _IMG_DECK, 1)
+    assert idx is not None, "kf-ausstattung-location p1 hat ein Bild"
+    marker = b"JANOVERRIDEIMG071"
+    png = _png_bytes(marker)
+
+    before = _cache_snapshot()
+    r = auth_client.post("/api/slidesuche/download", json={"slides": [
+        {"deck": _IMG_DECK, "page": 1,
+         "image_overrides": {str(idx): _data_url(png)}}]})
+    assert r.status_code == 200, r.text
+    raw = base64.b64decode(r.json()["pptx"].split(",", 1)[1])
+    media = b""
+    with zipfile.ZipFile(io.BytesIO(raw)) as z:
+        for n in z.namelist():
+            if n.startswith("ppt/media/"):
+                media += z.read(n)
+    assert marker in media, "Override-Bild nicht in ppt/media"
+    # Cache (READ-ONLY) darf sich durch den Download nicht verändert haben.
+    assert _cache_snapshot() == before, "Cache wurde beschrieben!"
+
+
+def test_download_image_override_invalid_dataurl(auth_client):
+    """Kein gültiges PNG/JPEG (Magic-Bytes) → 400."""
+    import shutil
+    if not shutil.which("node"):
+        pytest.skip("node fehlt")
+    idx = _image_idx(auth_client, _IMG_DECK, 1)
+    bad = "data:image/png;base64," + \
+        __import__("base64").b64encode(b"not-an-image").decode()
+    r = auth_client.post("/api/slidesuche/download", json={"slides": [
+        {"deck": _IMG_DECK, "page": 1, "image_overrides": {str(idx): bad}}]})
+    assert r.status_code == 400, r.text
+
+
+def test_download_image_override_too_large(auth_client):
+    """Bild > 8 MB → 413 (Data-URL-Limit, Pitfall 3)."""
+    import base64
+    import shutil
+    if not shutil.which("node"):
+        pytest.skip("node fehlt")
+    idx = _image_idx(auth_client, _IMG_DECK, 1)
+    big = b"\x89PNG\r\n\x1a\n" + b"\x00" * (8 * 1024 * 1024 + 10)
+    url = "data:image/png;base64," + base64.b64encode(big).decode()
+    r = auth_client.post("/api/slidesuche/download", json={"slides": [
+        {"deck": _IMG_DECK, "page": 1, "image_overrides": {str(idx): url}}]})
+    assert r.status_code == 413, r.text
