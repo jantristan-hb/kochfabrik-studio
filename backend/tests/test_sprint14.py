@@ -144,8 +144,10 @@ def test_preview_notext_requires_auth(client):
 
 
 def test_preview_notext_404_for_unrendered(auth_client):
-    """Ungerenderte Slide (kein preview_notext-PNG) → 404, kein Crash."""
-    r = auth_client.get(f"/api/slidesuche/preview-notext/{_DECK}/1.png")
+    """Ungerenderte Slide (kein preview_notext-PNG) → 404, kein Crash.
+    Seite 999 existiert in keinem Deck — der US-069-Merge hat die
+    realen Seiten der Sample-Decks gerendert (Stacked-Interaktion)."""
+    r = auth_client.get(f"/api/slidesuche/preview-notext/{_DECK}/999.png")
     assert r.status_code == 404
 
 
