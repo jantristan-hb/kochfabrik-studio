@@ -386,17 +386,50 @@ class TextsReq(BaseModel):
 
 def _slide_text_elements(deck: str, page: int):
     """[(seq_idx, element)] der Text-Elemente einer Cache-Slide."""
+    seq = _slide_seq(deck, page)
+    if seq is None:
+        return None
+    return [(i, e) for i, e in enumerate(seq)
+            if e.get("t") == "text" and e.get("lines")]
+
+
+def _slide_seq(deck: str, page: int):
+    """Rohe Element-Sequenz einer Cache-Slide (None = Slide/Deck fehlt)."""
     from ..slidesuche import _CACHE, _SAFE
     if not _SAFE.match(deck) or page < 1:
         return None
     el_path = os.path.join(_CACHE, deck, "elements.json")
     if not os.path.isfile(el_path):
         return None
-    seq = json.load(open(el_path, encoding="utf-8")).get(str(int(page)))
+    return json.load(open(el_path, encoding="utf-8")).get(str(int(page)))
+
+
+def _slide_meta(deck: str):
+    """_meta {w_pt,h_pt} eines Decks (Maßstab variiert je Deck, Pitfall 2 —
+    nie hartkodieren). Default 960×540, falls _meta fehlt."""
+    from ..slidesuche import _CACHE, _SAFE
+    default = {"w_pt": 960.0, "h_pt": 540.0}
+    if not _SAFE.match(deck):
+        return default
+    el_path = os.path.join(_CACHE, deck, "elements.json")
+    if not os.path.isfile(el_path):
+        return default
+    try:
+        m = json.load(open(el_path, encoding="utf-8")).get("_meta") or {}
+    except Exception:                                               # noqa
+        return default
+    return {"w_pt": float(m.get("w_pt", default["w_pt"])),
+            "h_pt": float(m.get("h_pt", default["h_pt"]))}
+
+
+def _slide_images(deck: str, page: int):
+    """images[] = {i,x,y,w,h} der t=='image'-Elemente einer Cache-Slide."""
+    seq = _slide_seq(deck, page)
     if not seq:
-        return None
-    return [(i, e) for i, e in enumerate(seq)
-            if e.get("t") == "text" and e.get("lines")]
+        return []
+    return [{"i": i, "x": e.get("x"), "y": e.get("y"),
+             "w": e.get("w"), "h": e.get("h")}
+            for i, e in enumerate(seq) if e.get("t") == "image"]
 
 
 def _suggest_overrides(texts, kind, gang, offer):
@@ -435,26 +468,50 @@ def _suggest_overrides(texts, kind, gang, offer):
     return sug
 
 
+# Notext-Preview-Route der Slidesuche (US-070): textfreie Renders je
+# Slide, Grundlage für die Overlay-Positionierung im Editor.
+_NOTEXT_BASE = "/api/slidesuche/preview-notext"
+
+
+def _text_entry(i: int, e: dict) -> dict:
+    """Ein Text-Element → Editor-Eintrag: Bestands-Felder (i/text/size,
+    #66) + Geometrie (x/y/w/h) + Stil (color/weight/italic) aus lines[0]
+    — genug, um Overlays pixelgenau zu setzen (FEATURE-014 EARS 1)."""
+    ln0 = e["lines"][0]
+    return {
+        "i": i,
+        "text": "\n".join(ln.get("txt", "") for ln in e["lines"]),
+        "size": max(ln["size"] for ln in e["lines"]),
+        "x": e.get("x"), "y": e.get("y"),
+        "w": e.get("w"), "h": e.get("h"),
+        "color": ln0.get("color"),
+        "weight": ln0.get("weight"),
+        "italic": bool(ln0.get("italic", False)),
+    }
+
+
 @router.post("/api/designer/texts")
 def designer_texts(r: TextsReq, request: Request):
-    """Pro Board-Slide: Ist-Texte (elements.json) + Auto-Override-
-    Vorschläge aus dem Angebot. Editor-Grundlage (#66)."""
+    """Pro Board-Slide: Ist-Texte (elements.json) inkl. Geometrie/Stil +
+    Slide-meta (w_pt/h_pt) + image-Elemente + Notext-Preview-URL + Auto-
+    Override-Vorschläge. Editor-/Overlay-Grundlage (#66, FEATURE-014)."""
     if not _owner(request):
         return JSONResponse({"error": "auth"}, status_code=401)
     out = []
     for sl in r.slides[:50]:
+        meta = _slide_meta(sl.deck)
+        notext = f"{_NOTEXT_BASE}/{sl.deck}/{int(sl.page)}.png"
         texts = _slide_text_elements(sl.deck, sl.page)
         if texts is None:
             out.append({"deck": sl.deck, "page": sl.page, "texts": [],
-                        "suggestions": {}})
+                        "images": [], "meta": meta,
+                        "preview_notext": notext, "suggestions": {}})
             continue
         out.append({
-            "deck": sl.deck, "page": sl.page,
-            "texts": [{"i": i,
-                       "text": "\n".join(ln.get("txt", "")
-                                          for ln in e["lines"]),
-                       "size": max(ln["size"] for ln in e["lines"])}
-                      for i, e in texts],
+            "deck": sl.deck, "page": sl.page, "meta": meta,
+            "preview_notext": notext,
+            "texts": [_text_entry(i, e) for i, e in texts],
+            "images": _slide_images(sl.deck, sl.page),
             "suggestions": _suggest_overrides(texts, sl.kind, sl.gang,
                                               r.offer),
         })

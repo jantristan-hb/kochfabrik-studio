@@ -198,6 +198,29 @@ def preview(deck: str, page: int, request: Request):
                                  "public, max-age=86400"})
 
 
+# ---------- GET /preview-notext/{deck}/{page}.png ----------
+# Textfreie Renders (US-069 erzeugt sie nach cache/<deck>/preview_notext/)
+# als Overlay-Untergrund für den Editor (US-070, FEATURE-014). Identische
+# Auth-/Traversal-/Cache-Semantik wie /preview, nur anderes Unterverzeichnis.
+
+
+@router.get("/preview-notext/{deck}/{page}.png")
+def preview_notext(deck: str, page: int, request: Request):
+    g = _auth_or_401(request)
+    if g:
+        return g
+    if not _SAFE.match(deck) or page < 1 or page > 9999:
+        return JSONResponse({"error": "ungültiger Pfad"},
+                            status_code=400)
+    path = os.path.join(_CACHE, deck, "preview_notext", f"p{page}.png")
+    if not os.path.isfile(path):
+        return JSONResponse({"error": "preview fehlt"},
+                            status_code=404)
+    return FileResponse(path, media_type="image/png",
+                        headers={"Cache-Control":
+                                 "public, max-age=86400"})
+
+
 # ---------- POST /download ----------
 
 class SlideRef(BaseModel):
