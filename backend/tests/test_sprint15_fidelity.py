@@ -180,3 +180,86 @@ def test_a4_vs_169_crasht_nicht(fid, sample_ref, tmp_path):
     assert set(res) >= {"text", "geometry", "font", "pixel", "total"}
     for k in ("text", "geometry", "font", "pixel", "total"):
         assert 0.0 <= res[k] <= 1.0, res
+
+
+# ---------------------------------------------------------------------------
+# US-082: Korpus-Harness fidelity_run (FEATURE-016 §8 Nr. 2)
+#
+# Der Lauf rekonstruiert Sample-Slides (reconstruct.js + soffice) und misst sie
+# gegen ref.pdf. Render läuft NUR im Container (kf-studio-sim: node + soffice;
+# fitz wird dort on-demand bereitgestellt). Diese Tests sind docker-gated und
+# skippen sauber, wenn kein docker da ist (CI ohne docker, FEATURE-016 §12.5).
+# ---------------------------------------------------------------------------
+import json
+import shutil
+import subprocess
+
+SAMPLE_DECK = "10-182-raumkarussell-gmbh-12-09-2026"
+
+
+def _docker_available() -> bool:
+    if shutil.which("docker") is None:
+        return False
+    try:
+        subprocess.run(
+            ["docker", "image", "inspect", "kf-studio-sim"],
+            check=True,
+            capture_output=True,
+            timeout=30,
+        )
+        return True
+    except Exception:
+        return False
+
+
+docker_gate = pytest.mark.skipif(
+    not _docker_available(),
+    reason="docker / kf-studio-sim Image fehlt — Render-Pipeline nur im Container",
+)
+
+
+def _run_in_container(args: list[str]) -> dict:
+    """fidelity_run.py im kf-studio-sim-Container fahren → geparstes JSON."""
+    proc = subprocess.run(
+        [
+            "docker", "run", "--rm",
+            "-v", f"{REPO_ROOT}/engine/data:/app/engine/data",
+            "-v", f"{REPO_ROOT}/engine/tooling:/app/engine/tooling",
+            "kf-studio-sim",
+            "python3", "engine/tooling/fidelity_run.py",
+            *args,
+        ],
+        capture_output=True,
+        text=True,
+        timeout=600,
+    )
+    assert proc.returncode == 0, f"stdout={proc.stdout}\nstderr={proc.stderr}"
+    return json.loads(proc.stdout)
+
+
+@docker_gate
+def test_fidelity_run_liefert_je_slide_scores():
+    """EARS Nr. 2: Lauf über das Sample → JSON mit je-Slide scores.total + Version."""
+    rep = _run_in_container(["--deck", SAMPLE_DECK])
+    assert "metrik_version" in rep
+    assert rep["slides"], "keine Slides gerendert"
+    for slide in rep["slides"]:
+        assert slide["deck"] == SAMPLE_DECK
+        assert isinstance(slide["page"], int)
+        assert set(slide["scores"]) >= {"text", "geometry", "font", "pixel", "total"}
+        assert 0.0 <= slide["scores"]["total"] <= 1.0, slide
+
+
+@docker_gate
+def test_fidelity_run_reproduzierbar():
+    """EARS Nr. 2: zweiter Lauf liefert identische Scores ±0.005 (Render-Determinismus)."""
+    rep_a = _run_in_container(["--deck", SAMPLE_DECK, "--limit", "2"])
+    rep_b = _run_in_container(["--deck", SAMPLE_DECK, "--limit", "2"])
+    scores_a = {s["page"]: s["scores"] for s in rep_a["slides"]}
+    scores_b = {s["page"]: s["scores"] for s in rep_b["slides"]}
+    assert scores_a.keys() == scores_b.keys()
+    assert scores_a, "kein Slide gerendert"
+    for page, sa in scores_a.items():
+        sb = scores_b[page]
+        for k in ("text", "geometry", "font", "pixel", "total"):
+            assert abs(sa[k] - sb[k]) <= 0.005, (page, k, sa[k], sb[k])
