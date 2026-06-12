@@ -15,7 +15,7 @@ project: kochfabrik
 
 Jede Änderung läuft vor dem Merge durch eine Pipeline (Lint + Tests +
 Build); master ist geschützt (PR-Pflicht + grüne Checks); das
-Treue-Sample-Gate (FEATURE-010) ist als Pflicht-Check verdrahtet —
+Treue-Sample-Gate (FEATURE-016) ist als Pflicht-Check verdrahtet —
 „super nah am PDF" wird vom Merge-Prozess erzwungen, nicht erhofft.
 
 ## 4. Flows / Pipeline-Design
@@ -52,7 +52,7 @@ CLAUDE.md). Delivery-Flow: docs/ops/DELIVERY-FLOW.md.
 ## 9. Abgrenzung (Nicht-Teil)
 
 - Voll-Korpus-Lauf im CI (200 Decks liegen nicht im Repo — Sample = 1
-  committetes Deck; Voll-Lauf bleibt lokal/manuell, FEATURE-010)
+  committetes Deck; Voll-Lauf bleibt lokal/manuell, FEATURE-016)
 - Auto-Deploy — bleibt bewusst manuell (CUTOVER-RUNBOOK)
 - Coverage-/Quality-Gates jenseits Lint+Tests (Goldplating)
 
@@ -77,7 +77,7 @@ CLAUDE.md). Delivery-Flow: docs/ops/DELIVERY-FLOW.md.
 ## 11. Implementierungs-Anker (Ist)
 
 `tools/.venv/bin/ruff check --select E9,F63,F7,F82 backend engine/scripts`
-= sauber (2026-06-11). Suite: 113 passed/5 skipped (DB-gated via
+= sauber (2026-06-11). Suite: 213 passed/5 skipped (DB-gated via
 fehlender DATABASE_URL — läuft im CI identisch). `Dockerfile` baut auf
 Ubuntu-Runnern (kein Mac-Spezifikum). Repo privat, gh-Token mit
 repo-Scope (Protection-API ok). Tests brauchen Python ≥3.10 (PEP 604,
@@ -101,8 +101,8 @@ README §Tests lokal) — CI nimmt 3.12 (Container-Parität).
 
 ## Referenzen
 - implements → REQUIREMENTS R-CI-1, R-CI-2, R-CI-3, R-FID-3 (CI-Teil)
-- depends_on → [[KOCHFABRIK-FEATURE-010]] (Sample-Gate) · tools/sim_gate.sh
+- depends_on → [[KOCHFABRIK-FEATURE-016]] (Sample-Gate) · tools/sim_gate.sh
 - relates_to → [[EPIC-008]] C1–C3 · [[EPIC-007]] V3
 
 ## Referenziert von
-— USER-STORIES Sprint 13 (US-061, US-062, US-067)
+— USER-STORIES Sprint 15 (US-079, US-080, US-084)
