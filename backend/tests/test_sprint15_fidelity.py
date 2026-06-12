@@ -18,7 +18,23 @@ from pathlib import Path
 
 import pytest
 
-fitz = pytest.importorskip("fitz", reason="PyMuPDF (fitz) ist Analyse-Dep, nicht im Runtime-Stack")
+# fitz (PyMuPDF) ist die Analyse-Dep — auf dem Host NUR im tools/.venv, NICHT im
+# Runtime-/CI-Stack. Die US-081-Unit-Tests bauen PDFs direkt mit host-fitz und
+# skippen ohne. Die docker-gated Gate-/Harness-Tests (US-082/084) brauchen KEIN
+# host-fitz — sie bootstrappen fitz IM Container. Darum hier KEIN modulweiter
+# importorskip (der würde sonst auch die Container-Tests skippen → der `fidelity`-
+# CI-Job hätte 0 Tests und failt mit exit 5).
+try:
+    import fitz  # noqa: F401
+    _HAS_HOST_FITZ = True
+except ImportError:
+    fitz = None
+    _HAS_HOST_FITZ = False
+
+requires_host_fitz = pytest.mark.skipif(
+    not _HAS_HOST_FITZ,
+    reason="PyMuPDF (fitz) ist Analyse-Dep, nicht im Runtime-/CI-Stack (nur tools/.venv)",
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 FIDELITY_PY = REPO_ROOT / "engine" / "tooling" / "fidelity.py"
@@ -53,10 +69,12 @@ def sample_ref():
     return SAMPLE_REF
 
 
+@requires_host_fitz
 def test_version_konstante(fid):
     assert getattr(fid, "FIDELITY_VERSION", None) == "1.0"
 
 
+@requires_host_fitz
 def test_selbstvergleich_total_min_099(fid, sample_ref):
     """EARS Nr. 1: Seite vs. sich selbst → total >= 0.99."""
     res = fid.compare(str(sample_ref), 1, str(sample_ref), 1)
@@ -78,6 +96,7 @@ def _copy_first_page(src_pdf: Path, dst_pdf: Path):
     src.close()
 
 
+@requires_host_fitz
 def test_text_score_sinkt_bei_textmanipulation(fid, sample_ref, tmp_path):
     """Monotonie: zusätzlich eingefügter Text senkt den text-Score."""
     base_copy = tmp_path / "text_base.pdf"
@@ -99,6 +118,7 @@ def test_text_score_sinkt_bei_textmanipulation(fid, sample_ref, tmp_path):
     assert changed["text"] < base["text"], (base, changed)
 
 
+@requires_host_fitz
 def test_font_score_sinkt_bei_groessenaenderung(fid, sample_ref, tmp_path):
     """Monotonie: geänderte Font-Größen senken den font-Score.
 
@@ -162,6 +182,7 @@ def test_font_score_sinkt_bei_groessenaenderung(fid, sample_ref, tmp_path):
     assert changed["font"] < base["font"], (base, changed)
 
 
+@requires_host_fitz
 def test_a4_vs_169_crasht_nicht(fid, sample_ref, tmp_path):
     """Pitfall §12.2: unterschiedliche Seitenmaße dürfen nicht crashen.
 
