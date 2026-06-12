@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KOCHfabrik Studio — Wizard</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  /* Wizard-spezifische, additive Klassen (FEATURE-015 §4). */
+  .wz{display:flex;flex-direction:column;gap:18px}
+
+  /* Fortschrittszeile: ein Chip je Schritt, aktiver Schritt hervorgehoben. */
+  .wz-progress{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .wz-prog-step{display:flex;align-items:center;gap:7px;border:1px solid var(--line);
+    border-radius:999px;padding:6px 13px;font-size:.8rem;color:var(--ink-soft);
+    background:var(--panel);white-space:nowrap}
+  .wz-prog-step .wz-prog-ix{font-weight:800;color:var(--gold-deep)}
+  .wz-prog-step.is-active{border-color:var(--gold);background:var(--gold-tint);color:var(--ink)}
+  .wz-prog-step.is-done{border-color:var(--gold-soft)}
+  .wz-prog-step.is-done .wz-prog-ix{color:var(--gold)}
+
+  /* Schritt-Container: Titel + Body (Alternativen-Leiste + Stage). */
+  .wz-step-h{display:flex;justify-content:space-between;align-items:baseline;gap:14px}
+  .wz-step-h h2{margin:0}
+  .wz-step-sub{font-size:.85rem;color:var(--ink-soft)}
+  .wz-status{font-size:.82rem;color:var(--ink-soft);min-height:1.2em}
+  .wz-status-error{color:#a8324b}
+  .wz-status-load{color:var(--gold-deep)}
+
+  /* Alternativen-Leiste (US-075 füllt sie): horizontale Kandidaten-Streifen. */
+  .wz-alts{display:flex;gap:12px;overflow-x:auto;padding:4px 0;align-items:stretch}
+  .wz-alt{flex:0 0 168px;border:1px solid var(--line);border-radius:var(--radius);
+    overflow:hidden;background:var(--panel);cursor:pointer;text-align:left;
+    padding:0;font:inherit;color:inherit;transition:.16s}
+  .wz-alt:hover{border-color:var(--gold);box-shadow:var(--shadow-s)}
+  .wz-alt-on{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold-soft) inset}
+  .wz-alt img{width:100%;height:auto;display:block;aspect-ratio:16/9;object-fit:cover;background:var(--gold-tint)}
+  .wz-alt-missing{aspect-ratio:16/9;background:var(--gold-tint)}
+  .wz-alt-cap{padding:7px 9px;font-size:.76rem;color:var(--ink-soft)}
+  .wz-more{flex:0 0 auto;align-self:center;border:1px dashed var(--gold-soft);
+    background:none;color:var(--gold-deep);border-radius:8px;padding:8px 12px;
+    cursor:pointer;font:inherit;white-space:nowrap}
+
+  /* Cover-Generieren (nur Cover-Schritt). */
+  .wz-cover-host{display:flex;flex-direction:column;gap:8px;margin:14px 0}
+
+  /* Große Stage: gewählte Slide groß + Overlay-Editor (US-076). */
+  .wz-stage{border:1px solid var(--line);border-radius:var(--radius);
+    background:var(--gold-tint-2);min-height:280px;position:relative;overflow:hidden;
+    display:flex;align-items:center;justify-content:center}
+  .wz-stage-empty{color:var(--ink-soft);font-size:.9rem;padding:40px}
+  /* Overlay-Frame: hält das Slide-Seitenverhältnis (aspect-ratio aus w_pt/h_pt). */
+  .wz-frame{position:relative;width:100%;max-width:100%;background:var(--panel)}
+  .wz-bg{width:100%;height:auto;display:block}
+  .wz-notext-badge{position:absolute;top:8px;left:8px;z-index:5;
+    background:rgba(168,50,75,.92);color:#fff;font-size:.7rem;padding:4px 8px;border-radius:6px}
+  /* Text-Overlay: absolut in % positioniert, editierbar. */
+  .wz-tov{position:absolute;display:flex;align-items:flex-start}
+  .wz-ted{width:100%;height:100%;outline:none;line-height:1.05;overflow:hidden;
+    white-space:pre-wrap;cursor:text}
+  .wz-tov:hover{outline:1px dashed var(--gold-soft)}
+  .wz-tov:focus-within{outline:1.5px solid var(--gold)}
+  .wz-tov-tools{position:absolute;top:-13px;right:-6px;display:none;z-index:6}
+  .wz-tov:hover .wz-tov-tools,.wz-tov:focus-within .wz-tov-tools{display:block}
+  .wz-tov-btn{border:1px solid var(--gold);background:var(--panel);color:var(--gold-deep);
+    border-radius:6px;width:22px;height:22px;cursor:pointer;font-size:.78rem;line-height:1;padding:0}
+  /* Bild-Overlay: positionierter Rahmen + Generieren-Button. */
+  .wz-iov{position:absolute;border:1px dashed var(--gold-soft);box-sizing:border-box}
+  .wz-iov-img{width:100%;height:100%;object-fit:cover;display:block}
+  .wz-iov-btn{position:absolute;bottom:4px;right:4px;border:1px solid var(--gold);
+    background:var(--panel);border-radius:6px;width:26px;height:26px;cursor:pointer;
+    font-size:.85rem;line-height:1;padding:0;z-index:6}
+  .wz-undo{border:1px solid var(--gold-soft);background:none;color:var(--gold-deep);
+    border-radius:6px;padding:2px 8px;cursor:pointer;font:inherit;font-size:.8rem;margin-left:6px}
+
+  /* Schritt-0-Panel: Quelle wählen. */
+  .wz-drop{border:1.5px dashed var(--line);border-radius:var(--radius);padding:26px;
+    text-align:center;color:var(--ink-soft);font-size:.88rem;background:var(--gold-tint-2);cursor:pointer}
+  .wz-drop-over{border-color:var(--gold);background:var(--gold-tint)}
+  .wz-field{display:flex;flex-direction:column;gap:6px;max-width:420px}
+  .wz-field label{font-size:.78rem;font-weight:700;color:var(--ink-soft)}
+  .wz-field select{border:1px solid var(--line);border-radius:8px;padding:9px 12px;
+    font:inherit;font-size:.9rem;outline:none}
+  .wz-field select:focus{border-color:var(--gold)}
+  .wz-or{font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);
+    text-align:center;margin:4px 0}
+
+  /* Filmstreifen (Abschluss): gewählte Slides in Reihenfolge. */
+  .wz-film{display:flex;gap:10px;overflow-x:auto;padding:6px 0}
+  .wz-film-item{position:relative;flex:0 0 200px;border:1px solid var(--line);
+    border-radius:var(--radius);overflow:hidden;background:var(--panel)}
+  .wz-film-item img{width:100%;height:auto;display:block;aspect-ratio:16/9;
+    object-fit:cover;background:var(--gold-tint)}
+  .wz-film-ix{position:absolute;top:6px;left:6px;z-index:2;background:var(--gold);
+    color:#fff;font-weight:800;font-size:.74rem;border-radius:999px;
+    width:22px;height:22px;display:flex;align-items:center;justify-content:center}
+  .wz-finish-actions{display:flex;gap:10px;margin-top:14px;align-items:center}
+
+  /* Steuer-Leiste. */
+  .wz-ctrl{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--line-2);padding-top:16px}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="side-logo"><a href="index.html"><img src="assets/kochfabrik-logo.png" alt="KOCHfabrik Studio"></a></div>
+    <nav class="side-nav">
+      <div class="nav-label">Arbeiten</div>
+      <a class="nav-item" href="index.html"><span class="ic">&#9632;</span> Dashboard</a>
+      <a class="nav-item" href="chat.html"><span class="ic">&#9993;</span> Angebotsgenerator</a>
+      <a class="nav-item" href="slidesuche.html"><span class="ic">&#9906;</span> Slide Suche</a>
+      <a class="nav-item active" href="wizard.html"><span class="ic">&#9881;</span> Wizard</a>
+      <a class="nav-item" href="designer.html"><span class="ic">&#9998;</span> Designer</a>
+      <a class="nav-item" href="bildgenerator.html"><span class="ic">&#9788;</span> Bildgenerator</a>
+      <div class="nav-label">Wissen</div>
+      <a class="nav-item" href="kunden.html"><span class="ic">&#9787;</span> Kunden</a>
+      <a class="nav-item" href="client.html"><span class="ic">&#9906;</span> Client Research</a>
+      <a class="nav-item" href="bibliothek.html"><span class="ic">&#9783;</span> Bibliothek</a>
+    </nav>
+    <div class="side-foot"><div class="avatar">PD</div><div><div class="nm">Patrick Diehr</div><div class="rl">KOCHfabrik</div></div></div>
+  </aside>
+
+  <main class="view">
+    <div class="topbar">
+      <div><h1>Wizard</h1><div class="sub">Geführt durch Angebot, Auswahl und Download</div></div>
+    </div>
+
+    <div class="content">
+      <div class="panel wz">
+
+        <!-- Fortschrittszeile (ein Chip je Schritt, Server-Reihenfolge). -->
+        <div id="wizard-progress" class="wz-progress"></div>
+
+        <!-- Schritt-Container: Schritt 0 (Quelle) ODER ein Slide-Schritt. -->
+        <section id="wizard-step">
+          <div class="wz-step-h">
+            <h2 id="wz-step-title">Angebot wählen</h2>
+            <span id="wz-step-sub" class="wz-step-sub"></span>
+          </div>
+
+          <!-- Schritt 0: Quelle (Upload-Dropzone + Angebots-Dropdown). -->
+          <div id="wz-step0">
+            <div class="wz-drop" id="wz-upload">Angebots-PDF hier ablegen oder klicken</div>
+            <input id="wz-file" type="file" accept="application/pdf" hidden>
+            <div class="wz-or">oder</div>
+            <div class="wz-field">
+              <label for="wz-offer">Aus bestehendem Angebot</label>
+              <select id="wz-offer"><option value="">Angebot wählen …</option></select>
+            </div>
+          </div>
+
+          <!-- Slide-Schritt: Alternativen-Leiste + große Stage.
+               US-075 füllt #wizard-alts + Stage-Preview + Cover-Generieren;
+               US-076 ergänzt das Overlay (Texte / aufgelöstes Cover-Bild). -->
+          <div id="wz-slide" hidden>
+            <!-- US-075: Alternativen je suggest-Gruppe (max 4 + "+N weitere"). -->
+            <div id="wizard-alts" class="wz-alts"></div>
+            <!-- US-075: Cover-Generieren (nur im Cover-Schritt sichtbar). -->
+            <div id="wz-cover-host" class="wz-cover-host" hidden></div>
+            <!-- Stage: gewählte Slide groß; Overlay-Editor folgt US-076. -->
+            <div id="wizard-stage" class="wz-stage">
+              <div class="wz-stage-empty">Wähle oben eine Alternative.</div>
+            </div>
+          </div>
+
+          <!-- Abschluss-Schritt: Filmstreifen der gewählten Slides + Download. -->
+          <div id="wz-finish" hidden>
+            <div id="wz-film" class="wz-film"></div>
+            <div class="wz-finish-actions">
+              <button class="btn btn-primary" id="wz-download" disabled>PPTX herunterladen</button>
+              <button class="btn" id="wz-reset" type="button">↺ Von vorn</button>
+            </div>
+          </div>
+
+          <div id="wz-status" class="wz-status"></div>
+        </section>
+
+        <!-- Steuerung: Zurück / Weiter. -->
+        <div class="wz-ctrl">
+          <button class="btn" id="wz-back" type="button" disabled>← Zurück</button>
+          <button class="btn btn-primary" id="wz-next" type="button" disabled>Weiter →</button>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+<script src="assets/wizard.js" type="module"></script>
+</body>
+</html>
