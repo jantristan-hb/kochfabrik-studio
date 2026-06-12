@@ -85,8 +85,16 @@
   .wz-or{font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);
     text-align:center;margin:4px 0}
 
-  /* Filmstreifen-Platzhalter (Abschluss, US-077 füllt ihn). */
+  /* Filmstreifen (Abschluss): gewählte Slides in Reihenfolge. */
   .wz-film{display:flex;gap:10px;overflow-x:auto;padding:6px 0}
+  .wz-film-item{position:relative;flex:0 0 200px;border:1px solid var(--line);
+    border-radius:var(--radius);overflow:hidden;background:var(--panel)}
+  .wz-film-item img{width:100%;height:auto;display:block;aspect-ratio:16/9;
+    object-fit:cover;background:var(--gold-tint)}
+  .wz-film-ix{position:absolute;top:6px;left:6px;z-index:2;background:var(--gold);
+    color:#fff;font-weight:800;font-size:.74rem;border-radius:999px;
+    width:22px;height:22px;display:flex;align-items:center;justify-content:center}
+  .wz-finish-actions{display:flex;gap:10px;margin-top:14px;align-items:center}
 
   /* Steuer-Leiste. */
   .wz-ctrl{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--line-2);padding-top:16px}
@@ -155,11 +163,13 @@
             </div>
           </div>
 
-          <!-- Abschluss-Schritt: Filmstreifen + Download.
-               PLATZHALTER (US-077 füllt ihn). -->
+          <!-- Abschluss-Schritt: Filmstreifen der gewählten Slides + Download. -->
           <div id="wz-finish" hidden>
             <div id="wz-film" class="wz-film"></div>
-            <button class="btn btn-primary" id="wz-download" disabled>Download</button>
+            <div class="wz-finish-actions">
+              <button class="btn btn-primary" id="wz-download" disabled>PPTX herunterladen</button>
+              <button class="btn" id="wz-reset" type="button">↺ Von vorn</button>
+            </div>
           </div>
 
           <div id="wz-status" class="wz-status"></div>

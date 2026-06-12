@@ -271,3 +271,128 @@ def test_wizard_image_generate_wiring():
     # Cover-pending (US-075) wird hier aufs größte image-Element aufgelöst.
     assert ("largest" in js.lower() or "größt" in js.lower()
             or "biggest" in js.lower()), "größtes image-Element-Auflösung fehlt"
+
+
+# --- US-077: Abschluss — Filmstreifen + Download + E2E (FEATURE-015 Nr. 5) --
+# Abschluss-Schritt: Filmstreifen der gewählten Slides in Reihenfolge,
+# "PPTX herunterladen" -> /api/slidesuche/download mit overrides +
+# image_overrides; "Von vorn"-Reset.
+
+def test_wizard_download_payload_markers():
+    js = _wizard_js()
+    assert "/api/slidesuche/download" in js, "download-Endpoint nicht verdrahtet"
+    # Payload trägt sowohl Text- als auch Bild-Overrides.
+    assert "image_overrides" in js, "image_overrides im Payload fehlt"
+    assert "overrides" in js, "overrides im Payload fehlt"
+    # Filmstreifen + "Von vorn"-Reset.
+    assert "renderFilm" in js or "wz-film" in js, "Filmstreifen-Render fehlt"
+    assert ("Von vorn" in js or "resetWizard" in js), '"Von vorn"-Reset fehlt'
+
+
+def test_wizard_finish_markers():
+    html = _wizard_html()
+    assert 'id="wz-film"' in html, "Filmstreifen-Container fehlt"
+    assert 'id="wz-download"' in html, "Download-Button fehlt"
+
+
+# E2E: suggest (gemockt) -> Auswahl + Text-Override + 1x1-PNG-image_override
+# -> download -> echte PPTX (PK-Magic) + Override-Text im Slide-XML + Bild in
+# ppt/media. node-gated (reconstruct.js). Muster:
+# test_sprint13_fe.test_e2e_suggest_to_pptx + test_sprint14.image-Override.
+_E2E_DECK = "kf-ausstattung-location"
+_E2E_PAGE = 1
+
+
+def _png_with_marker(marker: bytes):
+    """Gültiges 1x1-PNG mit tEXt-Marker (stdlib, ohne Pillow) — Muster
+    test_sprint14._png_bytes; der Marker beweist das Bild in ppt/media."""
+    import struct
+    import zlib
+
+    def chunk(typ: bytes, data: bytes) -> bytes:
+        return (struct.pack(">I", len(data)) + typ + data
+                + struct.pack(">I", zlib.crc32(typ + data) & 0xFFFFFFFF))
+
+    sig = b"\x89PNG\r\n\x1a\n"
+    ihdr = struct.pack(">IIBBBBB", 1, 1, 8, 2, 0, 0, 0)
+    idat = zlib.compress(b"\x00\xff\xff\xff")
+    text = b"Comment\x00" + marker
+    return (sig + chunk(b"IHDR", ihdr) + chunk(b"tEXt", text)
+            + chunk(b"IDAT", idat) + chunk(b"IEND", b""))
+
+
+def _node_available():
+    import shutil
+    return shutil.which("node") is not None
+
+
+@pytest.mark.skipif(not _node_available(),
+                    reason="node/reconstruct.js nicht verfügbar")
+def test_wizard_e2e_full_flow(auth_client, monkeypatch):
+    """E2E des Wizard-Download-Vertrags: suggest (gemockt) liefert Kandidaten;
+    eine gewählte Slide (committetes Cache-Deck) geht mit Text-Override +
+    1x1-PNG-image_override durch /api/slidesuche/download -> echte PPTX mit
+    Override-Text im Slide-XML UND dem Bild in ppt/media."""
+    import base64
+    import io
+    import zipfile
+
+    import numpy as np
+
+    import backend.routers.designer as d
+
+    def _fake_embed(texts):
+        rng = np.random.default_rng(7)
+        return rng.standard_normal((len(texts), 768)).astype(np.float64)
+
+    monkeypatch.setattr(d, "ENGINE_OK", True)
+    monkeypatch.setattr(d, "_korpus_ok", lambda: True)
+    monkeypatch.setattr(d, "embed", _fake_embed)
+    monkeypatch.setattr(
+        d, "_parse_offer_md",
+        lambda md: {"kunde": "ACME", "datum": "2026-07-01",
+                    "gaenge": [{"label": "Vorspeise",
+                                "dishes": [{"name": "Suppe", "desc": ""}]}]})
+
+    sug = auth_client.post("/api/designer/suggest",
+                           json={"offer": "## Angebot — ACME"})
+    assert sug.status_code == 200
+    groups = sug.json()["groups"]
+    assert any(g["candidates"] for g in groups)
+
+    # Text-Override-Index der E2E-Slide über die texts-API (wie US-066-E2E).
+    tx = auth_client.post("/api/designer/texts",
+                          json={"slides": [{"deck": _E2E_DECK,
+                                            "page": _E2E_PAGE}]})
+    sl = tx.json()["slides"][0]
+    txt_idx = str(sl["texts"][0]["i"])
+    img_idx = str(sl["images"][0]["i"]) if sl["images"] else None
+
+    marker_txt = "WIZARD E2E OVERRIDE"
+    marker_img = b"WIZARDE2EIMG077"
+    data_url = "data:image/png;base64," + base64.b64encode(
+        _png_with_marker(marker_img)).decode()
+
+    slide = {"deck": _E2E_DECK, "page": _E2E_PAGE,
+             "overrides": {txt_idx: marker_txt}}
+    if img_idx is not None:
+        slide["image_overrides"] = {img_idx: data_url}
+
+    dl = auth_client.post("/api/slidesuche/download", json={"slides": [slide]})
+    assert dl.status_code == 200, dl.text
+    pptx = dl.json()["pptx"]
+    assert pptx.startswith("data:application/vnd.openxmlformats")
+    raw = base64.b64decode(pptx.split(",", 1)[1])
+    assert raw[:2] == b"PK", "kein gültiges PPTX (PK-Magic fehlt)"
+
+    xml = b""
+    media = b""
+    with zipfile.ZipFile(io.BytesIO(raw)) as z:
+        for n in z.namelist():
+            if n.startswith("ppt/slides/") and n.endswith(".xml"):
+                xml += z.read(n)
+            if n.startswith("ppt/media/"):
+                media += z.read(n)
+    assert marker_txt.encode() in xml, "Text-Override nicht im Slide-XML"
+    if img_idx is not None:
+        assert marker_img in media, "Bild-Override nicht in ppt/media"

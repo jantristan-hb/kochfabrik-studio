@@ -161,6 +161,34 @@ async function formulateText(text, kind, gangLabel) {
   return data.text;
 }
 
+// Download (US-077): Storyboard -> PPTX-Bundle (Data-URL). slides tragen
+// overrides (Text) + image_overrides (Data-URLs). Liefert das pptx-Data-URL
+// oder null bei 401-Redirect; wirft bei !ok.
+async function downloadDeck(slides) {
+  const r = await api("/api/slidesuche/download", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ slides }),
+  });
+  if (!r) return null;                       // 401 -> Redirect bereits erfolgt
+  const data = await r.json().catch(() => null);
+  if (!r.ok) {
+    const err = new Error((data && data.error) || `Fehler ${r.status}`);
+    err.status = r.status;
+    throw err;
+  }
+  return data && data.pptx;
+}
+
+function triggerDataUrlDownload(dataUrl, filename) {
+  const a = document.createElement("a");
+  a.href = dataUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
 // --- DOM-Helfer -----------------------------------------------------------
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? "" : s)
@@ -246,6 +274,7 @@ function renderStep() {
     renderStage();
     renderCover();
   }
+  if (onFinish) renderFilm();                // US-077: Filmstreifen + Download
   renderProgress();
 }
 
@@ -642,6 +671,95 @@ function showFormulateUndo(cand, idx, ed, prev) {
   });
 }
 
+// --- US-077: Abschluss — Filmstreifen + Download --------------------------
+// Die gewählten Slides in SERVER-Reihenfolge (Pitfall 4) → Filmstreifen +
+// PPTX-Download. Payload je Slide: {deck, page, overrides, image_overrides}.
+
+// Die gewählten Slides in Gruppen-Reihenfolge (eine je Gruppe mit Kandidaten).
+function chosenSlides() {
+  const out = [];
+  state.groups.forEach((g, gi) => {
+    const cands = g.candidates || [];
+    if (!cands.length) return;
+    const c = cands[selectedCandIdx(gi)];
+    if (c) out.push({ deck: c.deck, page: c.page, label: c.label, gi });
+  });
+  return out;
+}
+
+// Download-Payload: overrides (Text, leere = entfernen) + image_overrides.
+function downloadPayload() {
+  return chosenSlides().map((s) => {
+    const key = _slideKey(s.deck, s.page);
+    const tov = state.textOverrides[key];
+    const iov = imageOverrides[key];
+    const slide = { deck: s.deck, page: s.page };
+    if (tov && Object.keys(tov).length) slide.overrides = tov;
+    if (iov && Object.keys(iov).length) slide.image_overrides = iov;
+    return slide;
+  });
+}
+
+function renderFilm() {
+  const film = $("wz-film");
+  const dl = $("wz-download");
+  const slides = chosenSlides();
+  if (film) {
+    if (!slides.length) {
+      film.innerHTML = '<div class="wz-stage-empty">Keine Slides gewählt.</div>';
+    } else {
+      // Statische Mini-Stage je Slide: Override-Bild deckt das Element, sonst
+      // das preview-PNG der gewählten Karte (Overlay-Thumbs reichen hier).
+      film.innerHTML = slides.map((s, i) => {
+        const key = _slideKey(s.deck, s.page);
+        const iov = imageOverrides[key];
+        const big = iov && Object.keys(iov).length
+          ? iov[Object.keys(iov)[0]] : null;
+        const cand = state.groups[s.gi].candidates[selectedCandIdx(s.gi)];
+        const src = big || (cand && cand.preview) || "";
+        return `<div class="wz-film-item"><span class="wz-film-ix">${i + 1}</span>`
+          + `<img src="${esc(src)}" alt="${esc(s.label)}" `
+          + `onerror="this.classList.add('wz-alt-missing');this.removeAttribute('src')">`
+          + `</div>`;
+      }).join("");
+    }
+  }
+  if (dl) dl.disabled = !slides.length;
+}
+
+async function runDownload() {
+  const dl = $("wz-download");
+  const slides = downloadPayload();
+  if (!slides.length) return;
+  const prev = dl ? dl.textContent : "";
+  if (dl) { dl.disabled = true; dl.textContent = "Erzeuge PPTX …"; }
+  setStatus("PPTX wird erzeugt …", "load");
+  try {
+    const pptx = await downloadDeck(slides);
+    if (pptx) {
+      triggerDataUrlDownload(pptx, "kochfabrik-wizard.pptx");
+      setStatus("");
+    }
+  } catch (e) {
+    setStatus(e.message || "Download fehlgeschlagen.", "error");
+  } finally {
+    if (dl) { dl.textContent = prev || "Download"; dl.disabled = !slides.length; }
+  }
+}
+
+// "Von vorn": State + in-memory-Overrides leeren, zurück auf Schritt 0.
+function resetWizard() {
+  state = emptyState();
+  for (const k of Object.keys(imageOverrides)) delete imageOverrides[k];
+  for (const k of Object.keys(_textsCache)) delete _textsCache[k];
+  _altsExpanded = false;
+  saveState(state);
+  const sel = $("wz-offer");
+  if (sel) sel.value = "";
+  setStatus("");
+  renderStep();
+}
+
 // --- Schritt-0: Quelle wählen ---------------------------------------------
 
 async function loadOffers() {
@@ -731,6 +849,11 @@ function bind() {
   const back = $("wz-back"), next = $("wz-next");
   if (back) back.addEventListener("click", prevStep);
   if (next) next.addEventListener("click", nextStep);
+
+  const dl = $("wz-download");
+  if (dl) dl.addEventListener("click", runDownload);
+  const reset = $("wz-reset");
+  if (reset) reset.addEventListener("click", resetWizard);
 }
 
 function init() {
