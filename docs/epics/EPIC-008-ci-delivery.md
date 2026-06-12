@@ -1,10 +1,10 @@
 ---
 id: EPIC-008
 title: "CI/Delivery: Tests + Treue-Gate vor jedem Merge"
-status: OPEN
+status: IN_PROGRESS
 created: 2026-06-09
 project: kochfabrik-studio
-sprints: []
+sprints: [15]
 ---
 
 # EPIC-008: CI/Delivery

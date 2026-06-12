@@ -8,8 +8,31 @@
 > (subtree). Ältere Sprints (1–9): `PROGRESS-archive.md`.
 
 **Projekt:** kochfabrik-studio (Monorepo: FastAPI-Backend + web/ + engine/)
-**Aktueller Sprint:** Sprint 14 **DONE** — Präsentations-Wizard live-fähig (Overlay-Editing, bildbewusstes Ranking, Bild-Overrides, Formulieren)
+**Aktueller Sprint:** Sprint 15 **GEPLANT** — CI + Treue-Harness + Korpus-Batches · Sprint 14 DONE
 **Status:** 14 Sprints done · Stack: FastAPI + PostgreSQL + SQLAlchemy2 async + Alembic + OAuth2-ready
+
+---
+
+## Sprint 15 — CI/Delivery + Treue-Harness + Korpus-Batches (geplant 2026-06-12)
+
+| Story | Titel | Status |
+|-------|-------|--------|
+| US-078 | Voll-Korpus-Batches + Volume-Sync + Deploy [LEAD] | TODO |
+| US-079 | GitHub-Actions-Pipeline (C1) | TODO |
+| US-080 | Branch-Protection + Delivery-Flow (C3) | TODO |
+| US-081 | Treue-Metrik fidelity.py (V1) | TODO |
+| US-082 | Korpus-Harness fidelity_run (V2) | TODO |
+| US-083 | Baseline + Report + Schwellen-Vorschlag (V3+V4) | TODO |
+| US-084 | Regressions-Gate + CI-Pflicht-Check (C2) | TODO |
+
+Epic-getrieben: EPIC-008 C1–C3 + EPIC-007 V1–V4 (2× geschoben, jetzt
+fällig) + Carry-Over HIGH (Batches entsperren den Wizard in Prod).
+„Super nah am PDF" wird eine gemessene Zahl mit Merge-Gate.
+Issues #83–#89 · 3 Stränge (CI-Kette, Treue-Kette, Lead-Batches) ·
+V5 (Schwellen-Abnahme) = Jan-Entscheid nach US-083-Vorlage.
+
+**Neue Artefakte:** .github/workflows/ci.yml · fidelity.py/_run ·
+fidelity_baseline.json · Branch-Protection master
 
 ---
 
@@ -200,8 +223,8 @@ _(Keine FAILED-Stories — Sprint 10 vollständig.)_
 | EPIC-004 | Monorepo & Refactoring | DONE | S11–S12 ✅ |
 | EPIC-005 | Font-Treue | OPEN | S14–S15 (geplant, gated: ADR-001) |
 | EPIC-006 | Live-Deck-Builder / Präsentationsdesigner | DONE | S13 ✅ (D5 optional offen) |
-| EPIC-007 | Render-Treue-Harness | OPEN | S15 (geschoben) |
-| EPIC-008 | CI/Delivery | OPEN | S15 (geschoben, Seed: docs/sprint-15/) |
+| EPIC-007 | Render-Treue-Harness | IN_PROGRESS | S15 (V1–V4; V5 = Jan) |
+| EPIC-008 | CI/Delivery | IN_PROGRESS | S15 |
 | EPIC-009 | Backup & Resilienz | DONE | S11 (B1-Vorzug) + S12 ✅ |
 | EPIC-010 | Security & DSGVO-Light | OPEN | S16 (geplant, gated: Q1-Findings ✅ liegen vor) |
 

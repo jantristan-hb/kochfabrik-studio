@@ -1,10 +1,10 @@
 ---
 id: EPIC-007
 title: "Render-Treue-Harness: Rekonstruktion messbar nah am Referenz-PDF"
-status: OPEN
+status: IN_PROGRESS
 created: 2026-06-09
 project: kochfabrik-studio
-sprints: []
+sprints: [15]
 ---
 
 # EPIC-007: Render-Treue-Harness
