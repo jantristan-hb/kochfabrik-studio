@@ -22,6 +22,7 @@
 ['POST'] /api/angebot/chat
 ['POST'] /api/angebot/pdf
 ['POST'] /api/angebot/save
+['POST'] /api/designer/formulate
 ['POST'] /api/designer/suggest
 ['POST'] /api/designer/texts
 ['POST'] /api/image

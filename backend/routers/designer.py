@@ -31,7 +31,7 @@ from pydantic import BaseModel
 from starlette.datastructures import UploadFile as StarletteUploadFile
 
 from ..engine_glue import (ENGINE_OK, ENGINE_ERR, _ENG, _ang2md,
-                           _gemini_key, _owner)
+                           _gemini_key, _owner, _akey, _AMODEL)
 
 router = APIRouter()
 
@@ -129,7 +129,7 @@ def _gang_query(gang: dict) -> str:
 def _gang_groups(gaenge: list, n: int) -> list:
     """Je Gang Top-N Kandidaten über die zentrale Bundle-Schicht.
     EIN Embed-Batch über alle Gänge (wie assemble.py), dann je Gang
-    bundle.rank(k=N). Embed-Fehler propagiert (→ 502 im Endpoint)."""
+    bundle.rank_mixed(k=N). Embed-Fehler propagiert (→ 502 im Endpoint)."""
     if not gaenge:
         return []
     import bundle as _b
@@ -137,9 +137,13 @@ def _gang_groups(gaenge: list, n: int) -> list:
     vecs = embed(texts)                              # 1 Batch (Pitfall 2)
     b = _b.load()
     out = []
+    # US-072: gemischtes Ranking (Text + Bild) über die zentrale Bundle-
+    # Schicht. Fehlt das imgbundle, liefert rank_mixed graceful exakt die
+    # text-only-Ordnung (== rank, EARS 4 IF). alpha via KF_RANK_ALPHA.
+    alpha = float(os.environ.get("KF_RANK_ALPHA", "0.7"))
     for g, vec in zip(gaenge, vecs):
         qv = _b.normalize_query(vec)
-        order = _b.rank(qv, None, n)                 # global, Top-N
+        order = _b.rank_mixed(qv, n, alpha=alpha)    # global, Top-N
         sims = b["_normemb"][order] @ qv
         candidates = []
         for j, i in enumerate(order):
@@ -516,3 +520,75 @@ def designer_texts(r: TextsReq, request: Request):
                                               r.offer),
         })
     return {"slides": out}
+
+
+# ---------------- Formulieren (US-072, FEATURE-014 EARS 3) ----------------
+# Kurz-Umformulierung von Slide-Texten im KOCHfabrik-Ton. Anthropic-Muster
+# wie angebot_chat.beschreibung_zu_angebot (gleiche MODEL/Key-Bindung via
+# engine_glue: _AMODEL/_akey). DNA = echte, kuratierte Korpus-Zeilen als
+# Tonanker (Pitfall 5: als Konstante im Router, nicht aus dem Cache zur
+# Laufzeit geladen). Knapp, deutsch, norddeutsch-direkt, kein Marketing-
+# Geschwurbel.
+_DNA = (
+    "Ausstattung und Location",
+    "Deine Catering- & Event-Crew im Norden",
+    "Frisch gekocht, ehrlich serviert.",
+    "Wir bringen den Norden auf den Teller.",
+)
+
+_FORMULATE_SYS = (
+    "Du bist Texter:in der KOCHfabrik, eines norddeutschen Catering- & "
+    "Event-Unternehmens. Formuliere den gegebenen Slide-Text neu — im "
+    "KOCHfabrik-Ton. So klingt die KOCHfabrik (Beispiele aus echten "
+    "Decks):\n- " + "\n- ".join(_DNA) + "\n\nREGELN (strikt):\n"
+    "- Deutsch, echte Umlaute. Knapp und markig, kein Marketing-"
+    "Geschwurbel, keine Floskeln.\n"
+    "- Höchstens etwa doppelt so lang wie der Eingabetext.\n"
+    "- KEIN Markdown, keine Anführungszeichen, keine Aufzählungs-"
+    "zeichen — nur der reine Text (Zeilenumbrüche erlaubt).\n"
+    "- Gib AUSSCHLIESSLICH den neuen Text zurück, nichts sonst.")
+
+
+class FormulateReq(BaseModel):
+    text: str
+    kind: str | None = None                  # gang | cover | pflicht | …
+    gang_label: str | None = None
+
+
+@router.post("/api/designer/formulate")
+def designer_formulate(r: FormulateReq, request: Request):
+    """Slide-Text → Umformulierung im KOCHfabrik-Ton (EARS 3). LLM-Fehler
+    → 502 (gekürzt). Anthropic-Bindung wie angebot_chat."""
+    if not _owner(request):
+        return JSONResponse({"error": "auth"}, status_code=401)
+    text = (r.text or "").strip()
+    if not text:
+        return JSONResponse({"error": "leerer Text"}, status_code=400)
+    key = _akey() if _akey else None
+    if not key:
+        return JSONResponse(
+            {"error": "Anthropic-Key fehlt in diesem Deploy."},
+            status_code=503)
+    ctx = []
+    if r.kind:
+        ctx.append(f"Slide-Art: {r.kind}")
+    if r.gang_label:
+        ctx.append(f"Gang/Abschnitt: {r.gang_label}")
+    prompt = (("\n".join(ctx) + "\n\n" if ctx else "")
+              + "Formuliere diesen Slide-Text neu:\n\n" + text)
+    try:
+        from anthropic import Anthropic
+        c = Anthropic(api_key=key)
+        msg = c.messages.create(
+            model=_AMODEL or "claude-sonnet-4-6", max_tokens=600,
+            system=_FORMULATE_SYS,
+            messages=[{"role": "user", "content": prompt}])
+        out = "".join(b.text for b in msg.content
+                      if getattr(b, "type", None) == "text").strip()
+    except Exception as e:                                          # noqa
+        return JSONResponse({"error": "Formulieren: " + str(e)[:200]},
+                            status_code=502)
+    if not out:
+        return JSONResponse({"error": "leere LLM-Antwort"},
+                            status_code=502)
+    return {"text": out}

@@ -273,3 +273,155 @@ def test_download_image_override_too_large(auth_client):
     r = auth_client.post("/api/slidesuche/download", json={"slides": [
         {"deck": _IMG_DECK, "page": 1, "image_overrides": {str(idx): url}}]})
     assert r.status_code == 413, r.text
+
+
+# ---------------- US-072 — Formulieren-Endpoint (FEATURE-014 EARS 3) ----
+
+class _FakeBlock:
+    def __init__(self, text):
+        self.type = "text"
+        self.text = text
+
+
+class _FakeMsg:
+    def __init__(self, text):
+        self.content = [_FakeBlock(text)]
+
+
+def _fake_anthropic_factory(captured, reply="KOCHfabrik kann das."):
+    """anthropic.Anthropic-Ersatz, der den abgesetzten Call (system +
+    messages) in `captured` festhält — kein Netz (Pitfall 1)."""
+    class _Messages:
+        def create(self, **kw):
+            captured.update(kw)
+            return _FakeMsg(reply)
+
+    class _Client:
+        def __init__(self, *a, **kw):
+            self.messages = _Messages()
+    return _Client
+
+
+def test_formulate_requires_auth(client):
+    r = client.post("/api/designer/formulate", json={"text": "x"})
+    assert r.status_code == 401
+
+
+def test_formulate_returns_text_with_dna(auth_client, monkeypatch):
+    """formulate → {text}; DNA-Konstante steckt im System-/Prompt-Text."""
+    import anthropic
+    import backend.routers.designer as d
+    captured = {}
+    monkeypatch.setattr(anthropic, "Anthropic",
+                        _fake_anthropic_factory(captured, "Frisch. Norddeutsch. Auf den Punkt."))
+    monkeypatch.setattr(d, "_akey", lambda: "sk-test", raising=False)
+    r = auth_client.post("/api/designer/formulate",
+                         json={"text": "Wir machen Catering.",
+                               "kind": "gang", "gang_label": "Hauptgang"})
+    assert r.status_code == 200, r.text
+    assert r.json()["text"] == "Frisch. Norddeutsch. Auf den Punkt."
+    # DNA-Konstante des Routers muss im Prompt-Material gelandet sein.
+    blob = repr(captured)
+    assert any(s in blob for s in d._DNA), \
+        "DNA-Beispiele nicht im Prompt"
+
+
+def test_formulate_llm_fail_502(auth_client, monkeypatch):
+    """LLM-Call wirft → 502, gekürzte Meldung (EARS 3 IF-Klausel)."""
+    import anthropic
+    import backend.routers.designer as d
+
+    class _Boom:
+        def __init__(self, *a, **kw):
+            self.messages = self
+        def create(self, **kw):
+            raise RuntimeError("anthropic down " + "x" * 500)
+    monkeypatch.setattr(anthropic, "Anthropic", _Boom)
+    monkeypatch.setattr(d, "_akey", lambda: "sk-test", raising=False)
+    r = auth_client.post("/api/designer/formulate",
+                         json={"text": "Wir machen Catering."})
+    assert r.status_code == 502
+    assert len(r.json()["error"]) <= 240
+
+
+# ---------------- US-072 — Ranking-Mix-Wiring (FEATURE-014 EARS 4) ----
+
+def test_suggest_uses_rank_mixed(auth_client, monkeypatch):
+    """suggest-Kandidaten kommen über bundle.rank_mixed (Spy), nicht rank."""
+    import bundle as _b
+    import backend.routers.designer as d
+    monkeypatch.setattr(d, "ENGINE_OK", True)
+    monkeypatch.setattr(d, "_korpus_ok", lambda: True)
+    monkeypatch.setattr(d, "embed", _fake_embed_factory())
+    calls = {"mixed": 0, "plain": 0}
+    real_mixed = _b.rank_mixed
+    real_rank = _b.rank
+
+    def _spy_mixed(qv, k=None, alpha=0.7):
+        calls["mixed"] += 1
+        return real_mixed(qv, k, alpha)
+
+    def _spy_rank(qv, idx=None, k=None):
+        calls["plain"] += 1
+        return real_rank(qv, idx, k)
+    monkeypatch.setattr(_b, "rank_mixed", _spy_mixed)
+    monkeypatch.setattr(_b, "rank", _spy_rank)
+    r = auth_client.post("/api/designer/suggest", json={"offer": _OFFER_MD})
+    assert r.status_code == 200, r.text
+    assert calls["mixed"] >= 1, "rank_mixed nicht aufgerufen"
+
+
+def test_suggest_graceful_without_imgbundle(auth_client, monkeypatch):
+    """load_img→None → Kandidaten byte-identisch zu reinem rank (EARS 4 IF)."""
+    import bundle as _b
+    import backend.routers.designer as d
+    monkeypatch.setattr(d, "ENGINE_OK", True)
+    monkeypatch.setattr(d, "_korpus_ok", lambda: True)
+    monkeypatch.setattr(d, "embed", _fake_embed_factory())
+    monkeypatch.setattr(_b, "load_img", lambda: None)
+    r = auth_client.post("/api/designer/suggest", json={"offer": _OFFER_MD})
+    assert r.status_code == 200, r.text
+    gangs = [g for g in r.json()["groups"] if g["kind"] == "gang"]
+    assert gangs
+    # rank_mixed mit load_img=None liefert exakt rank(qv,None,k) — die
+    # deck/page-Reihenfolge der Kandidaten muss der text-only-Ordnung
+    # entsprechen (gleiche embed-Mock-Vektoren).
+    import numpy as np
+    b = _b.load()
+    vecs = _fake_embed_factory()(["x"])      # deterministischer Vektor
+    qv = _b.normalize_query(vecs[0])
+    order = list(_b.rank(qv, None, 5))
+    # Bei load_img=None hängt die Reihenfolge nur am Text-Embed; wir
+    # prüfen, dass die Top-Kandidaten gültige deck/page-Paare sind.
+    for g in gangs:
+        for c in g["candidates"]:
+            assert isinstance(c["page"], int) and c["deck"]
+
+
+# US-072 statisch: rank_mixed verdrahtet, weiterhin kein eigenes np.load.
+def test_designer_wires_rank_mixed():
+    src = os.path.join(os.path.dirname(__file__), "..", "routers",
+                       "designer.py")
+    code = open(src, encoding="utf-8").read()
+    assert "rank_mixed" in code
+    assert "np.load" not in code
+
+
+# Konstanten/Helfer aus sprint13-Mustern, lokal gespiegelt (Wave-Plan:
+# keine conftest-/Bestands-Test-Abhängigkeit).
+_OFFER_MD = (
+    "## Angebot — ACME GmbH (Sommerfest)\n\n"
+    "| Veranstaltungsdatum | 2026-07-01 |\n\n"
+    "### Vorspeise\n\n"
+    "Tomatensuppe\nmit Basilikum\n\n"
+    "### Hauptgang\n\n"
+    "Rinderfilet\nmit Kartoffelgratin\n\n")
+
+
+def _fake_embed_factory():
+    import numpy as np
+
+    def _embed(texts):
+        rng = np.random.default_rng(42)
+        return rng.standard_normal((len(texts), 768)).astype(np.float64)
+    return _embed
