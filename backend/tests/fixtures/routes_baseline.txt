@@ -16,11 +16,13 @@
 ['GET'] /api/oauth/{provider}/callback
 ['GET'] /api/oauth/{provider}/login
 ['GET'] /api/praesentation/health
+['GET'] /api/slidesuche/preview-notext/{deck}/{page}.png
 ['GET'] /api/slidesuche/preview/{deck}/{page}.png
 ['GET'] /api/stats
 ['POST'] /api/angebot/chat
 ['POST'] /api/angebot/pdf
 ['POST'] /api/angebot/save
+['POST'] /api/designer/formulate
 ['POST'] /api/designer/suggest
 ['POST'] /api/designer/texts
 ['POST'] /api/image

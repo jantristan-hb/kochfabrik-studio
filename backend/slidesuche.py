@@ -198,6 +198,29 @@ def preview(deck: str, page: int, request: Request):
                                  "public, max-age=86400"})
 
 
+# ---------- GET /preview-notext/{deck}/{page}.png ----------
+# Textfreie Renders (US-069 erzeugt sie nach cache/<deck>/preview_notext/)
+# als Overlay-Untergrund für den Editor (US-070, FEATURE-014). Identische
+# Auth-/Traversal-/Cache-Semantik wie /preview, nur anderes Unterverzeichnis.
+
+
+@router.get("/preview-notext/{deck}/{page}.png")
+def preview_notext(deck: str, page: int, request: Request):
+    g = _auth_or_401(request)
+    if g:
+        return g
+    if not _SAFE.match(deck) or page < 1 or page > 9999:
+        return JSONResponse({"error": "ungültiger Pfad"},
+                            status_code=400)
+    path = os.path.join(_CACHE, deck, "preview_notext", f"p{page}.png")
+    if not os.path.isfile(path):
+        return JSONResponse({"error": "preview fehlt"},
+                            status_code=404)
+    return FileResponse(path, media_type="image/png",
+                        headers={"Cache-Control":
+                                 "public, max-age=86400"})
+
+
 # ---------- POST /download ----------
 
 class SlideRef(BaseModel):
@@ -206,10 +229,64 @@ class SlideRef(BaseModel):
     # Text-Overrides (#66): seq-Index -> neuer Text ("\n" = Zeilen,
     # leer = Element entfernen). Optional, Default = verbatim.
     overrides: Optional[Dict[str, str]] = None
+    # Bild-Overrides (#71): seq-Index -> Data-URL. Ersetzt die src des
+    # image-Elements an idx durch ein ins Bundle gelegtes Override-Bild.
+    image_overrides: Optional[Dict[str, str]] = None
 
 
 class DownloadReq(BaseModel):
     slides: List[SlideRef]
+
+
+# Data-URL-Limit je Bild (Pitfall 3 — 413 statt Riesen-PPTX).
+_MAX_IMG_BYTES = 8 * 1024 * 1024
+
+
+class _ImgErr(Exception):
+    """Override-Bild ungültig (Klartext) + HTTP-Status (400/413)."""
+    def __init__(self, msg: str, status: int):
+        super().__init__(msg)
+        self.status = status
+
+
+def _decode_image_override(data_url: str) -> bytes:
+    """Data-URL → rohe Bild-Bytes. Validiert PNG/JPEG-Magic + 8-MB-Limit.
+    _ImgErr(400) = kein gültiges Bild, _ImgErr(413) = zu groß."""
+    s = (data_url or "").strip()
+    b64 = s.split(",", 1)[1] if s.startswith("data:") and "," in s else s
+    try:
+        raw = base64.b64decode(b64, validate=True)
+    except Exception:
+        raise _ImgErr("Bild-Override: ungültige Data-URL", 400)
+    if len(raw) > _MAX_IMG_BYTES:
+        raise _ImgErr("Bild-Override > 8 MB", 413)
+    is_png = raw[:8] == b"\x89PNG\r\n\x1a\n"
+    is_jpeg = raw[:3] == b"\xff\xd8\xff"
+    if not (is_png or is_jpeg):
+        raise _ImgErr("Bild-Override: kein PNG/JPEG", 400)
+    return raw
+
+
+def _apply_image_overrides(seq, ov, shared, slot):
+    """Bild-Overrides (#71) auf eine Element-Sequenz anwenden: Override-
+    Bytes nach shared/_overrides/s<slot>_<idx>.png schreiben (NIE in den
+    READ-ONLY-Cache/Symlink — Symlink-Falle), src des t=="image"-Elements
+    an idx auf den Bundle-relativen Pfad setzen. Frische Element-Kopie wie
+    _apply_overrides — die geladene Cache-Struktur bleibt unberührt."""
+    ovdir = os.path.join(shared, "_overrides")
+    os.makedirs(ovdir, exist_ok=True)
+    out = []
+    for idx, e in enumerate(seq):
+        new = ov.get(str(idx))
+        if new is None or e.get("t") != "image":
+            out.append(e)
+            continue
+        raw = _decode_image_override(new)          # wirft _ImgErr (400/413)
+        rel = f"s{slot}_{idx}.png"
+        with open(os.path.join(ovdir, rel), "wb") as fh:
+            fh.write(raw)
+        out.append(dict(e, src="_overrides/" + rel))
+    return out
 
 
 def _apply_overrides(seq, ov):
@@ -264,6 +341,13 @@ def download(r: DownloadReq, request: Request):
             continue
         if s.overrides:
             seq = _apply_overrides(seq, s.overrides)
+        if s.image_overrides:
+            try:
+                seq = _apply_image_overrides(seq, s.image_overrides,
+                                             shared, i)
+            except _ImgErr as e:
+                return JSONResponse({"error": str(e)},
+                                    status_code=e.status)
         combined[str(i)] = seq
         if meta is None:
             meta = el.get("_meta", {"w_pt": 960, "h_pt": 540})

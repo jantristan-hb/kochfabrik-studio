@@ -31,7 +31,7 @@ from pydantic import BaseModel
 from starlette.datastructures import UploadFile as StarletteUploadFile
 
 from ..engine_glue import (ENGINE_OK, ENGINE_ERR, _ENG, _ang2md,
-                           _gemini_key, _owner)
+                           _gemini_key, _owner, _akey, _AMODEL)
 
 router = APIRouter()
 
@@ -129,7 +129,7 @@ def _gang_query(gang: dict) -> str:
 def _gang_groups(gaenge: list, n: int) -> list:
     """Je Gang Top-N Kandidaten über die zentrale Bundle-Schicht.
     EIN Embed-Batch über alle Gänge (wie assemble.py), dann je Gang
-    bundle.rank(k=N). Embed-Fehler propagiert (→ 502 im Endpoint)."""
+    bundle.rank_mixed(k=N). Embed-Fehler propagiert (→ 502 im Endpoint)."""
     if not gaenge:
         return []
     import bundle as _b
@@ -137,9 +137,13 @@ def _gang_groups(gaenge: list, n: int) -> list:
     vecs = embed(texts)                              # 1 Batch (Pitfall 2)
     b = _b.load()
     out = []
+    # US-072: gemischtes Ranking (Text + Bild) über die zentrale Bundle-
+    # Schicht. Fehlt das imgbundle, liefert rank_mixed graceful exakt die
+    # text-only-Ordnung (== rank, EARS 4 IF). alpha via KF_RANK_ALPHA.
+    alpha = float(os.environ.get("KF_RANK_ALPHA", "0.7"))
     for g, vec in zip(gaenge, vecs):
         qv = _b.normalize_query(vec)
-        order = _b.rank(qv, None, n)                 # global, Top-N
+        order = _b.rank_mixed(qv, n, alpha=alpha)    # global, Top-N
         sims = b["_normemb"][order] @ qv
         candidates = []
         for j, i in enumerate(order):
@@ -386,17 +390,50 @@ class TextsReq(BaseModel):
 
 def _slide_text_elements(deck: str, page: int):
     """[(seq_idx, element)] der Text-Elemente einer Cache-Slide."""
+    seq = _slide_seq(deck, page)
+    if seq is None:
+        return None
+    return [(i, e) for i, e in enumerate(seq)
+            if e.get("t") == "text" and e.get("lines")]
+
+
+def _slide_seq(deck: str, page: int):
+    """Rohe Element-Sequenz einer Cache-Slide (None = Slide/Deck fehlt)."""
     from ..slidesuche import _CACHE, _SAFE
     if not _SAFE.match(deck) or page < 1:
         return None
     el_path = os.path.join(_CACHE, deck, "elements.json")
     if not os.path.isfile(el_path):
         return None
-    seq = json.load(open(el_path, encoding="utf-8")).get(str(int(page)))
+    return json.load(open(el_path, encoding="utf-8")).get(str(int(page)))
+
+
+def _slide_meta(deck: str):
+    """_meta {w_pt,h_pt} eines Decks (Maßstab variiert je Deck, Pitfall 2 —
+    nie hartkodieren). Default 960×540, falls _meta fehlt."""
+    from ..slidesuche import _CACHE, _SAFE
+    default = {"w_pt": 960.0, "h_pt": 540.0}
+    if not _SAFE.match(deck):
+        return default
+    el_path = os.path.join(_CACHE, deck, "elements.json")
+    if not os.path.isfile(el_path):
+        return default
+    try:
+        m = json.load(open(el_path, encoding="utf-8")).get("_meta") or {}
+    except Exception:                                               # noqa
+        return default
+    return {"w_pt": float(m.get("w_pt", default["w_pt"])),
+            "h_pt": float(m.get("h_pt", default["h_pt"]))}
+
+
+def _slide_images(deck: str, page: int):
+    """images[] = {i,x,y,w,h} der t=='image'-Elemente einer Cache-Slide."""
+    seq = _slide_seq(deck, page)
     if not seq:
-        return None
-    return [(i, e) for i, e in enumerate(seq)
-            if e.get("t") == "text" and e.get("lines")]
+        return []
+    return [{"i": i, "x": e.get("x"), "y": e.get("y"),
+             "w": e.get("w"), "h": e.get("h")}
+            for i, e in enumerate(seq) if e.get("t") == "image"]
 
 
 def _suggest_overrides(texts, kind, gang, offer):
@@ -435,27 +472,123 @@ def _suggest_overrides(texts, kind, gang, offer):
     return sug
 
 
+# Notext-Preview-Route der Slidesuche (US-070): textfreie Renders je
+# Slide, Grundlage für die Overlay-Positionierung im Editor.
+_NOTEXT_BASE = "/api/slidesuche/preview-notext"
+
+
+def _text_entry(i: int, e: dict) -> dict:
+    """Ein Text-Element → Editor-Eintrag: Bestands-Felder (i/text/size,
+    #66) + Geometrie (x/y/w/h) + Stil (color/weight/italic) aus lines[0]
+    — genug, um Overlays pixelgenau zu setzen (FEATURE-014 EARS 1)."""
+    ln0 = e["lines"][0]
+    return {
+        "i": i,
+        "text": "\n".join(ln.get("txt", "") for ln in e["lines"]),
+        "size": max(ln["size"] for ln in e["lines"]),
+        "x": e.get("x"), "y": e.get("y"),
+        "w": e.get("w"), "h": e.get("h"),
+        "color": ln0.get("color"),
+        "weight": ln0.get("weight"),
+        "italic": bool(ln0.get("italic", False)),
+    }
+
+
 @router.post("/api/designer/texts")
 def designer_texts(r: TextsReq, request: Request):
-    """Pro Board-Slide: Ist-Texte (elements.json) + Auto-Override-
-    Vorschläge aus dem Angebot. Editor-Grundlage (#66)."""
+    """Pro Board-Slide: Ist-Texte (elements.json) inkl. Geometrie/Stil +
+    Slide-meta (w_pt/h_pt) + image-Elemente + Notext-Preview-URL + Auto-
+    Override-Vorschläge. Editor-/Overlay-Grundlage (#66, FEATURE-014)."""
     if not _owner(request):
         return JSONResponse({"error": "auth"}, status_code=401)
     out = []
     for sl in r.slides[:50]:
+        meta = _slide_meta(sl.deck)
+        notext = f"{_NOTEXT_BASE}/{sl.deck}/{int(sl.page)}.png"
         texts = _slide_text_elements(sl.deck, sl.page)
         if texts is None:
             out.append({"deck": sl.deck, "page": sl.page, "texts": [],
-                        "suggestions": {}})
+                        "images": [], "meta": meta,
+                        "preview_notext": notext, "suggestions": {}})
             continue
         out.append({
-            "deck": sl.deck, "page": sl.page,
-            "texts": [{"i": i,
-                       "text": "\n".join(ln.get("txt", "")
-                                          for ln in e["lines"]),
-                       "size": max(ln["size"] for ln in e["lines"])}
-                      for i, e in texts],
+            "deck": sl.deck, "page": sl.page, "meta": meta,
+            "preview_notext": notext,
+            "texts": [_text_entry(i, e) for i, e in texts],
+            "images": _slide_images(sl.deck, sl.page),
             "suggestions": _suggest_overrides(texts, sl.kind, sl.gang,
                                               r.offer),
         })
     return {"slides": out}
+
+
+# ---------------- Formulieren (US-072, FEATURE-014 EARS 3) ----------------
+# Kurz-Umformulierung von Slide-Texten im KOCHfabrik-Ton. Anthropic-Muster
+# wie angebot_chat.beschreibung_zu_angebot (gleiche MODEL/Key-Bindung via
+# engine_glue: _AMODEL/_akey). DNA = echte, kuratierte Korpus-Zeilen als
+# Tonanker (Pitfall 5: als Konstante im Router, nicht aus dem Cache zur
+# Laufzeit geladen). Knapp, deutsch, norddeutsch-direkt, kein Marketing-
+# Geschwurbel.
+_DNA = (
+    "Ausstattung und Location",
+    "Deine Catering- & Event-Crew im Norden",
+    "Frisch gekocht, ehrlich serviert.",
+    "Wir bringen den Norden auf den Teller.",
+)
+
+_FORMULATE_SYS = (
+    "Du bist Texter:in der KOCHfabrik, eines norddeutschen Catering- & "
+    "Event-Unternehmens. Formuliere den gegebenen Slide-Text neu — im "
+    "KOCHfabrik-Ton. So klingt die KOCHfabrik (Beispiele aus echten "
+    "Decks):\n- " + "\n- ".join(_DNA) + "\n\nREGELN (strikt):\n"
+    "- Deutsch, echte Umlaute. Knapp und markig, kein Marketing-"
+    "Geschwurbel, keine Floskeln.\n"
+    "- Höchstens etwa doppelt so lang wie der Eingabetext.\n"
+    "- KEIN Markdown, keine Anführungszeichen, keine Aufzählungs-"
+    "zeichen — nur der reine Text (Zeilenumbrüche erlaubt).\n"
+    "- Gib AUSSCHLIESSLICH den neuen Text zurück, nichts sonst.")
+
+
+class FormulateReq(BaseModel):
+    text: str
+    kind: str | None = None                  # gang | cover | pflicht | …
+    gang_label: str | None = None
+
+
+@router.post("/api/designer/formulate")
+def designer_formulate(r: FormulateReq, request: Request):
+    """Slide-Text → Umformulierung im KOCHfabrik-Ton (EARS 3). LLM-Fehler
+    → 502 (gekürzt). Anthropic-Bindung wie angebot_chat."""
+    if not _owner(request):
+        return JSONResponse({"error": "auth"}, status_code=401)
+    text = (r.text or "").strip()
+    if not text:
+        return JSONResponse({"error": "leerer Text"}, status_code=400)
+    key = _akey() if _akey else None
+    if not key:
+        return JSONResponse(
+            {"error": "Anthropic-Key fehlt in diesem Deploy."},
+            status_code=503)
+    ctx = []
+    if r.kind:
+        ctx.append(f"Slide-Art: {r.kind}")
+    if r.gang_label:
+        ctx.append(f"Gang/Abschnitt: {r.gang_label}")
+    prompt = (("\n".join(ctx) + "\n\n" if ctx else "")
+              + "Formuliere diesen Slide-Text neu:\n\n" + text)
+    try:
+        from anthropic import Anthropic
+        c = Anthropic(api_key=key)
+        msg = c.messages.create(
+            model=_AMODEL or "claude-sonnet-4-6", max_tokens=600,
+            system=_FORMULATE_SYS,
+            messages=[{"role": "user", "content": prompt}])
+        out = "".join(b.text for b in msg.content
+                      if getattr(b, "type", None) == "text").strip()
+    except Exception as e:                                          # noqa
+        return JSONResponse({"error": "Formulieren: " + str(e)[:200]},
+                            status_code=502)
+    if not out:
+        return JSONResponse({"error": "leere LLM-Antwort"},
+                            status_code=502)
+    return {"text": out}
