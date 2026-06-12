@@ -143,6 +143,9 @@ function addToBoard(item) {
     png_url: item.png_url || item.preview || "",
     label: item.label || `${item.deck} / ${item.page}`,
     slot: item.slot || null,
+    kind: item.kind || null,
+    gangLabel: item.gangLabel || null,
+    overrides: {},                            // Text-Overrides (#66)
   };
   // #64: Slot-Karten in Deck-Reihenfolge einsortieren — hinter den
   // letzten Eintrag mit slot <= eigenem; Slide ohne Slot (Suche) ans Ende.
@@ -179,6 +182,7 @@ function isOnBoard(item) { return boardIndexOf(item) !== -1; }
 function persistAndRender() {
   saveState(state);              // Persistenz bei JEDER Änderung (EARS 3)
   renderBoard();
+  syncTextsButton();
 }
 
 // --- DOM-Rendering des Storyboards ----------------------------------------
@@ -264,7 +268,7 @@ function onDesignerAdd(ev) {
 // EARS 5), Label, Score. Klick dockt via designer:add ans Board (US-065).
 // `card()` ist die gemeinsame Render-Funktion, die US-066 (Suche) mitnutzt.
 
-function card(cand, slot) {
+function card(cand, slot, group) {
   const c = el("button", "dz-card");
   c.type = "button";
   c.dataset.deck = cand.deck;
@@ -295,6 +299,8 @@ function card(cand, slot) {
     png_url: cand.preview || cand.preview_url || "",
     label: cand.label || cand.headline || "",
     slot: slot || null,                      // Deck-Position (#64)
+    kind: (group && group.kind) || null,     // Slide-Art (#66)
+    gangLabel: (group && group.kind === "gang") ? group.label : null,
   };
   const sync = () => c.classList.toggle("dz-card-on", isOnBoard(detail));
   c.addEventListener("click", () => {
@@ -327,14 +333,14 @@ function renderGroups(groups) {
       "Slide " + slot + ": " + g.label + suffix));
     const grid = el("div", "dz-cards dz-cards-row");
     const cands = g.candidates || [];
-    cands.slice(0, 3).forEach((cand) => grid.appendChild(card(cand, slot)));
+    cands.slice(0, 3).forEach((cand) => grid.appendChild(card(cand, slot, g)));
     if (cands.length > 3) {
       const more = el("button", "dz-more",
         "+" + (cands.length - 3) + " weitere");
       more.type = "button";
       more.addEventListener("click", () => {
         cands.slice(3).forEach((cand) =>
-          grid.insertBefore(card(cand, slot), more));
+          grid.insertBefore(card(cand, slot, g), more));
         more.remove();
       });
       grid.appendChild(more);
@@ -493,6 +499,128 @@ function triggerDataUrlDownload(dataUrl, filename) {
   a.remove();
 }
 
+// --- Texte-Editor (#66, D5) ---------------------------------------------
+// Modus-Umschalter: mittlere Spalte zeigt statt der Vorschläge je
+// Board-Slide das PNG links + editierbare Texte rechts. Felder sind mit
+// Auto-Overrides aus dem Angebot vorbefüllt (Gang-Headline = Gang,
+// größter Text-Block = Gerichte, Cover = Kunde/Datum) — geänderte
+// Werte wandern als overrides in den Board-State und in den Download.
+
+let textsMode = false;
+
+function gangByLabel(label) {
+  const o = state.offer || {};
+  return (o.gaenge || []).find((g) => g.label === label) || null;
+}
+
+async function fetchSlideTexts() {
+  const slides = state.board.map((b) => ({
+    deck: b.deck, page: b.page, kind: b.kind || null,
+    gang: b.gangLabel ? gangByLabel(b.gangLabel) : null,
+  }));
+  const r = await api("/api/designer/texts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ slides, offer: state.offer || null }),
+  });
+  if (!r || !r.ok) return null;
+  return (await r.json().catch(() => null));
+}
+
+function renderTextsEditor(data) {
+  const host = document.getElementById("dz-texts");
+  if (!host) return;
+  host.innerHTML = "";
+  (data.slides || []).forEach((sl, bi) => {
+    const b = state.board[bi];
+    if (!b || !sl.texts.length) {
+      if (b) {
+        const row = el("div", "dz-tx-row");
+        const img = document.createElement("img");
+        img.src = b.png_url; row.appendChild(img);
+        const f = el("div", "dz-tx-fields");
+        f.appendChild(el("div", "dz-tx-head",
+          "Slide " + (bi + 1) + ": " + (b.label || "")));
+        f.appendChild(el("div", "dz-tx-orig", "Keine Texte auf dieser Slide."));
+        row.appendChild(f); host.appendChild(row);
+      }
+      return;
+    }
+    const row = el("div", "dz-tx-row");
+    const img = document.createElement("img");
+    img.src = b.png_url;
+    img.onerror = () => img.classList.add("dz-thumb-missing");
+    row.appendChild(img);
+    const fields = el("div", "dz-tx-fields");
+    fields.appendChild(el("div", "dz-tx-head",
+      "Slide " + (bi + 1) + ": " + (b.label || "")));
+    b.overrides = b.overrides || {};
+    sl.texts.forEach((t) => {
+      const key = String(t.i);
+      const sug = (sl.suggestions || {})[key];
+      // Vorbelegung: bestehender Override > Auto-Vorschlag > Ist-Text.
+      let val = b.overrides[key];
+      if (val === undefined && sug !== undefined) {
+        val = sug;
+        if (sug !== t.text) b.overrides[key] = sug;   // Auto-Override aktiv
+      }
+      if (val === undefined) val = t.text;
+      const ta = document.createElement("textarea");
+      ta.value = val;
+      ta.rows = Math.min(6, (val.split("\n").length || 1));
+      if (b.overrides[key] !== undefined) ta.classList.add("dz-tx-auto");
+      ta.addEventListener("input", () => {
+        if (ta.value === t.text) { delete b.overrides[key]; ta.classList.remove("dz-tx-auto"); }
+        else { b.overrides[key] = ta.value; ta.classList.add("dz-tx-auto"); }
+        saveState(state);
+      });
+      fields.appendChild(ta);
+      const orig = el("div", "dz-tx-orig", "Original: " + t.text);
+      fields.appendChild(orig);
+    });
+    const reset = el("button", "dz-tx-reset", "Original wiederherstellen");
+    reset.type = "button";
+    reset.addEventListener("click", () => {
+      b.overrides = {};
+      saveState(state);
+      fetchSlideTexts().then((d) => d && renderTextsEditor(d));
+    });
+    fields.appendChild(reset);
+    row.appendChild(fields);
+    host.appendChild(row);
+  });
+  saveState(state);
+}
+
+async function toggleTextsMode() {
+  const btn = document.getElementById("dz-edit-texts");
+  const texts = document.getElementById("dz-texts");
+  const groups = document.getElementById("dz-groups");
+  const results = document.getElementById("dz-results");
+  const emptyG = document.getElementById("dz-groups-empty");
+  textsMode = !textsMode;
+  if (textsMode) {
+    btn.textContent = "⬅ Zurück zu Vorschlägen";
+    groups.hidden = true; results.hidden = true;
+    if (emptyG) emptyG.hidden = true;
+    texts.hidden = false;
+    texts.innerHTML = '<div class="dz-empty">Texte werden geladen …</div>';
+    const d = await fetchSlideTexts();
+    if (d) renderTextsEditor(d);
+    else texts.innerHTML = '<div class="dz-empty">Texte konnten nicht geladen werden.</div>';
+  } else {
+    btn.textContent = "📝 Texte bearbeiten";
+    groups.hidden = false; results.hidden = false;
+    if (emptyG) emptyG.hidden = false;
+    texts.hidden = true;
+  }
+}
+
+function wireTextsEditor() {
+  const btn = document.getElementById("dz-edit-texts");
+  if (btn) btn.addEventListener("click", toggleTextsMode);
+}
+
 // --- Cover-Bild-Generator (#65) ----------------------------------------
 // Ein Klick → Gemini-Bildprompt aus dem geparsten Angebot (Kunde +
 // Gänge/Konzept) → POST /api/image (category=cover, 16:9, Negativraum
@@ -545,6 +673,11 @@ async function generateCover() {
   }
 }
 
+function syncTextsButton() {
+  const btn = document.getElementById("dz-edit-texts");
+  if (btn) btn.disabled = !state.board.length;
+}
+
 function wireCover() {
   const btn = document.getElementById("dz-genbild");
   const again = document.getElementById("dz-cover-again");
@@ -557,7 +690,11 @@ function wireDownload() {
   if (!btn) return;
   btn.addEventListener("click", async () => {
     if (!state.board.length) return;         // disabled-Logik (Doppel-Absicherung)
-    const slides = state.board.map((b) => ({ deck: b.deck, page: b.page }));
+    const slides = state.board.map((b) => ({
+      deck: b.deck, page: b.page,
+      overrides: (b.overrides && Object.keys(b.overrides).length)
+        ? b.overrides : undefined,           // Text-Overrides (#66)
+    }));
     const prev = btn.textContent;
     btn.disabled = true;
     btn.textContent = "Erzeuge PPTX …";
@@ -581,6 +718,8 @@ function init() {
   wireSearch();
   wireDownload();
   wireCover();
+  wireTextsEditor();
+  syncTextsButton();
   loadOfferOptions();
   renderGroups(state.groups);   // Restore: zuletzt geladene Vorschläge
   renderBoard();                // Restore: Board aus sessionStorage

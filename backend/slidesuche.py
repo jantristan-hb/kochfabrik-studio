@@ -19,7 +19,7 @@ import re
 import subprocess
 import sys
 import tempfile
-from typing import List
+from typing import List, Dict, Optional
 
 from fastapi import APIRouter, Request
 from fastapi.responses import FileResponse, JSONResponse
@@ -203,10 +203,34 @@ def preview(deck: str, page: int, request: Request):
 class SlideRef(BaseModel):
     deck: str
     page: int
+    # Text-Overrides (#66): seq-Index -> neuer Text ("\n" = Zeilen,
+    # leer = Element entfernen). Optional, Default = verbatim.
+    overrides: Optional[Dict[str, str]] = None
 
 
 class DownloadReq(BaseModel):
     slides: List[SlideRef]
+
+
+def _apply_overrides(seq, ov):
+    """Text-Overrides (#66) auf eine Element-Sequenz anwenden: Zeilen
+    des Elements ersetzen (Stil der ersten Original-Zeile erben),
+    leerer Override entfernt das Element. Nicht-Text bleibt unberührt."""
+    out = []
+    for idx, e in enumerate(seq):
+        new = ov.get(str(idx))
+        if new is None or e.get("t") != "text" or not e.get("lines"):
+            out.append(e)
+            continue
+        if not new.strip():
+            continue                          # leer = Element entfernen
+        st = {k: e["lines"][0][k]
+              for k in ("size", "color", "weight", "italic")
+              if k in e["lines"][0]}
+        out.append(dict(e, lines=[st | {"txt": ln}
+                                  for ln in new.split("\n")
+                                  if ln.strip()]))
+    return out
 
 
 @router.post("/download")
@@ -238,6 +262,8 @@ def download(r: DownloadReq, request: Request):
         seq = el.get(str(int(s.page)))
         if not seq:
             continue
+        if s.overrides:
+            seq = _apply_overrides(seq, s.overrides)
         combined[str(i)] = seq
         if meta is None:
             meta = el.get("_meta", {"w_pt": 960, "h_pt": 540})

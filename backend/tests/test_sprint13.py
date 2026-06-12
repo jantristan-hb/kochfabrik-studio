@@ -249,3 +249,76 @@ def test_suggest_pauschal_konzept_fallback(auth_client, monkeypatch):
     kg = [g for g in r.json()["groups"] if g["kind"] == "konzept"][0]
     assert kg["candidates"], "Konzept-Gruppe ohne Kandidaten"
     assert "konzept" not in r.json()["offer"], "internes Feld geleakt"
+
+
+# #66 — Texte-Editor: Ist-Texte + Auto-Overrides aus dem Angebot.
+def test_designer_texts_endpoint(auth_client):
+    r = auth_client.post("/api/designer/texts", json={
+        "slides": [{"deck": "kf-ausstattung-location", "page": 1}],
+        "offer": None})
+    assert r.status_code == 200
+    sl = r.json()["slides"][0]
+    assert sl["texts"], "Ist-Texte fehlen"
+    assert any("Ausstattung" in t["text"] for t in sl["texts"])
+
+
+def test_designer_texts_requires_auth(client):
+    r = client.post("/api/designer/texts", json={"slides": []})
+    assert r.status_code == 401
+
+
+def test_designer_texts_gang_suggestions(auth_client):
+    gang = {"label": "Hauptgang", "dishes": [
+        {"name": "Rinderfilet", "desc": "mit Jus"},
+        {"name": "Gemüse", "desc": ""}]}
+    r = auth_client.post("/api/designer/texts", json={
+        "slides": [{"deck": "10-182-raumkarussell-gmbh-12-09-2026",
+                    "page": 2, "kind": "gang", "gang": gang}],
+        "offer": None})
+    assert r.status_code == 200
+    sug = r.json()["slides"][0]["suggestions"]
+    assert sug, "keine Auto-Overrides"
+    vals = " | ".join(sug.values())
+    assert "HAUPTGANG" in vals
+    assert "Rinderfilet — mit Jus" in vals
+
+
+def test_download_applies_overrides(auth_client):
+    """E2E (#66): Override-Text landet wirklich in der PPTX (XML-Check)."""
+    import base64
+    import io
+    import shutil
+    import zipfile
+
+    import pytest as _pytest
+    if not shutil.which("node"):
+        _pytest.skip("node fehlt")
+    marker = "JAN OVERRIDE TESTTEXT"
+    r = auth_client.post("/api/slidesuche/download", json={"slides": [
+        {"deck": "kf-ausstattung-location", "page": 1,
+         "overrides": {"5": marker}}]})
+    # Override auf irgendein Text-Element — Index 5 muss kein Text sein;
+    # robust: alle Text-Indizes durchprobieren bis der Marker drin ist.
+    if r.status_code == 200:
+        raw = base64.b64decode(r.json()["pptx"].split(",", 1)[1])
+        xml = b""
+        with zipfile.ZipFile(io.BytesIO(raw)) as z:
+            for n in z.namelist():
+                if n.startswith("ppt/slides/") and n.endswith(".xml"):
+                    xml += z.read(n)
+        if marker.encode() in xml:
+            return
+    tx = auth_client.post("/api/designer/texts", json={
+        "slides": [{"deck": "kf-ausstattung-location", "page": 1}]})
+    idx = str(tx.json()["slides"][0]["texts"][0]["i"])
+    r = auth_client.post("/api/slidesuche/download", json={"slides": [
+        {"deck": "kf-ausstattung-location", "page": 1,
+         "overrides": {idx: marker}}]})
+    assert r.status_code == 200, r.text
+    raw = base64.b64decode(r.json()["pptx"].split(",", 1)[1])
+    xml = b""
+    with zipfile.ZipFile(io.BytesIO(raw)) as z:
+        for n in z.namelist():
+            if n.startswith("ppt/slides/") and n.endswith(".xml"):
+                xml += z.read(n)
+    assert marker.encode() in xml, "Override nicht in der PPTX"
