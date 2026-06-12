@@ -1,6 +1,6 @@
 # CLAUDE.md — kochfabrik-studio
 
-> Projekt-Kontext für Claude-Agents. Stand: Sprint 13 DONE (2026-06-11). Dieses
+> Projekt-Kontext für Claude-Agents. Stand: Sprint 14 DONE (2026-06-12). Dieses
 > File ist die erste Anlaufstelle für jeden neuen Agent.
 
 ## Session-Start
@@ -11,7 +11,7 @@ Vor jeder Arbeit in dieser Reihenfolge lesen:
 2. **PROGRESS.md** — Status, Sprint-Tabelle, aktueller Zustand
 3. **REQUIREMENTS.md** — Produkt-These + Anforderungen (informelle SoT)
 4. **docs/epics/README.md** — Roadmap + Work-Packages (EPIC-001…010)
-5. **docs/sprint-13/** — letzter Sprint: `USER-STORIES.md`, `EXECUTE.md`,
+5. **docs/sprint-14/** — letzter Sprint: `USER-STORIES.md`, `EXECUTE.md`,
    `TRACEABILITY.md`, die FEATURE-Specs (EARS/Pitfalls/Boundaries)
 
 ## Tech Stack
@@ -88,8 +88,9 @@ Täglicher Host-Cron (`pg_dump | gzip` → `/data/backups/kf-studio-pg/`, Rotati
   (~90 Z.) und montiert nur. Geteilter Kern (Auth-/Cookie-Helfer, Bild-Kern,
   Kategorie-/Prompt-Konstanten, Engine-Import) lebt in `backend/engine_glue.py`
   — Router importieren von dort, **nie** auf `app.py` (kein Import-Zyklus).
-- **EINE Bundle-Schicht:** Das pgbundle wird ausschließlich über
-  `engine/scripts/bundle.py` (`load()`/`rank()`) gelesen — `np.load` auf
+- **EINE Bundle-Schicht:** pgbundle UND imgbundle werden ausschließlich
+  über `engine/scripts/bundle.py` (`load()`/`rank()`/`load_img()`/
+  `rank_mixed()`) gelesen — `np.load` auf
   `pgbundle.npz` existiert genau EINMAL (dort). **Nie** ein eigenes `np.load`
   oder eine eigene L2-Normalisierung an anderer Stelle (ADR-003, Drift-Risiko).
 - **Runtime vs. Tooling:** `engine/scripts/` (13 Module) = Laufzeit, lädt im
@@ -132,3 +133,4 @@ gepusht sind.
 | 11 | EPIC-004 Monorepo-Schnitt M1–M3 (subtree, Cutover live, Gates) | DONE |
 | 12 | EPIC-004-Abschluss M4–M7 + EPIC-009 (Router-Split, Bundle-Schicht, Tooling-Split, Alembic, Backup) | DONE (2026-06-11) |
 | 13 | EPIC-006 Präsentationsdesigner (Suggest-API, Builder-UI, Storyboard, Download, LIVE_DEEP) | DONE (2026-06-11) |
+| 14 | Präsentations-Wizard (Schritt pro Slide, Overlay-Editing, rank_mixed, Bild-Overrides, Formulieren) | DONE (2026-06-12) |

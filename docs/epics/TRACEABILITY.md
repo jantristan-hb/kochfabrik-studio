@@ -134,3 +134,12 @@ R-DECK-1/2/3 erfüllt, R-DECK-4 als D6 konkretisiert erfüllt,
 R-DECK-5 (D5 Text-Edit) bewusst offen. R-NF-2-Nachtrag: live_verify
 Deep-Check (Incident 2026-06-11). Offen: EPIC-007/008 (S14, Seed liegt),
 EPIC-005 (S15), EPIC-010 (S16), D6-R-ID-Nachtrag via /epic.
+
+## Erfüllungs-Stand Sprint 14 (Review 2026-06-12)
+
+Präsentations-Wizard (feature-getrieben, ohne Epic): R-DECK-1/2/3/5
+vollausgebaut (Overlay-Editing), R-DECK-4 bildbewusst (rank_mixed).
+Vertrag 2026-001 §3.2: 3 weitere Punkte geschlossen — offen bleiben
+Dialog-Nachbearbeitung, DNA-Doku, Font-Treue (EPIC-005). Offen:
+EPIC-007/008 (S15, Seed docs/sprint-15/), EPIC-005 (S16), EPIC-010
+(S17); Voll-Korpus-Batches als Betriebs-Schritt.

@@ -1,6 +1,6 @@
 ---
 key: KOCHFABRIK-FEATURE-013
-status: approved
+status: implemented
 title: "Korpus-Assets: textfreie Renders + Bild-Embeddings (bildbewusstes Ranking)"
 created: 2026-06-12
 project: kochfabrik

@@ -51,3 +51,15 @@
 (Seed: docs/sprint-15/FEATURE-CI-DELIVERY.md), EPIC-005 → S16,
 EPIC-010 → S17. Voll-Korpus-Batches (notext + imgbundle) = manuelle
 Runbook-Schritte NACH dem Sprint (Volume-Sync Ask-first).
+
+## Erfüllungs-Stand (Review 2026-06-12)
+
+9/9 DONE (PRs #77–#81, 4 Stränge, 0 Konflikte). Alle EARS-Kriterien
+grün (FEATURE-013 Nr. 1–4, 014 Nr. 1–4, 015 Nr. 1–6); F1–F8
+vollständig. Beweise: E2E real (Override-Text im Slide-XML + Bild in
+ppt/media), Live-Smoke Gesamtflow mit Risk-Ident-PDF (9 Schritte),
+Formulieren-Ton-Probe, Bild-Ranking-Stichprobe, Sim-Gate grün,
+Gold-Test unangetastet. Vertragspunkte „Bild in Folie" +
+„markengerechte Texte" + „Bildsuche nach Inhalt" geschlossen.
+**OFFEN (Betriebs-Schritt):** Voll-Korpus-Batches (render_notext +
+embed_images) + Volume-Sync — Runbooks liegen, braucht Jan-Go.

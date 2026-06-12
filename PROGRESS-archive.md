@@ -173,3 +173,15 @@ verknüpfte Angebot.
 | US-031 | praesentationsgenerator.html: LEGACY-Badge + Gold-Banner zum neuen Editor | DONE |
 | US-032 | 7 Switch-Tests (Nav, Banner, kein Alt-href, v2-Route distinct) | DONE |
 
+
+## Sprint 9 — EPIC-002 v2 Refactor (2026-05-20) — **DONE**
+
+| Story | Titel | Status |
+|-------|-------|--------|
+| US-033 | web/praesentationsgenerator.html → web/_legacy/ verschoben | DONE |
+| US-034 | REFACTOR-NOTES.md: Shared-Code-Analyse + Sprint-9-Backlog | DONE |
+| US-035 | Tests aktualisiert (Legacy-Archiv statt aktiv) | DONE |
+
+**Backend bleibt unverändert** für Rollback. `/api/praesentation/*` weiter
+aktiv. **111 Tests grün.**
+

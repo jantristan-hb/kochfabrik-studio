@@ -1,6 +1,6 @@
 ---
 key: KOCHFABRIK-FEATURE-014
-status: approved
+status: implemented
 title: "Overlay-Backend: Element-Geometrie, Bild-Overrides, Formulieren, Ranking-Mix"
 created: 2026-06-12
 project: kochfabrik

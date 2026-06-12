@@ -1,6 +1,6 @@
 ---
 key: KOCHFABRIK-FEATURE-015
-status: approved
+status: implemented
 title: "Präsentations-Wizard: Schritt pro Slide, Alternativen, Overlay-Editing"
 created: 2026-06-12
 project: kochfabrik
