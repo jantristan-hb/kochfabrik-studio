@@ -35,7 +35,15 @@
   .wz-alt:hover{border-color:var(--gold);box-shadow:var(--shadow-s)}
   .wz-alt-on{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold-soft) inset}
   .wz-alt img{width:100%;height:auto;display:block;aspect-ratio:16/9;object-fit:cover;background:var(--gold-tint)}
+  .wz-alt-missing{aspect-ratio:16/9;background:var(--gold-tint)}
   .wz-alt-cap{padding:7px 9px;font-size:.76rem;color:var(--ink-soft)}
+  .wz-more{flex:0 0 auto;align-self:center;border:1px dashed var(--gold-soft);
+    background:none;color:var(--gold-deep);border-radius:8px;padding:8px 12px;
+    cursor:pointer;font:inherit;white-space:nowrap}
+
+  /* Cover-Generieren (nur Cover-Schritt). */
+  .wz-cover-host{display:flex;flex-direction:column;gap:8px;margin:14px 0}
+  .wz-cover-pending{max-width:320px;border-radius:8px;display:block}
 
   /* Große Stage (US-076 füllt sie): gewählte Slide groß + Overlay-Editor. */
   .wz-stage{border:1px solid var(--line);border-radius:var(--radius);
@@ -113,12 +121,14 @@
           </div>
 
           <!-- Slide-Schritt: Alternativen-Leiste + große Stage.
-               Alternativen/Stage sind in US-074 gekennzeichnete Stubs;
-               US-075 füllt #wizard-alts, US-076 füllt #wizard-stage. -->
+               US-075 füllt #wizard-alts + Stage-Preview + Cover-Generieren;
+               US-076 ergänzt das Overlay (Texte / aufgelöstes Cover-Bild). -->
           <div id="wz-slide" hidden>
-            <!-- STUB (US-075): Alternativen je suggest-Gruppe. -->
+            <!-- US-075: Alternativen je suggest-Gruppe (max 4 + "+N weitere"). -->
             <div id="wizard-alts" class="wz-alts"></div>
-            <!-- STUB (US-076): gewählte Slide groß + Overlay-Editor. -->
+            <!-- US-075: Cover-Generieren (nur im Cover-Schritt sichtbar). -->
+            <div id="wz-cover-host" class="wz-cover-host" hidden></div>
+            <!-- Stage: gewählte Slide groß; Overlay-Editor folgt US-076. -->
             <div id="wizard-stage" class="wz-stage">
               <div class="wz-stage-empty">Wähle oben eine Alternative.</div>
             </div>

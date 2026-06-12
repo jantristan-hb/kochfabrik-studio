@@ -110,6 +110,23 @@ async function fetchSuggestions(payload) {
   return data;
 }
 
+// Cover-Bild (US-075): /api/image (category "cover", 16:9, Negativraum für
+// Titel-Overlay; Muster designer.js generateCover). Liefert die Bild-Data-URL
+// oder null bei 401-Redirect; wirft bei !ok.
+async function generateImage(prompt) {
+  const r = await api("/api/image", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt, table: false, category: "cover" }),
+  });
+  if (!r) return null;                       // 401 -> Redirect bereits erfolgt
+  const data = await r.json().catch(() => null);
+  if (!r.ok || !data || !data.image) {
+    throw new Error((data && data.error) || `Fehler ${r.status}`);
+  }
+  return data.image;
+}
+
 // --- DOM-Helfer -----------------------------------------------------------
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? "" : s)
@@ -188,8 +205,159 @@ function renderStep() {
   next.disabled = onSource || onFinish;            // Schritt 0 schaltet via suggest weiter
   next.textContent = (state.stepIndex === total - 2) ? "Abschluss →" : "Weiter →";
 
-  // Slide-Schritt-Inhalt (Alternativen/Stage) füllen US-075/076.
+  // Slide-Schritt-Inhalt: Alternativen-Leiste + Stage (US-076 ergänzt Overlay).
+  if (!onSource && !onFinish) {
+    ensureDefaultSelection(currentGroupIdx());
+    renderAlts();
+    renderStage();
+    renderCover();
+  }
   renderProgress();
+}
+
+// --- US-075: Alternativen + Auswahl ---------------------------------------
+// EARS Nr. 1: 3-4 Alternativen je Schritt, Top-Kandidat (candidates[0])
+// vorausgewählt. Pitfall 4: KEINE Umsortierung — Reihenfolge bleibt Server.
+
+// max sichtbare Alternativen, Rest hinter "+N weitere" (Designer-Slot-Muster).
+
+function ensureDefaultSelection(gi) {
+  // Vorauswahl = Top-Kandidat candidates[0], falls noch keine Wahl getroffen.
+  const g = state.groups[gi];
+  if (!g || !g.candidates || !g.candidates.length) return;
+  if (state.selections[gi] == null) {
+    state.selections[gi] = 0;    // Index von candidates[0]
+    saveState(state);
+  }
+}
+
+function selectedCandIdx(gi) {
+  const v = state.selections[gi];
+  return v == null ? 0 : v;
+}
+
+function selectAlt(gi, candIdx) {
+  state.selections[gi] = candIdx;
+  saveState(state);
+  renderAlts();
+  renderStage();
+}
+
+let _altsExpanded = false;       // "+N weitere" je Schritt (flüchtig)
+
+function renderAlts() {
+  const wrap = $("wizard-alts");
+  if (!wrap) return;
+  const gi = currentGroupIdx();
+  const g = state.groups[gi];
+  const cands = (g && g.candidates) || [];
+  if (!cands.length) {
+    wrap.innerHTML = '<div class="wz-stage-empty">Keine Alternativen.</div>';
+    return;
+  }
+  const sel = selectedCandIdx(gi);
+  // Max 4 sichtbar; Rest hinter "+N weitere" (Designer-Slot-Muster).
+  const visible = _altsExpanded ? cands : cands.slice(0, 4);
+  const rest = cands.length - visible.length;
+  wrap.innerHTML = visible.map((c, i) => {
+    const on = i === sel ? " wz-alt-on" : "";
+    const score = (c.score != null) ? `· ${c.score}` : "";
+    return `<button type="button" class="wz-alt${on}" data-cand="${i}">`
+      + `<img src="${esc(c.preview)}" alt="${esc(c.label)}" `
+      + `onerror="this.classList.add('wz-alt-missing');this.removeAttribute('src')">`
+      + `<div class="wz-alt-cap">${esc(c.label) || "Slide"} ${score}</div>`
+      + `</button>`;
+  }).join("");
+  if (rest > 0) {
+    const more = document.createElement("button");
+    more.type = "button";
+    more.className = "wz-more";
+    more.textContent = `+${rest} weitere`;
+    more.addEventListener("click", () => { _altsExpanded = true; renderAlts(); });
+    wrap.appendChild(more);
+  }
+  wrap.querySelectorAll(".wz-alt").forEach((btn) => {
+    btn.addEventListener("click", () => selectAlt(gi, Number(btn.dataset.cand)));
+  });
+}
+
+// Stage: gewählte Alternative groß. US-074-Stub wird hier gefüllt; das
+// Overlay (editierbare Texte / aufgelöstes Cover-Bild) folgt in US-076.
+function renderStage() {
+  const stage = $("wizard-stage");
+  if (!stage) return;
+  const gi = currentGroupIdx();
+  const g = state.groups[gi];
+  const cands = (g && g.candidates) || [];
+  const c = cands[selectedCandIdx(gi)];
+  if (!c) {
+    stage.innerHTML = '<div class="wz-stage-empty">Wähle oben eine Alternative.</div>';
+    return;
+  }
+  stage.innerHTML = `<img src="${esc(c.preview)}" alt="${esc(c.label)}" `
+    + `onerror="this.parentNode.innerHTML='<div class=\\'wz-stage-empty\\'>`
+    + `Vorschau nicht verfügbar.</div>'">`;
+}
+
+// --- US-075: Cover-Schritt (Gruppe kind=="cover") -------------------------
+// "✨ generieren" -> /api/image -> Ergebnis als pending image_override der
+// Gruppe (in-memory, Pitfall 3). Die visuelle Auflösung auf der Stage folgt
+// in US-076.
+
+function coverPrompt() {
+  // Prompt aus Angebots-Kontext (Muster designer.js coverPrompt).
+  const o = state.offer || {};
+  const labels = (state.groups || [])
+    .filter((g) => g.kind === "gang" || g.kind === "konzept")
+    .map((g) => g.label);
+  const parts = ["Catering-Event"];
+  if (o.kunde) parts.push("für " + o.kunde);
+  if (labels.length) parts.push("Menü/Konzept: " + labels.join(", "));
+  return parts.join(" ");
+}
+
+function renderCover() {
+  // Cover-Generieren-Button nur im Cover-Schritt einblenden.
+  const host = $("wz-cover-host");
+  if (!host) return;
+  const gi = currentGroupIdx();
+  const g = state.groups[gi];
+  const isCover = g && g.kind === "cover";
+  host.hidden = !isCover;
+  if (!isCover) return;
+  const have = imageOverrides[gi];
+  host.innerHTML =
+    `<button type="button" class="btn" id="wz-gencover">`
+    + `${have ? "Cover neu generieren" : "✨ Cover-Bild generieren"}</button>`
+    + `<div id="wz-cover-status" class="wz-status"></div>`
+    + (have ? `<img class="wz-cover-pending" src="${esc(have)}" `
+      + `alt="Generiertes Cover (wird in US-076 auf die Stage gelegt)">` : "");
+  const btn = $("wz-gencover");
+  if (btn) btn.addEventListener("click", () => generateCoverFor(gi));
+}
+
+async function generateCoverFor(gi) {
+  const st = $("wz-cover-status");
+  const btn = $("wz-gencover");
+  if (btn) btn.disabled = true;
+  if (st) {
+    st.textContent = "Cover-Bild wird generiert … (bis zu 1 Minute)";
+    st.className = "wz-status wz-status-load";
+  }
+  try {
+    const img = await generateImage(coverPrompt());
+    if (img == null) return;                 // 401 -> Redirect lief schon
+    // Pitfall 3: pending image_override IN-MEMORY (Data-URL, MB) — NICHT
+    // in sessionStorage. US-076 löst das größte Bild-Element auf der Stage auf.
+    imageOverrides[gi] = img;
+    renderCover();
+  } catch (e) {
+    if (st) {
+      st.textContent = "Cover-Bild fehlgeschlagen: " + (e.message || e);
+      st.className = "wz-status wz-status-error";
+    }
+    if (btn) btn.disabled = false;
+  }
 }
 
 // --- Schritt-0: Quelle wählen ---------------------------------------------

@@ -153,3 +153,65 @@ def test_wizard_nav_buttons_present():
     html = _wizard_html()
     assert 'id="wz-back"' in html
     assert 'id="wz-next"' in html
+
+
+# --- US-075: Alternativen + Auswahl (FEATURE-015 §8 Nr. 1 + Nr. 4-Teil) -----
+# WHEN ein Schritt angezeigt wird THE SYSTEM SHALL 3-4 Alternativen mit dem
+# Top-Kandidaten (candidates[0]) vorausgewählt zeigen; Rest hinter "+N weitere".
+# Cover-Schritt: "✨ generieren" -> /api/image -> pending image_override.
+
+def test_wizard_js_alts_limit_and_more():
+    # Max 4 sichtbar (slice(0, 4)) + "+N weitere"-Mechanik (Pitfall-frei:
+    # gleiche Begrenzung wie Designer-Slot-Ansicht).
+    js = _wizard_js()
+    assert "slice(0, 4)" in js, "Alternativen-Begrenzung slice(0, 4) fehlt"
+    assert "weitere" in js, '"+N weitere"-Mechanik fehlt'
+
+
+def test_wizard_js_alts_render_into_marker():
+    # Alternativen werden in den gekennzeichneten Bereich #wizard-alts gerendert.
+    js = _wizard_js()
+    assert "wizard-alts" in js, "Render-Ziel #wizard-alts nicht referenziert"
+    assert "renderAlts" in js, "renderAlts (Alternativen-Render) fehlt"
+
+
+def test_wizard_js_default_selection_top_candidate():
+    # Vorauswahl = Top-Kandidat candidates[0] (EARS Nr. 1).
+    js = _wizard_js()
+    assert "candidates[0]" in js, "Vorauswahl candidates[0] fehlt"
+
+
+def test_wizard_js_selection_state_per_group():
+    # Klick wechselt state.selections[groupIdx]; Auswahl-Markierung.
+    js = _wizard_js()
+    assert "selections" in js, "Auswahl-State (selections) fehlt"
+    assert "selectAlt" in js, "selectAlt (Auswahl-Wechsel) fehlt"
+    assert "wz-alt-on" in js, "Auswahl-Markierung (wz-alt-on) fehlt"
+
+
+def test_wizard_js_stage_shows_selected_preview():
+    # Stage zeigt vorerst das preview-PNG der gewählten Karte groß
+    # (Overlay folgt US-076).
+    js = _wizard_js()
+    assert "renderStage" in js, "renderStage (Stage-Render) fehlt"
+    assert "wizard-stage" in js, "Render-Ziel #wizard-stage nicht referenziert"
+
+
+def test_wizard_js_cover_generate_wiring():
+    # Cover-Schritt (kind=="cover"): /api/image mit category "cover".
+    js = _wizard_js()
+    assert "/api/image" in js, "/api/image nicht verdrahtet"
+    assert '"cover"' in js, 'category "cover" fehlt'
+    assert "coverPrompt" in js, "coverPrompt (Prompt aus Angebots-Kontext) fehlt"
+
+
+def test_wizard_js_cover_pending_image_override_in_memory():
+    # Pitfall 3: erzeugtes Cover-Bild als pending image_override IN-MEMORY,
+    # NICHT in sessionStorage. Persistenz enthält weiterhin keine Bilder.
+    js = _wizard_js()
+    assert "pendingImageOverride" in js or "imageOverrides" in js, (
+        "pending image_override (in-memory) fehlt")
+    # Bilder dürfen nicht in den persistierten State wandern.
+    save_block = js[js.index("function saveState"):js.index("function saveState") + 600]
+    assert "imageOverrides" not in save_block, (
+        "imageOverrides darf NICHT persistiert werden (Pitfall 3)")
