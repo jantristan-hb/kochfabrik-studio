@@ -365,3 +365,97 @@ async def designer_suggest(request: Request):
         return JSONResponse({"error": "Parsing: " + str(e)[:200]},
                             status_code=502)
     return _respond(offer)
+
+
+# ---------------- Text-Overrides (#66, EPIC-006/D5) ----------------
+# Texte der gewählten Slides (aus elements.json) + automatisch aus dem
+# Angebot generierte Override-Vorschläge (menu_overlay-Heuristik:
+# Headline = Gang, größter Caps-Block = Gerichte; Cover = Kunde/Datum).
+
+class TextSlideRef(BaseModel):
+    deck: str
+    page: int
+    kind: str | None = None                  # gang | cover | pflicht | …
+    gang: dict | None = None                 # {label, dishes:[{name,desc}]}
+
+
+class TextsReq(BaseModel):
+    slides: list[TextSlideRef]
+    offer: dict | None = None                # {kunde, datum, …}
+
+
+def _slide_text_elements(deck: str, page: int):
+    """[(seq_idx, element)] der Text-Elemente einer Cache-Slide."""
+    from ..slidesuche import _CACHE, _SAFE
+    if not _SAFE.match(deck) or page < 1:
+        return None
+    el_path = os.path.join(_CACHE, deck, "elements.json")
+    if not os.path.isfile(el_path):
+        return None
+    seq = json.load(open(el_path, encoding="utf-8")).get(str(int(page)))
+    if not seq:
+        return None
+    return [(i, e) for i, e in enumerate(seq)
+            if e.get("t") == "text" and e.get("lines")]
+
+
+def _suggest_overrides(texts, kind, gang, offer):
+    """Auto-Overrides je Slide-Art — gleiche Schwellen wie menu_overlay
+    (Headline = size >= 0.5*max; Caps = Rest = Gerichte-Slots)."""
+    if not texts:
+        return {}
+    sizes = [max(ln["size"] for ln in e["lines"]) for _, e in texts]
+    mx = max(sizes)
+    heads = [(i, sz) for (i, _), sz in zip(texts, sizes) if sz >= 0.5 * mx]
+    caps = [(i, e) for (i, e), sz in zip(texts, sizes) if sz < 0.5 * mx]
+    sug = {}
+    if kind == "gang" and gang:
+        primary = max(heads, key=lambda t: t[1])[0]
+        sug[str(primary)] = str(gang.get("label", "")).upper()
+        for i, _ in heads:
+            if i != primary:
+                sug[str(i)] = ""             # leere Override = entfernen
+        dishes = "\n".join(
+            d.get("name", "") + (" — " + d["desc"] if d.get("desc") else "")
+            for d in (gang.get("dishes") or []) if d.get("name"))
+        if caps and dishes:
+            big = max(caps, key=lambda t: t[1]["w"] * t[1]["h"])[0]
+            sug[str(big)] = dishes
+            for i, _ in caps:
+                if i != big:
+                    sug[str(i)] = ""
+    elif kind == "cover" and offer:
+        if heads:
+            primary = max(heads, key=lambda t: t[1])[0]
+            kunde = str(offer.get("kunde") or "").strip()
+            datum = str(offer.get("datum") or "").strip()
+            val = (kunde + ("\n" + datum if datum else "")).strip()
+            if val:
+                sug[str(primary)] = val
+    return sug
+
+
+@router.post("/api/designer/texts")
+def designer_texts(r: TextsReq, request: Request):
+    """Pro Board-Slide: Ist-Texte (elements.json) + Auto-Override-
+    Vorschläge aus dem Angebot. Editor-Grundlage (#66)."""
+    if not _owner(request):
+        return JSONResponse({"error": "auth"}, status_code=401)
+    out = []
+    for sl in r.slides[:50]:
+        texts = _slide_text_elements(sl.deck, sl.page)
+        if texts is None:
+            out.append({"deck": sl.deck, "page": sl.page, "texts": [],
+                        "suggestions": {}})
+            continue
+        out.append({
+            "deck": sl.deck, "page": sl.page,
+            "texts": [{"i": i,
+                       "text": "\n".join(ln.get("txt", "")
+                                          for ln in e["lines"]),
+                       "size": max(ln["size"] for ln in e["lines"])}
+                      for i, e in texts],
+            "suggestions": _suggest_overrides(texts, sl.kind, sl.gang,
+                                              r.offer),
+        })
+    return {"slides": out}

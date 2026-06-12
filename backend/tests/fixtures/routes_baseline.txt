@@ -8,6 +8,7 @@
 ['GET'] /api/angebot/{offer_id}
 ['GET'] /api/angebote
 ['GET'] /api/cats
+['GET'] /api/designer/health
 ['GET'] /api/health
 ['GET'] /api/kunde/{customer_id}
 ['GET'] /api/kunden
@@ -20,6 +21,8 @@
 ['POST'] /api/angebot/chat
 ['POST'] /api/angebot/pdf
 ['POST'] /api/angebot/save
+['POST'] /api/designer/suggest
+['POST'] /api/designer/texts
 ['POST'] /api/image
 ['POST'] /api/login
 ['POST'] /api/logout
@@ -28,5 +31,3 @@
 ['POST'] /api/praesentation/generate
 ['POST'] /api/slidesuche/download
 ['POST'] /api/slidesuche/search
-['GET'] /api/designer/health
-['POST'] /api/designer/suggest

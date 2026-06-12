@@ -305,3 +305,19 @@ def test_designer_js_cover_generator():
                 encoding="utf-8").read()
     assert 'id="dz-genbild"' in html
     assert html.index('id="dz-genbild"') < html.index('id="dz-board"')
+
+
+# #66 — Texte-Editor: Modus-Umschalter, Bild-links/Text-rechts-Layout,
+# Auto-Override-Vorbelegung, Download mit Overrides.
+def test_designer_js_texts_editor():
+    import os
+    root = os.path.join(os.path.dirname(__file__), "..", "..")
+    js = open(os.path.join(root, "web", "assets", "designer.js"),
+              encoding="utf-8").read()
+    assert "/api/designer/texts" in js
+    assert "toggleTextsMode" in js and "renderTextsEditor" in js
+    assert "b.overrides" in js
+    html = open(os.path.join(root, "web", "designer.html"),
+                encoding="utf-8").read()
+    assert 'id="dz-edit-texts"' in html and 'id="dz-texts"' in html
+    assert "dz-tx-row" in html                      # Bild links, Texte rechts
