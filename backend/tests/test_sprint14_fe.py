@@ -215,3 +215,59 @@ def test_wizard_js_cover_pending_image_override_in_memory():
     save_block = js[js.index("function saveState"):js.index("function saveState") + 600]
     assert "imageOverrides" not in save_block, (
         "imageOverrides darf NICHT persistiert werden (Pitfall 3)")
+
+
+# --- US-076: Overlay-Editor (FEATURE-015 §8 Nr. 2+3+4) ---------------------
+# Stage: texts-API → Notext-Hintergrund + positionierte Text-/Bild-Overlays.
+# Pitfall 1: Maßstab relativ aus meta.w_pt/h_pt + ResizeObserver. Pitfall 2:
+# contenteditable plain-text (paste-Strip), Enter = \n.
+
+def test_wizard_stage_notext_fallback():
+    # Stage-Hintergrund = preview_notext; onerror → normales preview + Badge.
+    js = _wizard_js()
+    assert "/api/designer/texts" in js, "texts-API nicht verdrahtet"
+    assert "preview_notext" in js, "Notext-Hintergrund fehlt"
+    assert "onerror" in js, "onerror-Fallback fehlt"
+    # Hinweis-Badge beim Fallback aufs normale preview.
+    assert ("notext" in js.lower() and "badge" in js.lower()), (
+        "Notext-Fallback-Badge fehlt")
+
+
+def test_wizard_overlay_scaling():
+    # Pitfall 1: Positionierung relativ aus meta.w_pt/h_pt + ResizeObserver.
+    js = _wizard_js()
+    assert "w_pt" in js and "h_pt" in js, "Maßstab aus meta.w_pt/h_pt fehlt"
+    assert "ResizeObserver" in js, "ResizeObserver (Nachrechnen) fehlt"
+
+
+def test_wizard_contenteditable_plaintext():
+    # Pitfall 2: contenteditable, paste-Strip auf plain-text.
+    js = _wizard_js()
+    assert "contenteditable" in js.lower(), "contenteditable fehlt"
+    assert "paste" in js, "paste-Strip (plain-text) fehlt"
+
+
+def test_wizard_override_precedence():
+    # Vorbelegung: Override > Auto-Suggestion > Ist-Text; Änderung →
+    # state.textOverrides[deck::page][idx].
+    js = _wizard_js()
+    assert "textOverrides" in js, "textOverrides-State fehlt"
+    assert "suggestions" in js, "Auto-Suggestion-Vorbelegung fehlt"
+
+
+def test_wizard_formulate_wiring():
+    # ✦ Formulieren je Feld: /api/designer/formulate + Undo.
+    js = _wizard_js()
+    assert "/api/designer/formulate" in js, "formulate-API nicht verdrahtet"
+    assert "Undo" in js or "undo" in js, "Undo-Mechanik fehlt"
+
+
+def test_wizard_image_generate_wiring():
+    # 🖼 Bild generieren je images[]-Element → /api/image (category food),
+    # in-memory Override, deckt das Element positionsgenau.
+    js = _wizard_js()
+    assert '"food"' in js, 'category "food" fehlt'
+    assert "imageOverrides" in js, "in-memory imageOverrides fehlt"
+    # Cover-pending (US-075) wird hier aufs größte image-Element aufgelöst.
+    assert ("largest" in js.lower() or "größt" in js.lower()
+            or "biggest" in js.lower()), "größtes image-Element-Auflösung fehlt"

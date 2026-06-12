@@ -43,14 +43,35 @@
 
   /* Cover-Generieren (nur Cover-Schritt). */
   .wz-cover-host{display:flex;flex-direction:column;gap:8px;margin:14px 0}
-  .wz-cover-pending{max-width:320px;border-radius:8px;display:block}
 
-  /* Große Stage (US-076 füllt sie): gewählte Slide groß + Overlay-Editor. */
+  /* Große Stage: gewählte Slide groß + Overlay-Editor (US-076). */
   .wz-stage{border:1px solid var(--line);border-radius:var(--radius);
     background:var(--gold-tint-2);min-height:280px;position:relative;overflow:hidden;
     display:flex;align-items:center;justify-content:center}
-  .wz-stage img{max-width:100%;display:block}
   .wz-stage-empty{color:var(--ink-soft);font-size:.9rem;padding:40px}
+  /* Overlay-Frame: hält das Slide-Seitenverhältnis (aspect-ratio aus w_pt/h_pt). */
+  .wz-frame{position:relative;width:100%;max-width:100%;background:var(--panel)}
+  .wz-bg{width:100%;height:auto;display:block}
+  .wz-notext-badge{position:absolute;top:8px;left:8px;z-index:5;
+    background:rgba(168,50,75,.92);color:#fff;font-size:.7rem;padding:4px 8px;border-radius:6px}
+  /* Text-Overlay: absolut in % positioniert, editierbar. */
+  .wz-tov{position:absolute;display:flex;align-items:flex-start}
+  .wz-ted{width:100%;height:100%;outline:none;line-height:1.05;overflow:hidden;
+    white-space:pre-wrap;cursor:text}
+  .wz-tov:hover{outline:1px dashed var(--gold-soft)}
+  .wz-tov:focus-within{outline:1.5px solid var(--gold)}
+  .wz-tov-tools{position:absolute;top:-13px;right:-6px;display:none;z-index:6}
+  .wz-tov:hover .wz-tov-tools,.wz-tov:focus-within .wz-tov-tools{display:block}
+  .wz-tov-btn{border:1px solid var(--gold);background:var(--panel);color:var(--gold-deep);
+    border-radius:6px;width:22px;height:22px;cursor:pointer;font-size:.78rem;line-height:1;padding:0}
+  /* Bild-Overlay: positionierter Rahmen + Generieren-Button. */
+  .wz-iov{position:absolute;border:1px dashed var(--gold-soft);box-sizing:border-box}
+  .wz-iov-img{width:100%;height:100%;object-fit:cover;display:block}
+  .wz-iov-btn{position:absolute;bottom:4px;right:4px;border:1px solid var(--gold);
+    background:var(--panel);border-radius:6px;width:26px;height:26px;cursor:pointer;
+    font-size:.85rem;line-height:1;padding:0;z-index:6}
+  .wz-undo{border:1px solid var(--gold-soft);background:none;color:var(--gold-deep);
+    border-radius:6px;padding:2px 8px;cursor:pointer;font:inherit;font-size:.8rem;margin-left:6px}
 
   /* Schritt-0-Panel: Quelle wählen. */
   .wz-drop{border:1.5px dashed var(--line);border-radius:var(--radius);padding:26px;

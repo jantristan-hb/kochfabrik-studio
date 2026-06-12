@@ -21,9 +21,11 @@
 const STATE_KEY = "kfWizard.v1";
 
 // Pitfall 3: Bild-Overrides (Data-URLs, MB!) gehören NICHT in sessionStorage.
-// Sie leben rein in-memory und gehen bei Reload bewusst verloren (US-076
-// zeigt dann einen Hinweis). Persistiert werden nur Schritt/Auswahl/Texte.
-const imageOverrides = {};   // {groupIdx: dataUrl} — flüchtig, NICHT persistiert
+// Sie leben rein in-memory und gehen bei Reload bewusst verloren (die Stage
+// zeigt dann einen Hinweis). Schlüssel = "deck::page" -> {seqIdx: dataUrl},
+// damit die Override an der Slide (nicht am Schritt) hängt und beim Wechsel
+// der gewählten Alternative korrekt neu greift.
+const imageOverrides = {};   // {"deck::page": {seqIdx: dataUrl}} — flüchtig
 
 const emptyState = () => ({
   version: 1,
@@ -32,7 +34,7 @@ const emptyState = () => ({
   groups: [],          // Server-Reihenfolge: [{label, kind, candidates:[...]}]
   stepIndex: 0,        // 0 = Quelle; 1..N = je Gruppe; N+1 = Abschluss
   selections: {},      // {groupIdx: candIdx} — gewählte Alternative je Gruppe
-  textOverrides: {},   // {groupIdx: {feld: text}} — editierte Texte (US-076)
+  textOverrides: {},   // {"deck::page": {seqIdx: text}} — editierte Texte
 });
 
 function loadState() {
@@ -110,14 +112,14 @@ async function fetchSuggestions(payload) {
   return data;
 }
 
-// Cover-Bild (US-075): /api/image (category "cover", 16:9, Negativraum für
-// Titel-Overlay; Muster designer.js generateCover). Liefert die Bild-Data-URL
-// oder null bei 401-Redirect; wirft bei !ok.
-async function generateImage(prompt) {
+// Bild generieren (US-075 Cover / US-076 Food): /api/image. category steuert
+// den Stil ("cover" 16:9 Negativraum | "food"); Muster designer.js
+// generateCover. Liefert die Bild-Data-URL oder null bei 401-Redirect.
+async function generateImage(prompt, category) {
   const r = await api("/api/image", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt, table: false, category: "cover" }),
+    body: JSON.stringify({ prompt, table: false, category: category || "cover" }),
   });
   if (!r) return null;                       // 401 -> Redirect bereits erfolgt
   const data = await r.json().catch(() => null);
@@ -125,6 +127,38 @@ async function generateImage(prompt) {
     throw new Error((data && data.error) || `Fehler ${r.status}`);
   }
   return data.image;
+}
+
+// Texte/Geometrie der gewählten Slide (US-076): /api/designer/texts liefert
+// meta{w_pt,h_pt} + texts[] (i/text/x/y/w/h/size/color/weight/italic) +
+// images[] (i/x/y/w/h) + preview_notext + suggestions. Slide-Objekt oder null.
+async function fetchTexts(deck, page, kind, gang, offer) {
+  const d = await apiJson("/api/designer/texts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      slides: [{ deck, page, kind: kind || null, gang: gang || null }],
+      offer: offer || null,
+    }),
+  });
+  return (d && d.slides && d.slides[0]) || null;
+}
+
+// Formulieren (US-076): /api/designer/formulate {text,kind,gang_label} ->
+// {text}. Liefert den neuen Text oder null bei 401-Redirect; wirft bei !ok.
+async function formulateText(text, kind, gangLabel) {
+  const r = await api("/api/designer/formulate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, kind: kind || null,
+                           gang_label: gangLabel || null }),
+  });
+  if (!r) return null;                       // 401 -> Redirect bereits erfolgt
+  const data = await r.json().catch(() => null);
+  if (!r.ok || !data || !data.text) {
+    throw new Error((data && data.error) || `Fehler ${r.status}`);
+  }
+  return data.text;
 }
 
 // --- DOM-Helfer -----------------------------------------------------------
@@ -281,11 +315,42 @@ function renderAlts() {
   });
 }
 
-// Stage: gewählte Alternative groß. US-074-Stub wird hier gefüllt; das
-// Overlay (editierbare Texte / aufgelöstes Cover-Bild) folgt in US-076.
+// --- US-076: Overlay-Editor (FEATURE-015 §8 Nr. 2+3+4) --------------------
+// Stage = Notext-Hintergrund der gewählten Slide + absolut positionierte
+// Text-Overlays (editierbar) und Bild-Overlays. Maßstab IMMER relativ aus
+// meta.w_pt/h_pt (Pitfall 1, nie hartkodieren), ResizeObserver rechnet die
+// Fontgrößen beim Layout-Wechsel nach.
+
+const _slideKey = (deck, page) => `${deck}::${page}`;
+
+// Cache der texts-API je Slide (vermeidet Re-Fetch beim Re-Render).
+const _textsCache = {};          // {"deck::page": slideObj} — flüchtig
+let _stageObserver = null;       // aktiver ResizeObserver der Stage
+
+// Vorbelegung eines Felds: Override > Auto-Suggestion > Ist-Text.
+function fieldValue(slide, idx) {
+  const key = _slideKey(slide.deck, slide.page);
+  const ov = state.textOverrides[key];
+  if (ov && ov[idx] != null) return ov[idx];
+  const sug = slide.suggestions || {};
+  if (sug[idx] != null) return sug[idx];
+  const t = (slide.texts || []).find((e) => e.i === idx);
+  return t ? t.text : "";
+}
+
+function setTextOverride(deck, page, idx, value) {
+  const key = _slideKey(deck, page);
+  if (!state.textOverrides[key]) state.textOverrides[key] = {};
+  state.textOverrides[key][idx] = value;
+  saveState(state);
+}
+
+// Stage: gewählte Alternative groß. US-074-Stub wird hier gefüllt; lädt die
+// texts-API asynchron und rendert dann die Overlays.
 function renderStage() {
   const stage = $("wizard-stage");
   if (!stage) return;
+  if (_stageObserver) { _stageObserver.disconnect(); _stageObserver = null; }
   const gi = currentGroupIdx();
   const g = state.groups[gi];
   const cands = (g && g.candidates) || [];
@@ -294,15 +359,167 @@ function renderStage() {
     stage.innerHTML = '<div class="wz-stage-empty">Wähle oben eine Alternative.</div>';
     return;
   }
-  stage.innerHTML = `<img src="${esc(c.preview)}" alt="${esc(c.label)}" `
-    + `onerror="this.parentNode.innerHTML='<div class=\\'wz-stage-empty\\'>`
-    + `Vorschau nicht verfügbar.</div>'">`;
+  const key = _slideKey(c.deck, c.page);
+  const cached = _textsCache[key];
+  if (cached) { renderStageOverlay(stage, g, c, cached); return; }
+  stage.innerHTML = '<div class="wz-stage-empty">Slide wird geladen …</div>';
+  fetchTexts(c.deck, c.page, g.kind, g.gang || null, state.offer)
+    .then((slide) => {
+      if (!slide) return;                    // 401 -> Redirect lief schon
+      _textsCache[key] = slide;
+      // Nur rendern, wenn noch derselbe Schritt/dieselbe Auswahl aktiv ist.
+      const g2 = state.groups[currentGroupIdx()];
+      const c2 = g2 && g2.candidates[selectedCandIdx(currentGroupIdx())];
+      if (c2 && c2.deck === c.deck && c2.page === c.page) {
+        renderStageOverlay(stage, g, c, slide);
+      }
+    })
+    .catch(() => {
+      stage.innerHTML = '<div class="wz-stage-empty">'
+        + 'Texte konnten nicht geladen werden.</div>';
+    });
 }
 
-// --- US-075: Cover-Schritt (Gruppe kind=="cover") -------------------------
-// "✨ generieren" -> /api/image -> Ergebnis als pending image_override der
-// Gruppe (in-memory, Pitfall 3). Die visuelle Auflösung auf der Stage folgt
-// in US-076.
+function renderStageOverlay(stage, group, cand, slide) {
+  const meta = slide.meta || { w_pt: 960, h_pt: 540 };
+  // Hintergrund = preview_notext; onerror → normales preview + Notext-Badge.
+  // Maßstab relativ: Overlays in % von w_pt/h_pt, Stage hält das 16:9-Format.
+  stage.innerHTML = "";
+  const frame = document.createElement("div");
+  frame.className = "wz-frame";
+  frame.style.aspectRatio = `${meta.w_pt} / ${meta.h_pt}`;
+  const bg = document.createElement("img");
+  bg.className = "wz-bg";
+  bg.src = slide.preview_notext;
+  bg.alt = cand.label || "";
+  bg.addEventListener("error", () => {
+    // Fallback aufs normale preview + Hinweis-Badge (Texte sind dann
+    // eingebrannt, der Editor liegt trotzdem darüber).
+    bg.src = cand.preview;
+    if (!frame.querySelector(".wz-notext-badge")) {
+      const badge = document.createElement("div");
+      badge.className = "wz-notext-badge";
+      badge.textContent = "Notext-Vorschau fehlt — Texte ggf. doppelt";
+      frame.appendChild(badge);
+    }
+  });
+  frame.appendChild(bg);
+
+  // Text-Overlays absolut positioniert in % (Pitfall 1).
+  (slide.texts || []).forEach((t) => {
+    const ov = document.createElement("div");
+    ov.className = "wz-tov";
+    ov.dataset.idx = t.i;
+    ov.style.left = (100 * t.x / meta.w_pt) + "%";
+    ov.style.top = (100 * t.y / meta.h_pt) + "%";
+    ov.style.width = (100 * t.w / meta.w_pt) + "%";
+    ov.style.height = (100 * t.h / meta.h_pt) + "%";
+    if (t.color) ov.style.color = t.color;
+    if (t.weight) ov.style.fontWeight = t.weight;
+    if (t.italic) ov.style.fontStyle = "italic";
+    ov.dataset.size = String(t.size);        // pt; Fontgröße = size/h_pt*Höhe
+
+    const ed = document.createElement("div");
+    ed.className = "wz-ted";
+    ed.contentEditable = "plaintext-only";
+    ed.dataset.idx = t.i;
+    ed.textContent = fieldValue(slide, t.i);
+    // Pitfall 2: plain-text erzwingen — paste-Strip, Enter = \n.
+    ed.addEventListener("paste", (e) => {
+      e.preventDefault();
+      const txt = (e.clipboardData || window.clipboardData).getData("text");
+      document.execCommand("insertText", false, txt);
+    });
+    ed.addEventListener("input", () => {
+      setTextOverride(cand.deck, cand.page, t.i, ed.innerText);
+    });
+    ov.appendChild(ed);
+
+    // ✦ Formulieren je Feld (US-076, /api/designer/formulate) + Undo.
+    const tools = document.createElement("div");
+    tools.className = "wz-tov-tools";
+    const fbtn = document.createElement("button");
+    fbtn.type = "button";
+    fbtn.className = "wz-tov-btn";
+    fbtn.textContent = "✦";
+    fbtn.title = "Im KOCHfabrik-Ton neu formulieren";
+    fbtn.addEventListener("click",
+      () => formulateField(cand, group, t.i, ed));
+    tools.appendChild(fbtn);
+    ov.appendChild(tools);
+    frame.appendChild(ov);
+  });
+
+  // Bild-Overlays: Rahmen je images[]-Element + 🖼-Generieren.
+  const imgs = slide.images || [];
+  imgs.forEach((im) => {
+    const box = document.createElement("div");
+    box.className = "wz-iov";
+    box.dataset.idx = im.i;
+    box.style.left = (100 * im.x / meta.w_pt) + "%";
+    box.style.top = (100 * im.y / meta.h_pt) + "%";
+    box.style.width = (100 * im.w / meta.w_pt) + "%";
+    box.style.height = (100 * im.h / meta.h_pt) + "%";
+    const ovImg = currentImageOverride(cand, im.i);
+    if (ovImg) {
+      const el = document.createElement("img");
+      el.className = "wz-iov-img";
+      el.src = ovImg;
+      box.appendChild(el);
+    }
+    const gbtn = document.createElement("button");
+    gbtn.type = "button";
+    gbtn.className = "wz-iov-btn";
+    gbtn.textContent = "🖼";
+    gbtn.title = "Bild generieren";
+    gbtn.addEventListener("click",
+      () => generateImageOverlay(cand, group, im.i, box));
+    box.appendChild(gbtn);
+    frame.appendChild(box);
+  });
+
+  stage.appendChild(frame);
+  applyOverlayFontSizes(frame, meta);
+  // Pitfall 1: ResizeObserver rechnet die pt-basierten Fontgrößen nach,
+  // wenn sich die Stage-Breite ändert.
+  _stageObserver = new ResizeObserver(() => applyOverlayFontSizes(frame, meta));
+  _stageObserver.observe(frame);
+}
+
+// Fontgröße = size_pt / h_pt * aktuelle Stage-Höhe (relativer Maßstab).
+function applyOverlayFontSizes(frame, meta) {
+  const h = frame.clientHeight;
+  if (!h) return;
+  frame.querySelectorAll(".wz-ted").forEach((ed) => {
+    const ov = ed.parentNode;
+    const size = parseFloat(ov.dataset.size || "0");
+    if (size) ed.style.fontSize = (size / meta.h_pt * h) + "px";
+  });
+}
+
+// --- US-076: Bild-Overrides je Element + Cover-Auflösung ------------------
+// Cover (US-075) liefert ein pending image_override, das HIER aufs GRÖSSTE
+// image-Element der gewählten Slide aufgelöst wird (largest by w*h).
+
+function imgKey(cand) { return _slideKey(cand.deck, cand.page); }
+
+function currentImageOverride(cand, idx) {
+  const m = imageOverrides[imgKey(cand)];
+  return m ? m[idx] : null;
+}
+
+function setImageOverride(cand, idx, dataUrl) {
+  const key = imgKey(cand);
+  if (!imageOverrides[key]) imageOverrides[key] = {};
+  imageOverrides[key][idx] = dataUrl;        // in-memory (Pitfall 3)
+}
+
+function largestImageIdx(slide) {
+  const imgs = slide.images || [];
+  if (!imgs.length) return null;
+  return imgs.reduce((best, im) =>
+    (im.w * im.h) > (best.w * best.h) ? im : best, imgs[0]).i;
+}
 
 function coverPrompt() {
   // Prompt aus Angebots-Kontext (Muster designer.js coverPrompt).
@@ -316,8 +533,19 @@ function coverPrompt() {
   return parts.join(" ");
 }
 
+// Food-Prompt eines Gang-/Gericht-Schritts (US-076 Bild-Element).
+function foodPrompt(group) {
+  const parts = ["Gericht-Foto, appetitlich, KOCHfabrik-Catering"];
+  if (group && group.label) parts.push(group.label);
+  const dishes = (group && group.gang && group.gang.dishes) || [];
+  const names = dishes.map((d) => d.name).filter(Boolean);
+  if (names.length) parts.push(names.join(", "));
+  return parts.join(" — ");
+}
+
+// Cover-Generieren-Panel nur im Cover-Schritt; das erzeugte Bild wird aufs
+// größte image-Element der gewählten Slide aufgelöst.
 function renderCover() {
-  // Cover-Generieren-Button nur im Cover-Schritt einblenden.
   const host = $("wz-cover-host");
   if (!host) return;
   const gi = currentGroupIdx();
@@ -325,18 +553,21 @@ function renderCover() {
   const isCover = g && g.kind === "cover";
   host.hidden = !isCover;
   if (!isCover) return;
-  const have = imageOverrides[gi];
   host.innerHTML =
     `<button type="button" class="btn" id="wz-gencover">`
-    + `${have ? "Cover neu generieren" : "✨ Cover-Bild generieren"}</button>`
-    + `<div id="wz-cover-status" class="wz-status"></div>`
-    + (have ? `<img class="wz-cover-pending" src="${esc(have)}" `
-      + `alt="Generiertes Cover (wird in US-076 auf die Stage gelegt)">` : "");
+    + `✨ Cover-Bild generieren</button>`
+    + `<div id="wz-cover-status" class="wz-status"></div>`;
   const btn = $("wz-gencover");
-  if (btn) btn.addEventListener("click", () => generateCoverFor(gi));
+  if (btn) btn.addEventListener("click", () => generateCoverFor());
 }
 
-async function generateCoverFor(gi) {
+async function generateCoverFor() {
+  const gi = currentGroupIdx();
+  const g = state.groups[gi];
+  const cand = g && g.candidates[selectedCandIdx(gi)];
+  if (!cand) return;
+  const slide = _textsCache[_slideKey(cand.deck, cand.page)];
+  const idx = slide ? largestImageIdx(slide) : null;
   const st = $("wz-cover-status");
   const btn = $("wz-gencover");
   if (btn) btn.disabled = true;
@@ -345,19 +576,70 @@ async function generateCoverFor(gi) {
     st.className = "wz-status wz-status-load";
   }
   try {
-    const img = await generateImage(coverPrompt());
+    const img = await generateImage(coverPrompt(), "cover");
     if (img == null) return;                 // 401 -> Redirect lief schon
-    // Pitfall 3: pending image_override IN-MEMORY (Data-URL, MB) — NICHT
-    // in sessionStorage. US-076 löst das größte Bild-Element auf der Stage auf.
-    imageOverrides[gi] = img;
-    renderCover();
+    if (idx != null) {
+      // Auf das größte image-Element auflösen (Pitfall 3: in-memory).
+      setImageOverride(cand, idx, img);
+      renderStage();
+    }
+    if (st) { st.textContent = ""; st.className = "wz-status"; }
   } catch (e) {
     if (st) {
       st.textContent = "Cover-Bild fehlgeschlagen: " + (e.message || e);
       st.className = "wz-status wz-status-error";
     }
+  } finally {
     if (btn) btn.disabled = false;
   }
+}
+
+// 🖼 je image-Element: Food-Bild generieren → in-memory Override, deckt das
+// Element positionsgenau (das <img> liegt im positionierten .wz-iov-Rahmen).
+async function generateImageOverlay(cand, group, idx, box) {
+  const gbtn = box.querySelector(".wz-iov-btn");
+  if (gbtn) gbtn.disabled = true;
+  try {
+    const img = await generateImage(foodPrompt(group), "food");
+    if (img == null) return;                 // 401 -> Redirect lief schon
+    setImageOverride(cand, idx, img);
+    renderStage();
+  } catch (e) {
+    setStatus("Bild generieren fehlgeschlagen: " + (e.message || e), "error");
+    if (gbtn) gbtn.disabled = false;
+  }
+}
+
+// ✦ Feld neu formulieren (Undo speichert den vorherigen Wert).
+async function formulateField(cand, group, idx, ed) {
+  const prev = ed.innerText;                 // für Undo
+  const gangLabel = (group && group.kind === "gang") ? group.label : null;
+  setStatus("Wird formuliert …", "load");
+  try {
+    const out = await formulateText(prev, group && group.kind, gangLabel);
+    if (out == null) return;                 // 401 -> Redirect lief schon
+    ed.innerText = out;
+    setTextOverride(cand.deck, cand.page, idx, out);
+    // Undo: ein Klick stellt den vorherigen Wert wieder her.
+    showFormulateUndo(cand, idx, ed, prev);
+    setStatus("");
+  } catch (e) {
+    setStatus("Formulieren fehlgeschlagen: " + (e.message || e), "error");
+  }
+}
+
+function showFormulateUndo(cand, idx, ed, prev) {
+  const el = $("wz-status");
+  if (!el) return;
+  el.className = "wz-status";
+  el.innerHTML = 'Neu formuliert. <button type="button" class="wz-undo" '
+    + 'id="wz-undo">↶ Undo</button>';
+  const ub = $("wz-undo");
+  if (ub) ub.addEventListener("click", () => {
+    ed.innerText = prev;
+    setTextOverride(cand.deck, cand.page, idx, prev);
+    setStatus("");
+  });
 }
 
 // --- Schritt-0: Quelle wählen ---------------------------------------------
