@@ -408,6 +408,7 @@ async function runSuggest(payload) {
     const data = await fetchSuggestions(payload);
     if (data === null) return;               // 401 -> Redirect lief schon
     state.groups = data.groups || [];
+    state.offer = data.offer || null;        // Prompt-Quelle fürs Cover (#65)
     saveState(state);
     renderGroups(state.groups);
     // Pauschal-Angebot ohne Menü-Gänge (#62): erklären statt schweigen.
@@ -492,6 +493,65 @@ function triggerDataUrlDownload(dataUrl, filename) {
   a.remove();
 }
 
+// --- Cover-Bild-Generator (#65) ----------------------------------------
+// Ein Klick → Gemini-Bildprompt aus dem geparsten Angebot (Kunde +
+// Gänge/Konzept) → POST /api/image (category=cover, 16:9, Negativraum
+// für Titel-Overlay). Bild bleibt in-memory (Data-URLs sind zu groß
+// für sessionStorage) — "PNG sichern" lädt es herunter.
+
+function coverPrompt() {
+  const o = state.offer || {};
+  const labels = (state.groups || [])
+    .filter((g) => g.kind === "gang" || g.kind === "konzept")
+    .map((g) => g.label);
+  const parts = ["Catering-Event"];
+  if (o.kunde) parts.push("für " + o.kunde);
+  if (labels.length) parts.push("Menü/Konzept: " + labels.join(", "));
+  return parts.join(" ");
+}
+
+async function generateCover() {
+  const st = document.getElementById("dz-cover-status");
+  const wrap = document.getElementById("dz-cover");
+  const img = document.getElementById("dz-cover-img");
+  const save = document.getElementById("dz-cover-save");
+  const btn = document.getElementById("dz-genbild");
+  if (!st || !img) return;
+  btn.disabled = true;
+  st.textContent = "Cover-Bild wird generiert … (bis zu 1 Minute)";
+  st.className = "dz-status dz-status-load";
+  try {
+    const r = await api("/api/image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: coverPrompt(), table: false,
+                             category: "cover" }),
+    });
+    if (!r) return;                          // 401 → Redirect lief schon
+    const d = await r.json().catch(() => null);
+    if (!r.ok || !d || !d.image) {
+      throw new Error((d && d.error) || ("Fehler " + r.status));
+    }
+    img.src = d.image;
+    if (save) save.href = d.image;
+    wrap.hidden = false;
+    st.textContent = "";
+    st.className = "dz-status";
+  } catch (e) {
+    st.textContent = "Cover-Bild fehlgeschlagen: " + (e.message || e);
+    st.className = "dz-status dz-status-error";
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function wireCover() {
+  const btn = document.getElementById("dz-genbild");
+  const again = document.getElementById("dz-cover-again");
+  if (btn) btn.addEventListener("click", generateCover);
+  if (again) again.addEventListener("click", generateCover);
+}
+
 function wireDownload() {
   const btn = document.getElementById("dz-download");
   if (!btn) return;
@@ -520,6 +580,7 @@ function init() {
   wireSource();
   wireSearch();
   wireDownload();
+  wireCover();
   loadOfferOptions();
   renderGroups(state.groups);   // Restore: zuletzt geladene Vorschläge
   renderBoard();                // Restore: Board aus sessionStorage

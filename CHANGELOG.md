@@ -5,6 +5,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/)
 ## [Unreleased]
 
 ### Hinzugefügt
+- **Designer Cover-Bild-Generator:** Button über dem Storyboard — Gemini-Bildprompt aus dem geparsten Angebot (Kunde + Gänge/Konzept) → 16:9-Cover mit Titel-Negativraum via bestehender /api/image (category=cover); PNG sichern + Neu generieren (#65)
 - **Designer Slot-Ansicht:** Vorschläge als nummerierte Slides in Deck-Reihenfolge (Cover → Crew → Gänge → Personal → Ausstattung → Wertschätzung → Kontakt), je Slot 2–3 Alternativen nebeneinander (+N weitere), Mehrfachauswahl; Board sortiert Slot-Karten automatisch in Deck-Reihenfolge ein (#64)
 
 ### Bugfixes
