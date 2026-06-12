@@ -24,6 +24,13 @@ _NPZ = os.path.join(_D, "pgbundle.npz")
 
 _BUNDLE = None
 
+# US-073 / FEATURE-013: Bild-Embedding-Bundle (imgbundle.npz). Optional —
+# fehlt es, fällt rank_mixed graceful auf text-only zurück. `np.load` auf
+# Bundles existiert weiterhin NUR in diesem Modul (ADR-003).
+_IMG_NPZ = os.path.join(_D, "imgbundle.npz")
+_IMG = None
+_IMG_LOADED = False
+
 
 def npz_path() -> str:
     return _NPZ
@@ -67,4 +74,67 @@ def rank(qv, idx=None, k=None) -> np.ndarray:
         return idx[:0]
     sim = E[idx] @ qv
     order = idx[np.argsort(-sim)]
+    return order if k is None else order[:k]
+
+
+def load_img():
+    """Lädt + cached das imgbundle (US-073). Gibt ein dict mit
+    `imgemb` (float32 N×768, L2-normiert, NaN-Zeile = Slide ohne
+    Foto-Vektor), `deck`, `page` zurück — oder None, wenn das Bundle
+    fehlt (graceful, EARS Nr. 3 IF-Klausel). EINZIGE np.load-Stelle für
+    imgbundle.npz (ADR-003, analog load())."""
+    global _IMG, _IMG_LOADED
+    if _IMG_LOADED:
+        return _IMG
+    _IMG_LOADED = True
+    if not os.path.isfile(_IMG_NPZ):
+        _IMG = None
+        return None
+    z = np.load(_IMG_NPZ, allow_pickle=True)
+    _IMG = {k: z[k] for k in z.files}
+    _IMG["imgemb"] = _IMG["imgemb"].astype(np.float32)
+    return _IMG
+
+
+def rank_mixed(qv, k=None, alpha=0.7) -> np.ndarray:
+    """Gemischtes ANN: score = alpha*text_sim + (1-alpha)*img_sim über
+    das globale Bundle. `qv` ist BEREITS normalisiert (normalize_query).
+
+    - imgbundle fehlt → graceful text-only (== rank(qv, None, k)).
+    - alpha == 1.0 → reine Text-Reihenfolge (img-Beitrag *0), == rank.
+    - Slides OHNE Foto-Vektor (NaN-Zeile im imgbundle bzw. nicht im
+      imgbundle enthalten) zählen NEUTRAL text-only: ihr Mischscore ist
+      alpha*text + (1-alpha)*text == text_sim, NICHT (1-alpha)*0
+      (Pitfall 4). Das hält sie auf ihrem Text-Rang statt sie wegen
+      fehlendem Foto künstlich nach hinten zu schieben.
+
+    imgemb wie text-emb L2-normiert (in embed_images erzeugt), die
+    Cosinus-Mischung ist damit auf gleicher Skala wie text_sim.
+    """
+    E = load()["_normemb"]
+    text_sim = E @ qv
+    img = load_img()
+    if img is None or alpha >= 1.0:
+        order = np.argsort(-text_sim)
+        return order if k is None else order[:k]
+    # img_sim je Bundle-Slide über (deck,page)-Join; Default = text_sim
+    # (neutral: Slides ohne Foto behalten ihren Text-Score).
+    img_sim = text_sim.copy()
+    b = load()
+    key2row = {}
+    idecks, ipages = img["deck"], img["page"]
+    iemb = img["imgemb"]
+    for r in range(len(idecks)):
+        vec = iemb[r]
+        if np.isnan(vec).any():          # Slide ohne Foto-Vektor
+            continue
+        key2row[(str(idecks[r]), int(ipages[r]))] = r
+    if key2row:
+        bd, bp = b["deck"], b["page"]
+        for i in range(len(text_sim)):
+            r = key2row.get((str(bd[i]), int(bp[i])))
+            if r is not None:
+                img_sim[i] = float(iemb[r] @ qv)
+    score = alpha * text_sim + (1.0 - alpha) * img_sim
+    order = np.argsort(-score)
     return order if k is None else order[:k]
