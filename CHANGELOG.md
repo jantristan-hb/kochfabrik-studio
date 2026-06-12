@@ -2,6 +2,16 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/)
 
+## [Sprint 15] — 2026-06-12 — CI/Delivery + Treue-Harness + Korpus-Batches
+
+### Hinzugefügt
+- **US-079/080: CI/Delivery (EPIC-008)** — GitHub-Actions-Pipeline (ruff + pytest + docker build, Ubuntu/Py3.12) auf PR und master; Branch-Protection mit Pflicht-Checks `ci` + `fidelity` (Admin-Bypass nur für Review-Docs, `docs/ops/DELIVERY-FLOW.md`)
+- **US-081–084: Render-Treue-Harness (EPIC-007 V1–V4)** — `fidelity.py` (Score aus Text/Geometrie/Font/Pixel), `fidelity_run` (Container-Harness, reproduzierbar ±0.005), eingefrorene Baseline (Ø total 0.612 — F-E-02 quantifiziert: font=0.0), Regressions-Gate als CI-Pflicht-Check (Beweis: künstliche Regression Δ0.098 gefangen); Schwellen-Vorlage für Jan (V5) im `FIDELITY-REPORT.md`
+- **US-078: Voll-Korpus-Batches** — 2376 textfreie Renders (201/201 Decks) aufs Prod-Volume gesynct; volles `imgbundle.npz` (2087 Slides/201 Decks) → bildbewusstes Ranking + Wizard-Notext-Stage prod-bereit
+
+### Geändert
+- **embed_images.py gehärtet** — Checkpoint alle 25 Slides (atomar) + Retry/Backoff bei 429/5xx, nach realem Gemini-503-Abbruch mit 1043 verlorenen Vision-Calls
+
 ## [Sprint 14] — 2026-06-12 — Präsentations-Wizard
 
 ### Hinzugefügt
