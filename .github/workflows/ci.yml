@@ -1,0 +1,37 @@
+name: CI
+
+# FEATURE-009 §4: Pipeline laeuft auf jedem PR und bei Push auf master.
+# EARS §8 Nr. 2: WHEN die Pipeline auf master/PR laeuft THE SYSTEM SHALL gruen sein.
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Container-Paritaet: Dockerfile nutzt python:3.12-slim.
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest httpx ruff
+
+      # Nur fatale Lint-Klassen (Syntax/undefined names) — Baseline ist sauber.
+      - name: Lint (ruff)
+        run: ruff check --select E9,F63,F7,F82 backend engine/scripts
+
+      - name: Tests (pytest)
+        run: pytest backend/tests -q
+
+      # Image-Build verifiziert Engine-Runtime (LibreOffice/poppler/node).
+      # Ohne Layer-Cache ~3-5 min (akzeptiert, FEATURE-009 §12 Nr. 3).
+      - name: Docker build
+        run: docker build -t kf-studio-sim .
