@@ -2,6 +2,16 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/)
 
+## [Sprint 14] — 2026-06-12 — Präsentations-Wizard
+
+### Hinzugefügt
+- **US-074/075: Wizard** — geführter Default-Einstieg `web/wizard.html`: Angebot wählen → ein Schritt pro Slide (Deck-Reihenfolge), 3–4 Alternativen mit Top-Kandidat vorausgewählt, Cover-Schritt mit ✨-Bild-Generieren; Session-persistent mit Zurück/Weiter
+- **US-076: Overlay-Editor** — gewählte Slide groß auf textfreiem Render, Texte direkt auf der Folie editierbar (vorbefüllt aus dem Angebot), ✦ Formulieren im KOCHfabrik-Ton mit Undo, 🖼 Bild generieren je Bild-Element (positionsgenaues Overlay)
+- **US-077: Filmstreifen + Download** — Abschluss-Übersicht und PPTX mit allen Text- und Bild-Overrides; E2E-bewiesen (Override-Text im Slide-XML, Bild in ppt/media)
+- **US-069: Textfreie Korpus-Renders** — `render_notext.py` (deterministischer Element-Filter, Container-Render), `preview_notext/`-Artefakte + Voll-Korpus-Runbook
+- **US-073: Bildbewusstes Ranking** — `imgbundle.npz` (Gemini-Vision-Beschreibungen → Embeddings im pgbundle-Raum) + `bundle.rank_mixed` (Score-Mix, graceful Fallback)
+- **US-070/071/072: Overlay-Backend** — Element-Geometrie-API (meta/Stil/Bilder/Notext-URL), Bild-Overrides im Download (Cache-sicher via `shared/_overrides/`), `POST /api/designer/formulate` (markengerechte Umformulierung, DNA-Tonanker) + Ranking-Mix-Wiring (`KF_RANK_ALPHA`)
+
 ## [Unreleased]
 
 ### Hinzugefügt
