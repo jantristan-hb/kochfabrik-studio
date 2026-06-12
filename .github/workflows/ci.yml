@@ -35,3 +35,31 @@ jobs:
       # Ohne Layer-Cache ~3-5 min (akzeptiert, FEATURE-009 §12 Nr. 3).
       - name: Docker build
         run: docker build -t kf-studio-sim .
+
+  # FEATURE-016 §8 Nr. 3: Treue-Regressions-Gate (US-084). Eigener Pflicht-Check
+  # neben `ci` — blockiert einen PR mit verschlechterter Render-Treue. Braucht das
+  # kf-studio-sim-Image (node + soffice); fitz stellt der Harness on-demand im
+  # Container bereit (Tooling-Split — fitz bleibt aus dem Runtime-Image).
+  fidelity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test deps
+        run: pip install pytest httpx
+
+      # Render-/Mess-Pipeline läuft im Container — Image VOR dem Gate-Lauf bauen,
+      # sonst skippen die docker-gated Tests (Image fehlt).
+      - name: Docker build (kf-studio-sim)
+        run: docker build -t kf-studio-sim .
+
+      # Nur die mit @pytest.mark.fidelity markierten Gate-Tests: frischer Render
+      # vs. docs/sprint-15/fidelity_baseline.json (Regression > 0.02 je Slide = rot).
+      - name: Treue-Gate (pytest -m fidelity)
+        run: pytest backend/tests/test_sprint15_fidelity.py -m fidelity -q

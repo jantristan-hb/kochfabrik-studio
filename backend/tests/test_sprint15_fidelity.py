@@ -263,3 +263,115 @@ def test_fidelity_run_reproduzierbar():
         sb = scores_b[page]
         for k in ("text", "geometry", "font", "pixel", "total"):
             assert abs(sa[k] - sb[k]) <= 0.005, (page, k, sa[k], sb[k])
+
+
+# ---------------------------------------------------------------------------
+# US-084: Regressions-Gate (FEATURE-016 §8 Nr. 3 + FEATURE-009 §8 Nr. 3)
+#
+# Das Gate vergleicht einen frischen Render gegen die eingefrorene Baseline
+# (docs/sprint-15/fidelity_baseline.json). Ein Slide gilt als Regression, wenn
+# baseline_total − neu_total > GATE_TOLERANZ. Schwellen-Vorschlag aus US-083
+# (begründet über die ±0.005-Repro-Toleranz aus US-082).
+#
+# Der `fidelity`-Marker macht das Gate als eigenen CI-Job adressierbar
+# (`pytest -m fidelity`). Beide Tests docker-gated (skippen ohne docker).
+# ---------------------------------------------------------------------------
+BASELINE_JSON = REPO_ROOT / "docs" / "sprint-15" / "fidelity_baseline.json"
+GATE_TOLERANZ = 0.02  # absolut je Slide gegen Baseline-total (US-083 §4)
+
+
+def _load_baseline_totals() -> dict:
+    data = json.loads(BASELINE_JSON.read_text(encoding="utf-8"))
+    return {s["page"]: s["scores"]["total"] for s in data["slides"]}
+
+
+def _regressions(baseline_totals: dict, run_slides: list) -> list:
+    """Liste (page, baseline, neu, delta) der Slides, die das Gate verletzen."""
+    bad = []
+    for slide in run_slides:
+        page = slide["page"]
+        if page not in baseline_totals:
+            continue
+        base = baseline_totals[page]
+        neu = slide["scores"]["total"]
+        if base - neu > GATE_TOLERANZ:
+            bad.append((page, base, neu, base - neu))
+    return bad
+
+
+@pytest.mark.fidelity
+@docker_gate
+def test_fidelity_gate():
+    """EARS §8 Nr. 3a: unveränderter Stand ist grün (keine Regression > Toleranz)."""
+    baseline = _load_baseline_totals()
+    assert baseline, "Baseline leer"
+    rep = _run_in_container(["--deck", SAMPLE_DECK])
+    run_pages = {s["page"] for s in rep["slides"]}
+    assert set(baseline) <= run_pages, (
+        f"Lauf deckt nicht alle Baseline-Seiten: baseline={set(baseline)} run={run_pages}"
+    )
+    bad = _regressions(baseline, rep["slides"])
+    assert not bad, f"unerwartete Regression(en) > {GATE_TOLERANZ}: {bad}"
+
+
+def _run_manipulated_in_container() -> dict:
+    """Rendert das Sample mit halbierten Text-Größen IM Container und liefert
+    den Report. Manipulation passiert auf einer Kopie des Decks unter /tmp —
+    der read-only Cache (engine/data) wird NIE beschrieben."""
+    script = (
+        "import json, os, shutil, sys, tempfile\n"
+        "sys.path.insert(0, 'engine/tooling'); sys.path.insert(0, 'engine/scripts')\n"
+        "import fidelity_run as fr\n"
+        "fr.ensure_fitz()\n"
+        "fid = fr._load_fidelity()\n"
+        f"deck = {SAMPLE_DECK!r}\n"
+        "src = os.path.join(fr.CACHE, deck)\n"
+        "tmp_cache = tempfile.mkdtemp(prefix='gate_cache_')\n"
+        "dst = os.path.join(tmp_cache, deck)\n"
+        # ref.pdf + assets als Symlink (read-only reicht), elements.json als Kopie
+        "shutil.copytree(src, dst, symlinks=True)\n"
+        "el_path = os.path.join(dst, 'elements.json')\n"
+        "el = json.load(open(el_path))\n"
+        "for k, seq in el.items():\n"
+        "    if k == '_meta':\n"
+        "        continue\n"
+        "    for e in seq:\n"
+        "        if e.get('t') == 'text':\n"
+        "            for ln in e.get('lines', []):\n"
+        "                if 'size' in ln:\n"
+        "                    ln['size'] = round(float(ln['size']) * 0.5, 2)\n"
+        "json.dump(el, open(el_path, 'w'))\n"
+        # CACHE auf das manipulierte Temp-Cache umbiegen, dann run_deck
+        "fr.CACHE = tmp_cache\n"
+        "slides, errs = fr.run_deck(deck, fid)\n"
+        "print(json.dumps({'slides': slides, 'errors': errs}))\n"
+    )
+    proc = subprocess.run(
+        [
+            "docker", "run", "--rm",
+            "-v", f"{REPO_ROOT}/engine/data:/app/engine/data",
+            "-v", f"{REPO_ROOT}/engine/tooling:/app/engine/tooling",
+            "kf-studio-sim",
+            "python3", "-c", script,
+        ],
+        capture_output=True,
+        text=True,
+        timeout=600,
+    )
+    assert proc.returncode == 0, f"stdout={proc.stdout}\nstderr={proc.stderr}"
+    return json.loads(proc.stdout.strip().splitlines()[-1])
+
+
+@pytest.mark.fidelity
+@docker_gate
+def test_gate_catches_regression():
+    """EARS §8 Nr. 3b: künstliche Regression (Text-Größen ×0.5) MUSS das Gate
+    verletzen — der Beweis, dass das Gate beißt."""
+    baseline = _load_baseline_totals()
+    rep = _run_manipulated_in_container()
+    assert rep["slides"], f"kein Slide gerendert: {rep}"
+    bad = _regressions(baseline, rep["slides"])
+    assert bad, (
+        "Gate hat die künstliche Regression NICHT gefangen — "
+        f"manipulierte Scores: {[(s['page'], s['scores']['total']) for s in rep['slides']]}"
+    )
