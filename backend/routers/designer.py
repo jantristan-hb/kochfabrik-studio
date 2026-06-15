@@ -83,8 +83,29 @@ def _guard():
     return None
 
 
+def _offer_meta(src: str) -> tuple:
+    """Veranstaltungsanlass + -ort aus md/PDF (Cover-Prompt-Quelle, #95).
+    Additiv — der Anlass ist der bessere Cover-Aufhänger als die Gänge."""
+    import re
+    import subprocess
+    try:
+        if src.lower().endswith(".pdf"):
+            txt = subprocess.run(["pdftotext", "-layout", src, "-"],
+                                 capture_output=True, text=True).stdout
+        else:
+            with open(src, encoding="utf-8") as fh:
+                txt = fh.read()
+    except Exception:                                           # noqa
+        return "", ""
+
+    def grab(label):
+        m = re.search(label + r"\s*:?\s*(.+)", txt)
+        return m.group(1).strip() if m else ""
+    return grab("Veranstaltungsanlass"), grab("Veranstaltungsort")
+
+
 def _parse_offer_md(offer_md: str) -> dict:
-    """Offer-md → {kunde, datum, gaenge[]} via Engine-Parser
+    """Offer-md → {kunde, datum, anlass, ort, gaenge[]} via Engine-Parser
     (parse_header + parse_offer_dishes). Schreibt das md in eine
     Tempdatei (Parser nehmen Pfade, kein String — Muster
     praesentation._assemble_md)."""
@@ -96,11 +117,13 @@ def _parse_offer_md(offer_md: str) -> dict:
     with open(src, "w", encoding="utf-8") as fh:
         fh.write(offer_md)
     kunde, datum = assemble.parse_header(src, offer="Angebot")
+    anlass, ort = _offer_meta(src)
     dishes = compose_offer.parse_offer_dishes(src, offer="Angebot")
     gaenge = [{"label": course,
                "dishes": [{"name": n, "desc": de} for n, de in items]}
               for course, items in dishes]
-    return {"kunde": kunde, "datum": datum, "gaenge": gaenge}
+    return {"kunde": kunde, "datum": datum, "anlass": anlass,
+            "ort": ort, "gaenge": gaenge}
 
 
 async def _load_offer_md(owner: str, offer_id: int) -> str | None:
@@ -318,12 +341,14 @@ async def designer_suggest(request: Request):
             import assemble
             import compose_offer
             kunde, datum = assemble.parse_header(src)
+            anlass, ort = _offer_meta(src)
             dishes = compose_offer.parse_offer_dishes(src)
             gaenge = [{"label": c,
                        "dishes": [{"name": n, "desc": de}
                                   for n, de in items]}
                       for c, items in dishes]
-            offer = {"kunde": kunde, "datum": datum, "gaenge": gaenge}
+            offer = {"kunde": kunde, "datum": datum, "anlass": anlass,
+                     "ort": ort, "gaenge": gaenge}
             if not gaenge:
                 # Pauschal-Angebot ohne Menü-Gänge (#62) → Konzept-Text
                 # als Fallback-Query (Speisen-Positionen + Konzept).

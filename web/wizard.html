@@ -54,22 +54,31 @@
   .wz-bg{width:100%;height:auto;display:block}
   .wz-notext-badge{position:absolute;top:8px;left:8px;z-index:5;
     background:rgba(168,50,75,.92);color:#fff;font-size:.7rem;padding:4px 8px;border-radius:6px}
-  /* Text-Overlay: absolut in % positioniert, editierbar. */
-  .wz-tov{position:absolute;display:flex;align-items:flex-start}
+  /* Text-Overlay: absolut in % positioniert, editierbar.
+     #95: z-index 4 (über den Bild-Overlays) + Ruhe-Affordanz (immer
+     sichtbarer Rahmen + Tint + Textschatten), sonst war der Editor
+     unsichtbar bzw. von den Bild-Boxen überdeckt. */
+  .wz-tov{position:absolute;display:flex;align-items:flex-start;z-index:4}
   .wz-ted{width:100%;height:100%;outline:none;line-height:1.05;overflow:hidden;
-    white-space:pre-wrap;cursor:text}
-  .wz-tov:hover{outline:1px dashed var(--gold-soft)}
-  .wz-tov:focus-within{outline:1.5px solid var(--gold)}
-  .wz-tov-tools{position:absolute;top:-13px;right:-6px;display:none;z-index:6}
+    white-space:pre-wrap;cursor:text;border:1px dashed rgba(201,162,39,.55);
+    background:rgba(0,0,0,.14);border-radius:3px;
+    text-shadow:0 1px 2px rgba(0,0,0,.55)}
+  .wz-tov:hover .wz-ted{border-color:var(--gold-soft)}
+  .wz-tov:focus-within .wz-ted{border:1.5px solid var(--gold);background:rgba(0,0,0,.22)}
+  .wz-tov-tools{position:absolute;top:-13px;right:-6px;display:none;z-index:7}
   .wz-tov:hover .wz-tov-tools,.wz-tov:focus-within .wz-tov-tools{display:block}
   .wz-tov-btn{border:1px solid var(--gold);background:var(--panel);color:var(--gold-deep);
     border-radius:6px;width:22px;height:22px;cursor:pointer;font-size:.78rem;line-height:1;padding:0}
-  /* Bild-Overlay: positionierter Rahmen + Generieren-Button. */
-  .wz-iov{position:absolute;border:1px dashed var(--gold-soft);box-sizing:border-box}
+  /* Bild-Overlay: positionierter Rahmen + Generieren-Button.
+     #95: z-index 2 (unter Textfeldern) + pointer-events:none, damit die
+     vollflächige Cover-Bildbox die Textfelder nicht mehr abdeckt/Klicks
+     schluckt; nur der Generieren-Button bleibt klickbar. */
+  .wz-iov{position:absolute;border:1px dashed var(--gold-soft);box-sizing:border-box;
+    z-index:2;pointer-events:none}
   .wz-iov-img{width:100%;height:100%;object-fit:cover;display:block}
   .wz-iov-btn{position:absolute;bottom:4px;right:4px;border:1px solid var(--gold);
     background:var(--panel);border-radius:6px;width:26px;height:26px;cursor:pointer;
-    font-size:.85rem;line-height:1;padding:0;z-index:6}
+    font-size:.85rem;line-height:1;padding:0;z-index:6;pointer-events:auto}
   .wz-undo{border:1px solid var(--gold-soft);background:none;color:var(--gold-deep);
     border-radius:6px;padding:2px 8px;cursor:pointer;font:inherit;font-size:.8rem;margin-left:6px}
 

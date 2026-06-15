@@ -1,4 +1,8 @@
-fastapi>=0.110
+# fastapi/starlette exakt gepinnt (#95): neuere Starlette ändert die
+# app.routes-Struktur (_IncludedRouter ohne .path) → bricht die Routen-
+# Introspektionstests (sprint2/3/12). Auf die lokal+CI-grüne Kombi pinnen.
+fastapi==0.136.3
+starlette==1.2.1
 uvicorn[standard]>=0.27
 pydantic>=2
 anthropic>=0.40
