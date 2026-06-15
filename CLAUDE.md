@@ -75,6 +75,7 @@ curl "https://coolify.flinkbase.com/api/v1/deploy?uuid=yu2fqx0twmtqcp6zyx2e59si&
 ```
 
 Ablauf + Rollback: `docs/sprint-11/CUTOVER-RUNBOOK.md`.
+Gesamter Auslieferungs-Pfad (PR → CI → Merge → Deploy → LIVE_DEEP) + Branch-Protection/Admin-Bypass: `docs/ops/DELIVERY-FLOW.md`.
 
 ### Backup / Restore
 
