@@ -452,7 +452,15 @@ function renderStageOverlay(stage, group, cand, slide) {
     ed.className = "wz-ted";
     ed.contentEditable = "plaintext-only";
     ed.dataset.idx = t.i;
-    ed.textContent = fieldValue(slide, t.i);
+    const val = fieldValue(slide, t.i);
+    ed.textContent = val;
+    // #95: Angebots-Suggestion sofort committen — sonst wird sie nur
+    // angezeigt, landet aber nie im Download (PPTX behielt den Originaltext).
+    const k0 = _slideKey(cand.deck, cand.page);
+    const hasOv = state.textOverrides[k0] && state.textOverrides[k0][t.i] != null;
+    if (!hasOv && val !== t.text) {
+      setTextOverride(cand.deck, cand.page, t.i, val);
+    }
     // Pitfall 2: plain-text erzwingen — paste-Strip, Enter = \n.
     ed.addEventListener("paste", (e) => {
       e.preventDefault();
@@ -551,15 +559,19 @@ function largestImageIdx(slide) {
 }
 
 function coverPrompt() {
-  // Prompt aus Angebots-Kontext (Muster designer.js coverPrompt).
+  // #95: Cover = atmosphärischer TITEL-Hintergrund, NICHT die Speisen.
+  // Früher hängten wir die Gang-Labels an → Gemini machte ein Essensbild
+  // trotz background-Scaffold. Jetzt Anlass/Location/Stimmung als
+  // Aufhänger, Speisen bleiben draußen.
   const o = state.offer || {};
-  const labels = (state.groups || [])
-    .filter((g) => g.kind === "gang" || g.kind === "konzept")
-    .map((g) => g.label);
-  const parts = ["Catering-Event"];
-  if (o.kunde) parts.push("für " + o.kunde);
-  if (labels.length) parts.push("Menü/Konzept: " + labels.join(", "));
-  return parts.join(" ");
+  const parts = ["Stimmungsvoller, atmosphärischer Veranstaltungs-Hintergrund "
+    + "für ein gehobenes Catering-Event"];
+  if (o.anlass) parts.push("Anlass: " + o.anlass);
+  else if (o.kunde) parts.push("Kunde: " + o.kunde);
+  if (o.ort) parts.push("Location: " + o.ort);
+  parts.push("elegante Eventstimmung, viel ruhiger Negativraum oben "
+    + "für einen Titel, kein Speisen-Close-up");
+  return parts.join(", ");
 }
 
 // Food-Prompt eines Gang-/Gericht-Schritts (US-076 Bild-Element).
