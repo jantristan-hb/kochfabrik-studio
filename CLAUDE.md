@@ -1,6 +1,6 @@
 # CLAUDE.md — kochfabrik-studio
 
-> Projekt-Kontext für Claude-Agents. Stand: Sprint 14 DONE (2026-06-12). Dieses
+> Projekt-Kontext für Claude-Agents. Stand: Sprint 15 DONE (2026-06-15). Dieses
 > File ist die erste Anlaufstelle für jeden neuen Agent.
 
 ## Session-Start
@@ -11,7 +11,7 @@ Vor jeder Arbeit in dieser Reihenfolge lesen:
 2. **PROGRESS.md** — Status, Sprint-Tabelle, aktueller Zustand
 3. **REQUIREMENTS.md** — Produkt-These + Anforderungen (informelle SoT)
 4. **docs/epics/README.md** — Roadmap + Work-Packages (EPIC-001…010)
-5. **docs/sprint-14/** — letzter Sprint: `USER-STORIES.md`, `EXECUTE.md`,
+5. **docs/sprint-15/** — letzter Sprint: `USER-STORIES.md`, `EXECUTE.md`,
    `TRACEABILITY.md`, die FEATURE-Specs (EARS/Pitfalls/Boundaries)
 
 ## Tech Stack
@@ -135,3 +135,4 @@ gepusht sind.
 | 12 | EPIC-004-Abschluss M4–M7 + EPIC-009 (Router-Split, Bundle-Schicht, Tooling-Split, Alembic, Backup) | DONE (2026-06-11) |
 | 13 | EPIC-006 Präsentationsdesigner (Suggest-API, Builder-UI, Storyboard, Download, LIVE_DEEP) | DONE (2026-06-11) |
 | 14 | Präsentations-Wizard (Schritt pro Slide, Overlay-Editing, rank_mixed, Bild-Overrides, Formulieren) | DONE (2026-06-12) |
+| 15 | CI/Delivery (GitHub Actions, Branch-Protection) + Treue-Harness (fidelity, Baseline, Gate) + Korpus-Batches + Wizard-Bugfix #95 | DONE (2026-06-15) |

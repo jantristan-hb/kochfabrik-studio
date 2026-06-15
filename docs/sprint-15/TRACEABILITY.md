@@ -61,3 +61,11 @@
 | R-IDs | 10 | 10 | R-FID-5-Abnahme |
 | Carry-Over-Items | 4 | 2 | 2 (Vertrag-Rest → S16, Alt-Ordner) |
 | Epic-Kriterien | 8 | 7 | 1 (V5) |
+
+## Erfüllungs-Stand (Review 2026-06-15)
+
+7/7 DONE (PRs #91–#94, Wizard-Bugfix #96). EPIC-008 (C1–C3) + EPIC-007
+(V1–V4) erfüllt; V5 (Schwellen-Abnahme) offen = Jan. CI live + Branch-
+Protection (ci+fidelity) auf master, Treue-Baseline eingefroren,
+Voll-Korpus-Batches deployt. Beifang-Fixes: fastapi-Pin (CI-Drift),
+Wizard-Editor (#95). master deployt + LIVE_DEEP grün.

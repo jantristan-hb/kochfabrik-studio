@@ -1,8 +1,9 @@
 ---
 id: EPIC-008
 title: "CI/Delivery: Tests + Treue-Gate vor jedem Merge"
-status: IN_PROGRESS
+status: DONE
 created: 2026-06-09
+completed: 2026-06-15
 project: kochfabrik-studio
 sprints: [15]
 ---

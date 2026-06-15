@@ -143,3 +143,11 @@ Vertrag 2026-001 §3.2: 3 weitere Punkte geschlossen — offen bleiben
 Dialog-Nachbearbeitung, DNA-Doku, Font-Treue (EPIC-005). Offen:
 EPIC-007/008 (S15, Seed docs/sprint-15/), EPIC-005 (S16), EPIC-010
 (S17); Voll-Korpus-Batches als Betriebs-Schritt.
+
+## Erfüllungs-Stand Sprint 15 (Review 2026-06-15)
+
+EPIC-008 DONE (CI-Pipeline, Branch-Protection, Delivery-Flow) · EPIC-007
+DONE (Treue-Metrik/Harness/Baseline/Gate; V5-Schwellen = Jan offen).
+R-CI-1/2/3 + R-FID-1/2/3/4 erfüllt, R-FID-5 offen. Voll-Korpus-Batches
+(R-DECK-4/R-NF-3). Offen: EPIC-005 (Font-Treue, S16), EPIC-010 (Security),
+Vertrag-Rest §3.2 (Dialog-Edit, DNA-Doku).

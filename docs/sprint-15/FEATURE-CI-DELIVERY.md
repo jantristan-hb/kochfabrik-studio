@@ -1,6 +1,6 @@
 ---
 key: KOCHFABRIK-FEATURE-009
-status: approved
+status: implemented
 title: "CI/Delivery: GitHub Actions, Branch-Protection, Treue-Gate-Verdrahtung"
 created: 2026-06-11
 project: kochfabrik

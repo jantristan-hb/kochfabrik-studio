@@ -1,6 +1,6 @@
 ---
 key: KOCHFABRIK-FEATURE-016
-status: approved
+status: implemented
 title: "Render-Treue-Harness: Metrik, Korpus-Lauf, Baseline, Regressions-Gate"
 created: 2026-06-12
 project: kochfabrik
