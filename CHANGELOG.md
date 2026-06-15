@@ -2,6 +2,11 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/)
 
+## [Unreleased]
+
+### Behoben
+- **Wizard-Editor (#95)** — vier Prod-Defekte des Präsentations-Wizards: (1) Angebots-Texte landen jetzt im Download statt nur angezeigt zu werden (Auto-Override wird committet) — die PPTX trägt nicht mehr den Originaltext (z.B. „BECHTLE"); (2) Textfelder liegen über den Bild-Overlays und sind sichtbar/klickbar (z-index + pointer-events); (3) generiertes Cover wird in der Stage angezeigt; (4) Cover-Prompt nutzt Veranstaltungsanlass + Location statt der Gänge → atmosphärischer Titelhintergrund statt Essensbild
+
 ## [Sprint 15] — 2026-06-12 — CI/Delivery + Treue-Harness + Korpus-Batches
 
 ### Hinzugefügt
