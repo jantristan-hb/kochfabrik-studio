@@ -1,0 +1,98 @@
+{
+  "metrik_version": "1.0",
+  "fitz_version": "1.27.2.3",
+  "decks": [
+    "10-182-raumkarussell-gmbh-12-09-2026"
+  ],
+  "slides": [
+    {
+      "deck": "10-182-raumkarussell-gmbh-12-09-2026",
+      "page": 1,
+      "scores": {
+        "text": 1.0,
+        "geometry": 0.518738,
+        "font": 0.0,
+        "pixel": 0.991451,
+        "total": 0.628402
+      }
+    },
+    {
+      "deck": "10-182-raumkarussell-gmbh-12-09-2026",
+      "page": 2,
+      "scores": {
+        "text": 1.0,
+        "geometry": 0.462545,
+        "font": 0.0,
+        "pixel": 0.991665,
+        "total": 0.614386
+      }
+    },
+    {
+      "deck": "10-182-raumkarussell-gmbh-12-09-2026",
+      "page": 3,
+      "scores": {
+        "text": 1.0,
+        "geometry": 0.487869,
+        "font": 0.0,
+        "pixel": 0.989533,
+        "total": 0.620397
+      }
+    },
+    {
+      "deck": "10-182-raumkarussell-gmbh-12-09-2026",
+      "page": 4,
+      "scores": {
+        "text": 1.0,
+        "geometry": 0.530189,
+        "font": 0.0,
+        "pixel": 0.996996,
+        "total": 0.632097
+      }
+    },
+    {
+      "deck": "10-182-raumkarussell-gmbh-12-09-2026",
+      "page": 5,
+      "scores": {
+        "text": 1.0,
+        "geometry": 0.508716,
+        "font": 0.0,
+        "pixel": 0.997244,
+        "total": 0.626766
+      }
+    },
+    {
+      "deck": "10-182-raumkarussell-gmbh-12-09-2026",
+      "page": 6,
+      "scores": {
+        "text": 1.0,
+        "geometry": 0.343898,
+        "font": 0.0,
+        "pixel": 0.94016,
+        "total": 0.576999
+      }
+    },
+    {
+      "deck": "10-182-raumkarussell-gmbh-12-09-2026",
+      "page": 7,
+      "scores": {
+        "text": 1.0,
+        "geometry": 0.351534,
+        "font": 0.0,
+        "pixel": 0.94897,
+        "total": 0.580229
+      }
+    },
+    {
+      "deck": "10-182-raumkarussell-gmbh-12-09-2026",
+      "page": 8,
+      "scores": {
+        "text": 1.0,
+        "geometry": 0.48474,
+        "font": 0.0,
+        "pixel": 0.990063,
+        "total": 0.619694
+      }
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,65 @@
+name: CI
+
+# FEATURE-009 §4: Pipeline laeuft auf jedem PR und bei Push auf master.
+# EARS §8 Nr. 2: WHEN die Pipeline auf master/PR laeuft THE SYSTEM SHALL gruen sein.
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Container-Paritaet: Dockerfile nutzt python:3.12-slim.
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest httpx ruff
+
+      # Nur fatale Lint-Klassen (Syntax/undefined names) — Baseline ist sauber.
+      - name: Lint (ruff)
+        run: ruff check --select E9,F63,F7,F82 backend engine/scripts
+
+      - name: Tests (pytest)
+        run: pytest backend/tests -q
+
+      # Image-Build verifiziert Engine-Runtime (LibreOffice/poppler/node).
+      # Ohne Layer-Cache ~3-5 min (akzeptiert, FEATURE-009 §12 Nr. 3).
+      - name: Docker build
+        run: docker build -t kf-studio-sim .
+
+  # FEATURE-016 §8 Nr. 3: Treue-Regressions-Gate (US-084). Eigener Pflicht-Check
+  # neben `ci` — blockiert einen PR mit verschlechterter Render-Treue. Braucht das
+  # kf-studio-sim-Image (node + soffice); fitz stellt der Harness on-demand im
+  # Container bereit (Tooling-Split — fitz bleibt aus dem Runtime-Image).
+  fidelity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test deps
+        run: pip install pytest httpx
+
+      # Render-/Mess-Pipeline läuft im Container — Image VOR dem Gate-Lauf bauen,
+      # sonst skippen die docker-gated Tests (Image fehlt).
+      - name: Docker build (kf-studio-sim)
+        run: docker build -t kf-studio-sim .
+
+      # Nur die mit @pytest.mark.fidelity markierten Gate-Tests: frischer Render
+      # vs. docs/sprint-15/fidelity_baseline.json (Regression > 0.02 je Slide = rot).
+      - name: Treue-Gate (pytest -m fidelity)
+        run: pytest backend/tests/test_sprint15_fidelity.py -m fidelity -q
