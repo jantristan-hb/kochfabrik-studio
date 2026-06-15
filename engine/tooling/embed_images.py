@@ -147,6 +147,22 @@ def _load_existing(out_path):
     return rows
 
 
+def _write(out_path, merged):
+    """Atomar schreiben (tmp + rename) — Checkpoint-sicher."""
+    keys = sorted(merged.keys())
+    tmp = out_path + ".tmp"
+    np.savez(
+        tmp,
+        deck=np.array([k[0] for k in keys], dtype=object),
+        page=np.array([k[1] for k in keys], dtype=np.int64),
+        imgemb=np.stack([merged[k]["imgemb"] for k in keys]).astype(
+            np.float32),
+        desc=np.array([merged[k]["desc"] for k in keys], dtype=object),
+    )
+    os.replace(tmp + ".npz" if os.path.exists(tmp + ".npz") else tmp,
+               out_path)
+
+
 def run(out_path=_OUT, decks=None, limit=None, force=False, key=None):
     """Sammelt image-Slides, beschreibt + embedet die neuen (oder alle bei
     --force) und schreibt imgbundle.npz. Gibt die Gesamtzahl der Einträge
@@ -160,33 +176,62 @@ def run(out_path=_OUT, decks=None, limit=None, force=False, key=None):
     if limit is not None:
         todo = todo[:limit]
 
+    # Betriebs-Härtung (US-078): Checkpoint alle CHUNK Slides + Retry bei
+    # transienten API-Fehlern — ein 503 mitten im Voll-Lauf darf nicht
+    # Stunden an Vision-Calls verwerfen (real passiert 2026-06-12).
+    CHUNK = 25
     new_rows = {}
-    if todo:
-        descs = []
-        for deck, page, png in todo:
-            desc = describe_image(png, key)
-            descs.append(desc)
-            print(f"  vision {deck}:{page} → {desc[:60]!r}", file=sys.stderr)
-        emb = np.asarray(embed(descs), dtype=np.float32)
-        emb = emb / (np.linalg.norm(emb, axis=1, keepdims=True) + 1e-9)
-        for (deck, page, _png), e, d in zip(todo, emb, descs):
-            new_rows[(deck, page)] = {"imgemb": e, "desc": d}
-
     merged = dict(existing)
-    merged.update(new_rows)
+
+    def _describe_retry(png, key, tries=(10, 30, 60)):
+        import time
+        import urllib.error
+        for i, wait in enumerate((0,) + tries):
+            if wait:
+                time.sleep(wait)
+            try:
+                return describe_image(png, key)
+            except urllib.error.HTTPError as e:                     # noqa
+                if e.code not in (429, 500, 502, 503, 504) or i == len(tries):
+                    raise
+                print(f"  retry {i+1} nach HTTP {e.code} …",
+                      file=sys.stderr)
+        return None
+
+    def _flush(rows):
+        if not rows:
+            return
+        emb = np.asarray(embed([r["desc"] for r in rows]),
+                         dtype=np.float32)
+        emb = emb / (np.linalg.norm(emb, axis=1, keepdims=True) + 1e-9)
+        for r, e in zip(rows, emb):
+            merged[(r["deck"], r["page"])] = {"imgemb": e,
+                                              "desc": r["desc"]}
+            new_rows[(r["deck"], r["page"])] = True
+        _write(out_path, merged)
+        print(f"  checkpoint: {len(merged)} Slides gesichert",
+              file=sys.stderr)
+
+    if todo:
+        pending = []
+        for deck, page, png in todo:
+            try:
+                desc = _describe_retry(png, key)
+            except Exception as e:                                  # noqa
+                print(f"  SKIP {deck}:{page} — {e}", file=sys.stderr)
+                continue
+            pending.append({"deck": deck, "page": page, "desc": desc})
+            print(f"  vision {deck}:{page} → {desc[:60]!r}",
+                  file=sys.stderr)
+            if len(pending) >= CHUNK:
+                _flush(pending)
+                pending = []
+        _flush(pending)
     if not merged:
         print("Keine image-Slides gefunden.", file=sys.stderr)
         return 0
 
-    keys = sorted(merged.keys())
-    np.savez(
-        out_path,
-        deck=np.array([k[0] for k in keys], dtype=object),
-        page=np.array([k[1] for k in keys], dtype=np.int64),
-        imgemb=np.stack([merged[k]["imgemb"] for k in keys]).astype(
-            np.float32),
-        desc=np.array([merged[k]["desc"] for k in keys], dtype=object),
-    )
+    _write(out_path, merged)
     print(f"imgbundle.npz: {len(merged)} Slides "
           f"(+{len(new_rows)} neu) → {out_path}", file=sys.stderr)
     return len(merged)
