@@ -49,6 +49,22 @@
     background:var(--gold-tint-2);min-height:280px;position:relative;overflow:hidden;
     display:flex;align-items:center;justify-content:center}
   .wz-stage-empty{color:var(--ink-soft);font-size:.9rem;padding:40px}
+  /* #95: sichtbare Feldliste = der eigentliche Editor (unter der Vorschau). */
+  .wz-fields{margin-top:14px;display:flex;flex-direction:column;gap:10px}
+  .wz-fields-h{font-weight:600;font-size:.85rem;color:var(--ink-soft);
+    text-transform:uppercase;letter-spacing:.04em}
+  .wz-field{display:flex;flex-direction:column;gap:4px;border:1px solid var(--line);
+    border-radius:var(--radius);padding:8px 10px;background:var(--panel)}
+  .wz-field-lab{font-size:.72rem;color:var(--ink-soft)}
+  .wz-field-in{width:100%;font:inherit;font-size:.95rem;padding:6px 8px;
+    border:1px solid var(--gold-soft);border-radius:6px;resize:vertical;
+    background:#fff;color:var(--ink)}
+  .wz-field-in:focus{outline:none;border-color:var(--gold);
+    box-shadow:0 0 0 2px var(--gold-tint-2)}
+  .wz-field-tools{display:flex;justify-content:flex-end}
+  .wz-field-fmt{border:1px solid var(--gold);background:var(--panel);
+    color:var(--gold-deep);border-radius:6px;padding:3px 10px;cursor:pointer;
+    font-size:.8rem}
   /* Overlay-Frame: hält das Slide-Seitenverhältnis (aspect-ratio aus w_pt/h_pt). */
   .wz-frame{position:relative;width:100%;max-width:100%;background:var(--panel)}
   .wz-bg{width:100%;height:auto;display:block}
@@ -194,6 +210,6 @@
     </div>
   </main>
 </div>
-<script src="assets/wizard.js" type="module"></script>
+<script src="assets/wizard.js?v=95b" type="module"></script>
 </body>
 </html>

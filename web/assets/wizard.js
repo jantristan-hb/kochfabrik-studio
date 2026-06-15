@@ -434,7 +434,12 @@ function renderStageOverlay(stage, group, cand, slide) {
   });
   frame.appendChild(bg);
 
-  // Text-Overlays absolut positioniert in % (Pitfall 1).
+  // Text-Overlays absolut positioniert in % (Pitfall 1) — NUR ANZEIGE
+  // (Live-Vorschau). Editiert wird in der sichtbaren Feldliste unter der
+  // Stage (#95: transparente Inline-Overlays waren als Editor nicht
+  // erkennbar). _eds: idx → Anzeige-Element, damit die Liste es spiegelt.
+  const _eds = {};
+  const k0 = _slideKey(cand.deck, cand.page);
   (slide.texts || []).forEach((t) => {
     const ov = document.createElement("div");
     ov.className = "wz-tov";
@@ -450,40 +455,17 @@ function renderStageOverlay(stage, group, cand, slide) {
 
     const ed = document.createElement("div");
     ed.className = "wz-ted";
-    ed.contentEditable = "plaintext-only";
     ed.dataset.idx = t.i;
     const val = fieldValue(slide, t.i);
     ed.textContent = val;
     // #95: Angebots-Suggestion sofort committen — sonst wird sie nur
     // angezeigt, landet aber nie im Download (PPTX behielt den Originaltext).
-    const k0 = _slideKey(cand.deck, cand.page);
     const hasOv = state.textOverrides[k0] && state.textOverrides[k0][t.i] != null;
     if (!hasOv && val !== t.text) {
       setTextOverride(cand.deck, cand.page, t.i, val);
     }
-    // Pitfall 2: plain-text erzwingen — paste-Strip, Enter = \n.
-    ed.addEventListener("paste", (e) => {
-      e.preventDefault();
-      const txt = (e.clipboardData || window.clipboardData).getData("text");
-      document.execCommand("insertText", false, txt);
-    });
-    ed.addEventListener("input", () => {
-      setTextOverride(cand.deck, cand.page, t.i, ed.innerText);
-    });
     ov.appendChild(ed);
-
-    // ✦ Formulieren je Feld (US-076, /api/designer/formulate) + Undo.
-    const tools = document.createElement("div");
-    tools.className = "wz-tov-tools";
-    const fbtn = document.createElement("button");
-    fbtn.type = "button";
-    fbtn.className = "wz-tov-btn";
-    fbtn.textContent = "✦";
-    fbtn.title = "Im KOCHfabrik-Ton neu formulieren";
-    fbtn.addEventListener("click",
-      () => formulateField(cand, group, t.i, ed));
-    tools.appendChild(fbtn);
-    ov.appendChild(tools);
+    _eds[t.i] = ed;
     frame.appendChild(ov);
   });
 
@@ -521,6 +503,63 @@ function renderStageOverlay(stage, group, cand, slide) {
   // wenn sich die Stage-Breite ändert.
   _stageObserver = new ResizeObserver(() => applyOverlayFontSizes(frame, meta));
   _stageObserver.observe(frame);
+
+  // #95: Sichtbare Feldliste unter der Vorschau — DAS ist der Editor.
+  // Echte textareas mit Label, vorbefüllt aus dem Angebot; Tippen
+  // schreibt den Override und spiegelt live ins Bild oben.
+  const texts = slide.texts || [];
+  if (texts.length) {
+    const list = document.createElement("div");
+    list.className = "wz-fields";
+    const head = document.createElement("div");
+    head.className = "wz-fields-h";
+    head.textContent = "Texte dieser Slide";
+    list.appendChild(head);
+    texts.forEach((t) => {
+      const row = document.createElement("div");
+      row.className = "wz-field";
+      const lab = document.createElement("div");
+      lab.className = "wz-field-lab";
+      lab.textContent = (t.text || "").split("\n")[0].slice(0, 40) || "Text";
+      const ta = document.createElement("textarea");
+      ta.className = "wz-field-in";
+      ta.rows = Math.min(4, ((fieldValue(slide, t.i) || "").split("\n").length) || 1);
+      ta.value = fieldValue(slide, t.i);
+      ta.addEventListener("input", () => {
+        setTextOverride(cand.deck, cand.page, t.i, ta.value);
+        if (_eds[t.i]) _eds[t.i].textContent = ta.value;   // Live-Vorschau
+      });
+      const fbtn = document.createElement("button");
+      fbtn.type = "button";
+      fbtn.className = "wz-field-fmt";
+      fbtn.textContent = "✦ Formulieren";
+      fbtn.title = "Im KOCHfabrik-Ton neu formulieren";
+      fbtn.addEventListener("click", async () => {
+        const prev = ta.value;
+        fbtn.disabled = true;
+        try {
+          const gangLabel = (group && group.kind === "gang") ? group.label : null;
+          const out = await formulateText(prev, group && group.kind, gangLabel);
+          if (out == null) return;             // 401 -> Redirect lief schon
+          ta.value = out;
+          setTextOverride(cand.deck, cand.page, t.i, out);
+          if (_eds[t.i]) _eds[t.i].textContent = out;
+        } catch (e) {
+          setStatus("Formulieren fehlgeschlagen: " + (e.message || e), "error");
+        } finally {
+          fbtn.disabled = false;
+        }
+      });
+      const tools = document.createElement("div");
+      tools.className = "wz-field-tools";
+      tools.appendChild(fbtn);
+      row.appendChild(lab);
+      row.appendChild(ta);
+      row.appendChild(tools);
+      list.appendChild(row);
+    });
+    stage.appendChild(list);
+  }
 }
 
 // Fontgröße = size_pt / h_pt * aktuelle Stage-Höhe (relativer Maßstab).
