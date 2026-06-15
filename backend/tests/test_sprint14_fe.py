@@ -240,11 +240,13 @@ def test_wizard_overlay_scaling():
     assert "ResizeObserver" in js, "ResizeObserver (Nachrechnen) fehlt"
 
 
-def test_wizard_contenteditable_plaintext():
-    # Pitfall 2: contenteditable, paste-Strip auf plain-text.
+def test_wizard_plaintext_editor():
+    # #95b: Editor ist die sichtbare textarea-Feldliste (ersetzt das nicht
+    # erkennbare contenteditable-Overlay). <textarea> ist von Natur aus
+    # plain-text — der frühere paste-Strip entfällt.
     js = _wizard_js()
-    assert "contenteditable" in js.lower(), "contenteditable fehlt"
-    assert "paste" in js, "paste-Strip (plain-text) fehlt"
+    assert 'createElement("textarea")' in js, "textarea-Editor fehlt"
+    assert "wz-fields" in js, "sichtbare Feldliste fehlt"
 
 
 def test_wizard_override_precedence():
