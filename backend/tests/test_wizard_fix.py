@@ -70,3 +70,14 @@ def test_wizard_css_layering():
     assert ".wz-iov-btn" in html and "pointer-events:auto" in html
     # Text-Overlay-Ebene über Bild-Overlay-Ebene
     assert "z-index:4" in html and "z-index:2" in html
+
+
+def test_wizard_visible_field_editor():
+    """#95b: sichtbarer textarea-Editor unter der Vorschau (Overlays waren
+    als Editor nicht erkennbar). Tippen spiegelt live ins Bild."""
+    js = _read("web", "assets", "wizard.js")
+    html = _read("web", "wizard.html")
+    assert "wz-fields" in js and 'createElement("textarea")' in js
+    assert "_eds[t.i].textContent = ta.value" in js   # Live-Spiegelung
+    assert ".wz-field-in" in html                      # sichtbares Feld-CSS
+    assert "wizard.js?v=" in html                      # Cache-Bust
