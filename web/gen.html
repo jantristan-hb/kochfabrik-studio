@@ -32,7 +32,6 @@
       <a class="nav-item" href="index.html"><span class="ic">&#9632;</span> Dashboard</a>
       <a class="nav-item" href="chat.html"><span class="ic">&#9993;</span> Angebotsgenerator</a>
       <a class="nav-item" href="slidesuche.html"><span class="ic">&#9906;</span> Slide Suche</a>
-      <a class="nav-item" href="wizard.html"><span class="ic">&#9881;</span> Wizard</a>
       <a class="nav-item" href="designer.html"><span class="ic">&#9998;</span> Designer</a>
       <a class="nav-item active" href="bildgenerator.html"><span class="ic">&#9788;</span> Bildgenerator</a>
       <div class="nav-label">Wissen</div>
@@ -41,7 +40,7 @@
     </nav>
     <div class="side-foot">
       <div class="avatar">PD</div>
-      <div><div class="nm">Patrick Diehr</div><div class="rl">KOCHfabrik</div></div>
+      <div><div class="nm">Patrick Diehr</div><div class="rl">KOCHfabrik</div></div><a href="#" id="logout" class="side-logout" onclick="event.preventDefault();fetch('/api/logout',{method:'POST'}).then(()=>location.href='/login.html')">Abmelden</a>
     </div>
   </aside>
 
@@ -50,7 +49,6 @@
       <div><h1 id="ttl">Generator</h1><div class="sub" id="sub">&nbsp;</div></div>
       <div class="tb-actions">
         <a class="btn btn-ghost btn-sm" href="bildgenerator.html">&larr; Kategorien</a>
-        <a class="btn btn-ghost btn-sm" href="#" id="logout">Abmelden</a>
       </div>
     </div>
 

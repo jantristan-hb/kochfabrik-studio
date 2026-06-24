@@ -4,3 +4,9 @@ __pycache__/
 
 .claude-active
 **/.claude-active
+
+# lokale Dev-Artefakte (NIE committen)
+.localdb/
+secrets.local.ps1
+run-local.ps1
+docs/progress/

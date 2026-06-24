@@ -180,7 +180,13 @@ def _gang_groups(gaenge: list, n: int) -> list:
                            f"/{int(b['page'][i])}.png",
                 "label": str(b["module_label"][i] or ""),
             })
+        # W2: Gang-Objekt (label + dishes) MITLIEFERN, damit der Wizard die
+        # angebotsbezogenen Text-Vorschläge bauen kann. Ohne dieses Feld kam
+        # im Wizard immer gang=null an → _suggest_overrides lieferte nichts
+        # Angebotsbezogenes (Korpus-Originaltext blieb stehen). Single Source
+        # of Truth: gilt auch für die Konzept-Gruppe (nutzt dieselbe Funktion).
         out.append({"label": g["label"], "kind": "gang",
+                    "gang": {"label": g["label"], "dishes": g.get("dishes", [])},
                     "candidates": candidates})
     return out
 

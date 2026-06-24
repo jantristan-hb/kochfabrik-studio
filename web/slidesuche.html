@@ -56,7 +56,6 @@
       <a class="nav-item" href="index.html"><span class="ic">&#9632;</span> Dashboard</a>
       <a class="nav-item" href="chat.html"><span class="ic">&#9993;</span> Angebotsgenerator</a>
       <a class="nav-item active" href="slidesuche.html"><span class="ic">&#9906;</span> Slide Suche</a>
-      <a class="nav-item" href="wizard.html"><span class="ic">&#9881;</span> Wizard</a>
       <a class="nav-item" href="designer.html"><span class="ic">&#9998;</span> Designer</a>
       <a class="nav-item" href="bildgenerator.html"><span class="ic">&#9788;</span> Bildgenerator</a>
       <div class="nav-label">Wissen</div>
@@ -64,14 +63,13 @@
       <a class="nav-item" href="client.html"><span class="ic">&#9906;</span> Client Research</a>
       <a class="nav-item" href="bibliothek.html"><span class="ic">&#9783;</span> Bibliothek</a>
     </nav>
-    <div class="side-foot"><div class="avatar">PD</div><div><div class="nm">Patrick Diehr</div><div class="rl">KOCHfabrik</div></div></div>
+    <div class="side-foot"><div class="avatar">PD</div><div><div class="nm">Patrick Diehr</div><div class="rl">KOCHfabrik</div></div><a href="#" id="logout" class="side-logout" onclick="event.preventDefault();fetch('/api/logout',{method:'POST'}).then(()=>location.href='/login.html')">Abmelden</a></div>
   </aside>
 
   <main class="view">
     <div class="topbar">
       <div><h1>Slide Suche</h1><div class="sub">Thematische Suche über den Slide-Korpus — Vorschauen ansehen, mehrere auswählen, als PPTX bündeln</div></div>
       <div class="tb-actions">
-        <a class="btn btn-ghost btn-sm" href="#" id="logout">Abmelden</a>
       </div>
     </div>
 
@@ -136,9 +134,14 @@ $('grid').addEventListener('change',ev=>{
   refreshDl();
 });
 
+let _searching=false,_pending=false;
 async function doSearch(){
   const q=$('q').value.trim();
   if(!q)return;
+  // In-Flight-Guard: läuft schon eine Suche, merken wir uns, dass danach
+  // erneut gesucht werden soll (letzte Eingabe gewinnt) — kein Überlappen.
+  if(_searching){_pending=true;return;}
+  _searching=true;
   const b=$('go'),lbl=b.textContent; b.disabled=true; b.textContent='sucht…';
   $('status').textContent='';
   $('grid').innerHTML='<div class="ss-empty"><span class="spin"></span>Matche gegen den Slide-Korpus …</div>';
@@ -156,10 +159,21 @@ async function doSearch(){
     }
   }catch(e){$('grid').innerHTML='<div class="warn">Netzwerkfehler: '+esc(e)+'</div>';}
   b.disabled=false; b.textContent=lbl;
+  _searching=false;
+  if(_pending){_pending=false;doSearch();}   // während der Suche weitergetippt
 }
 
 $('go').onclick=doSearch;
-$('q').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch();});
+// Live-Suche: beim Tippen automatisch suchen, debounced (~450ms Pause) ab
+// 3 Zeichen. Debounce statt pro-Tastendruck, weil jede Suche einen Gemini-
+// Embed-Call kostet. Button + Enter bleiben als Sofort-Auslöser erhalten.
+let _searchT=null;
+$('q').addEventListener('input',()=>{
+  clearTimeout(_searchT);
+  if($('q').value.trim().length<3)return;
+  _searchT=setTimeout(doSearch,450);
+});
+$('q').addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(_searchT);doSearch();}});
 
 $('dl').onclick=async()=>{
   if(selected.size===0)return;
