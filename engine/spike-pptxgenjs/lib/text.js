@@ -29,7 +29,9 @@ function emitText(slide, e, band) {
       options: {
         fontSize: Math.round(l.size * SIZE_K * 10) / 10,
         color: l.color || "FFFFFF",
-        fontFace: w.face,
+        // Pro-Text-Schriftart-Override (l.font) schlägt die aus dem Gewicht
+        // abgeleitete Open-Sans-Face. Ohne Override unverändert.
+        fontFace: l.font || w.face,
         bold: w.bold,
         italic: !!l.italic,
         breakLine: i < lines.length - 1, // Zeilenumbruch zwischen Zeilen

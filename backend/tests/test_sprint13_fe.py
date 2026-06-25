@@ -22,6 +22,12 @@ from fastapi.testclient import TestClient
 
 ROOT = Path(__file__).resolve().parents[2]
 WEB = ROOT / "web"
+# Der Storyboard-Designer dieser Sprint-13-Kette wurde beim Wizard→Designer-
+# Rename ins Archiv verschoben: web/_legacy/designer.html + .../designer.js
+# (KEIN assets/-Unterordner). web/designer.* ist seitdem die neue (Ex-Wizard-)
+# UI. Die HTTP-GET-Tests prüfen nur Status (200/302) und bleiben auf den neuen
+# Routen; die Inhalts-Greps lesen das Archiv.
+LEG = ROOT / "web" / "_legacy"
 
 # Bekannter KF_USERS-Eintrag zum Minten eines gueltigen Session-Cookies
 # (gleiche Mechanik wie test_charakterisierung.py).
@@ -69,7 +75,7 @@ def test_designer_page_gated_without_cookie(client):
 
 
 def test_designer_page_has_three_area_markers():
-    html = (WEB / "designer.html").read_text(encoding="utf-8")
+    html = (LEG / "designer.html").read_text(encoding="utf-8")
     for marker in ("designer-source", "designer-groups", "designer-board"):
         assert marker in html, f"Bereichs-Marker fehlt: {marker}"
 
@@ -81,13 +87,13 @@ def test_designer_js_served_200(client):
 
 
 def test_designer_js_versioned_state_key():
-    js = (WEB / "assets" / "designer.js").read_text(encoding="utf-8")
+    js = (LEG / "designer.js").read_text(encoding="utf-8")
     assert "kfDesigner.v1" in js, "sessionStorage-Key kfDesigner.v1 fehlt"
 
 
 def test_designer_js_has_login_redirect_pattern():
     # 401 -> Login-Redirect nach chat.html-Muster.
-    js = (WEB / "assets" / "designer.js").read_text(encoding="utf-8")
+    js = (LEG / "designer.js").read_text(encoding="utf-8")
     assert "/login.html" in js
 
 
@@ -106,7 +112,7 @@ def test_at_least_five_pages_link_designer():
 # Persistenz via sessionStorage unter dem versionierten Key.
 
 def _designer_js():
-    return (WEB / "assets" / "designer.js").read_text(encoding="utf-8")
+    return (LEG / "designer.js").read_text(encoding="utf-8")
 
 
 def test_board_persists_to_versioned_session_key():
@@ -145,7 +151,7 @@ def test_board_restores_on_load():
 # den Kandidaten zu verwerfen.
 
 def _designer_html():
-    return (WEB / "designer.html").read_text(encoding="utf-8")
+    return (LEG / "designer.html").read_text(encoding="utf-8")
 
 
 def test_designer_js_wires_suggest():
@@ -270,7 +276,7 @@ def test_e2e_suggest_to_pptx(auth_client, monkeypatch):
 def test_designer_js_pauschal_hint():
     import os
     root = os.path.join(os.path.dirname(__file__), "..", "..")
-    js = open(os.path.join(root, "web", "assets", "designer.js"),
+    js = open(os.path.join(root, "web", "_legacy", "designer.js"),
               encoding="utf-8").read()
     assert "Pauschal-Angebot" in js
     assert '"konzept"' in js
@@ -281,13 +287,13 @@ def test_designer_js_pauschal_hint():
 def test_designer_js_slot_view():
     import os
     root = os.path.join(os.path.dirname(__file__), "..", "..")
-    js = open(os.path.join(root, "web", "assets", "designer.js"),
+    js = open(os.path.join(root, "web", "_legacy", "designer.js"),
               encoding="utf-8").read()
     assert '"Slide " + slot' in js               # Nummerierung
     assert "slice(0, 3)" in js                   # 2-3 nebeneinander
     assert "weitere" in js                       # +N weitere
     assert "b.slot != null && b.slot <= entry.slot" in js  # Board-Einsortierung
-    html = open(os.path.join(root, "web", "designer.html"),
+    html = open(os.path.join(root, "web", "_legacy", "designer.html"),
                 encoding="utf-8").read()
     assert "dz-cards-row" in html
 
@@ -297,11 +303,11 @@ def test_designer_js_slot_view():
 def test_designer_js_cover_generator():
     import os
     root = os.path.join(os.path.dirname(__file__), "..", "..")
-    js = open(os.path.join(root, "web", "assets", "designer.js"),
+    js = open(os.path.join(root, "web", "_legacy", "designer.js"),
               encoding="utf-8").read()
     assert "/api/image" in js
     assert '"cover"' in js and "coverPrompt" in js
-    html = open(os.path.join(root, "web", "designer.html"),
+    html = open(os.path.join(root, "web", "_legacy", "designer.html"),
                 encoding="utf-8").read()
     assert 'id="dz-genbild"' in html
     assert html.index('id="dz-genbild"') < html.index('id="dz-board"')
@@ -312,12 +318,12 @@ def test_designer_js_cover_generator():
 def test_designer_js_texts_editor():
     import os
     root = os.path.join(os.path.dirname(__file__), "..", "..")
-    js = open(os.path.join(root, "web", "assets", "designer.js"),
+    js = open(os.path.join(root, "web", "_legacy", "designer.js"),
               encoding="utf-8").read()
     assert "/api/designer/texts" in js
     assert "toggleTextsMode" in js and "renderTextsEditor" in js
     assert "b.overrides" in js
-    html = open(os.path.join(root, "web", "designer.html"),
+    html = open(os.path.join(root, "web", "_legacy", "designer.html"),
                 encoding="utf-8").read()
     assert 'id="dz-edit-texts"' in html and 'id="dz-texts"' in html
     assert "dz-tx-row" in html                      # Bild links, Texte rechts

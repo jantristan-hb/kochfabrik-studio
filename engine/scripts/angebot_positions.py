@@ -13,16 +13,45 @@ Engine (extract.py/reconstruct.js) UNVERÄNDERT — nur Element-Ebene.
 """
 import copy
 
-DY = 0.162           # Zeilen-Pitch (aus Referenz: num-Spalte h/nlines)
+# A1 — globale Schrift-Vergrößerung. EIN Knopf: skaliert am Ende von
+# render() ALLE Text-Größen uniform (Proportionen bleiben exakt), und
+# zieht Zeilen-Pitch (DY) + Umbruch-Schwelle (BEZ_MAX) konsistent mit.
+# Die "faithful"-Engine-Konstante SIZE_K (lib/text.js) bleibt unberührt.
+FONT_SCALE = 1.3
+
+DY = round(0.162 * FONT_SCALE, 4)   # Zeilen-Pitch, skaliert mit Schrift
 HDR_OFF = 0.55       # Gold-Header-y → erste Datenzeile (Atem-Margin)
 GAP = 0.55           # Abstand Zwischensumme → nächster Block (Atem)
 SUBHEAD_LEAD = 0.5   # Zusatz-Luft VOR Sub-Header (× DY, ab 2. SubHd)
 ZSUM_LEAD = 2.0      # Luft zwischen letzter Position und Zwischensumme
 PAGE_RESERVE = 0.30  # Safety-Margin oberhalb Footer (in)
 
-# Pre-Wrap-Konstanten — Bezeichnungs-Spalte Word-Break vor Render
-BEZ_W, BEZ_MAX = 3.7, 68          # 3.7in × 9pt × SIZE_K ≈ 68 chars
+# Pre-Wrap-Konstanten — Bezeichnungs-Spalte Word-Break vor Render.
+# BEZ_MAX schrumpft mit FONT_SCALE (größere Schrift → weniger Zeichen
+# passen in die 3.7in-Spalte), sonst läuft der Text in die Mengenspalte.
+BEZ_W = 3.7
+BEZ_MAX = int(68 / FONT_SCALE)
 WRAP_PITCH = 1.7                  # Pitch-Multiplikator bei 2-Zeilen-Wrap
+
+
+def _scale_fonts(el, k):
+    """A1 — letzter Schritt in render(): skaliert JEDE Text-Zeilen-Größe
+    über alle Seiten uniform mit k. Läuft NACH den größen-basierten
+    Heuristiken (Strip size==9.0, Footer/Pagenum size==5.0), damit die
+    unberührt bleiben."""
+    if k == 1.0:
+        return el
+    for key, seq in el.items():
+        if key == "_meta":
+            continue
+        for e in seq:
+            if e.get("t") != "text":
+                continue
+            for ln in e.get("lines", []):
+                s = ln.get("size")
+                if isinstance(s, (int, float)):
+                    ln["size"] = round(s * k, 1)
+    return el
 
 
 def _wrap_bez(t):
@@ -276,7 +305,7 @@ def render(el, angebot):
         new_pg = str(pg_int + offset + j)
         el[new_pg] = agb_seq
         _set_page_num(agb_seq, pg_int + offset + j)
-    return el
+    return _scale_fonts(el, FONT_SCALE)            # A1 — uniforme Skalierung
 
 
 if __name__ == "__main__":

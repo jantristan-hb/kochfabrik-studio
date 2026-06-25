@@ -1,27 +1,45 @@
-/* KOCHfabrik Studio — Designer.
+/* KOCHfabrik Studio — Wizard (geführter Flow).
  *
- * Modul-Skelett: versionierter State (sessionStorage), API-Wrapper mit
- * 401 -> /login.html-Redirect (Muster aus chat.html), Init-Hook.
+ * FEATURE-015 §4 (FEATURE-WIZARD-UI): geführte Kette Schritt 0 (Angebot) ->
+ * je suggest-Gruppe ein Schritt ("Slide i von N: <label>") -> Abschluss
+ * (Filmstreifen + Download).
  *
- * US-063: Gerüst + State.
- * US-065: Storyboard-Modul — Add/Reorder/Remove/Zähler, Duplikat-Schutz,
- *         Session-Persistenz (reload-fest) + Restore (FEATURE-012 EARS 3).
- *         Karten-Klicks (US-064) feuern ein `designer:add`-Event; das Board
- *         hört darauf, ohne die Karten-Logik zu koppeln.
- * Klick-Verdrahtung der Quelle/Karten/Suche/Download folgt in US-064 ff.
+ * US-074: Gerüst + Schritt 0 + State-Maschine + Navigation.
+ *   - versionierter State (sessionStorage) unter kfWizard.v1
+ *   - API-Wrapper mit 401 -> /login.html-Redirect (Muster designer.js)
+ *   - Schritt 0: Angebot (Upload-Dropzone | Dropdown) -> suggest -> groups
+ *   - Schritt-Maschine: Gruppen = Schritte in SERVER-Reihenfolge (Pitfall 4,
+ *     FE sortiert NICHT um), Weiter/Zurück + reload-feste Persistenz (EARS 6)
+ * US-075: Alternativen-Leiste (#wizard-alts) füllen.
+ * US-076: große Stage (#wizard-stage) + Overlay-Editor füllen.
+ * US-077: Abschluss (Filmstreifen + Download + E2E).
  *
  * Vanilla, kein Framework/CDN (Bestands-Muster).
  */
 
 // State-Schema versioniert (Pitfall §12.2): Key-Bump bei Schema-Bruch.
-const STATE_KEY = "kfDesigner.v1";
+const STATE_KEY = "kfWizard.v1";
+
+// Pitfall 3: Bild-Overrides (Data-URLs, MB!) gehören NICHT in sessionStorage.
+// Sie leben rein in-memory und gehen bei Reload bewusst verloren (die Stage
+// zeigt dann einen Hinweis). Schlüssel = "deck::page" -> {seqIdx: dataUrl},
+// damit die Override an der Slide (nicht am Schritt) hängt und beim Wechsel
+// der gewählten Alternative korrekt neu greift.
+const imageOverrides = {};   // {"deck::page": {seqIdx: dataUrl}} — flüchtig
 
 const emptyState = () => ({
   version: 1,
-  source: null,      // {type:'upload'|'offer', id, label}
-  query: "",
-  groups: [],        // [{title, items:[{png_url, slide_id, label}]}]
-  board: [],         // geordnete Liste gewählter Items: {deck, page, png_url, label}
+  source: null,        // {type:'upload'|'offer', id, label}
+  offer: null,         // geparstes Angebot vom suggest-Response (Kontext)
+  groups: [],          // Server-Reihenfolge: [{label, kind, candidates:[...]}]
+  stepIndex: 0,        // 0 = Quelle; 1..N = je Gruppe; N+1 = Abschluss
+  selections: {},      // {groupIdx: candIdx} — gewählte Alternative je Gruppe
+  textOverrides: {},   // {"deck::page": {seqIdx: text}} — editierte Texte
+  // W1: editierte Bild-Prompts je image-Element. NUR Text (Pitfall 3 bleibt:
+  // die generierten Data-URLs leben weiter rein in-memory in imageOverrides).
+  imagePrompts: {},    // {"deck::page": {imgIdx: prompt}}
+  // Schriftart je Text-Element (PPTX-Font-Name, "" = Standard/aus Gewicht).
+  fontOverrides: {},   // {"deck::page": {seqIdx: fontName}}
 });
 
 function loadState() {
@@ -31,19 +49,39 @@ function loadState() {
     const s = JSON.parse(raw);
     if (!s || s.version !== 1) return emptyState();
     // Defensive: fehlende Felder aus Alt-/Teil-States auffüllen.
-    return { ...emptyState(), ...s, board: Array.isArray(s.board) ? s.board : [] };
+    return {
+      ...emptyState(), ...s,
+      groups: Array.isArray(s.groups) ? s.groups : [],
+      selections: s.selections || {},
+      textOverrides: s.textOverrides || {},
+      imagePrompts: s.imagePrompts || {},
+      fontOverrides: s.fontOverrides || {},
+    };
   } catch (e) {
     return emptyState();
   }
 }
 
 function saveState(s) {
-  try { sessionStorage.setItem(STATE_KEY, JSON.stringify(s)); } catch (e) {}
+  // Nur der persistierbare Teil-State (Pitfall 3: KEINE Bilder).
+  try {
+    sessionStorage.setItem(STATE_KEY, JSON.stringify({
+      version: 1,
+      source: s.source,
+      offer: s.offer,
+      groups: s.groups,
+      stepIndex: s.stepIndex,
+      selections: s.selections,
+      textOverrides: s.textOverrides,
+      imagePrompts: s.imagePrompts,
+      fontOverrides: s.fontOverrides,
+    }));
+  } catch (e) {}
 }
 
 let state = loadState();
 
-// --- API-Wrapper (401 -> Login-Redirect wie chat.html) --------------------
+// --- API-Wrapper (401 -> Login-Redirect wie designer.js) ------------------
 // Same-Origin -> Session-Cookie kf_sess wird automatisch mitgesendet.
 
 async function api(path, opts) {
@@ -58,8 +96,7 @@ async function apiJson(path, opts) {
   try { return await r.json(); } catch (e) { return null; }
 }
 
-// --- Designer-API (US-064) ------------------------------------------------
-// Angebots-Liste fürs Dropdown (gleiche Route wie bibliothek.html).
+// Angebots-Liste fürs Dropdown (gleiche Route wie bibliothek.html/designer.js).
 async function fetchOffers() {
   const d = await apiJson("/api/angebote");
   return (d && d.offers) || [];
@@ -84,8 +121,58 @@ async function fetchSuggestions(payload) {
   return data;
 }
 
-// Download (US-067): Storyboard -> PPTX-Bundle (Data-URL-Muster).
-// Liefert das pptx-Data-URL oder null bei 401-Redirect; wirft bei !ok.
+// Bild generieren (US-075 Cover / US-076 Food): /api/image. category steuert
+// den Stil ("cover" 16:9 Negativraum | "food"); Muster designer.js
+// generateCover. Liefert die Bild-Data-URL oder null bei 401-Redirect.
+async function generateImage(prompt, category) {
+  const r = await api("/api/image", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt, table: false, category: category || "cover" }),
+  });
+  if (!r) return null;                       // 401 -> Redirect bereits erfolgt
+  const data = await r.json().catch(() => null);
+  if (!r.ok || !data || !data.image) {
+    throw new Error((data && data.error) || `Fehler ${r.status}`);
+  }
+  return data.image;
+}
+
+// Texte/Geometrie der gewählten Slide (US-076): /api/designer/texts liefert
+// meta{w_pt,h_pt} + texts[] (i/text/x/y/w/h/size/color/weight/italic) +
+// images[] (i/x/y/w/h) + preview_notext + suggestions. Slide-Objekt oder null.
+async function fetchTexts(deck, page, kind, gang, offer) {
+  const d = await apiJson("/api/designer/texts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      slides: [{ deck, page, kind: kind || null, gang: gang || null }],
+      offer: offer || null,
+    }),
+  });
+  return (d && d.slides && d.slides[0]) || null;
+}
+
+// Formulieren (US-076): /api/designer/formulate {text,kind,gang_label} ->
+// {text}. Liefert den neuen Text oder null bei 401-Redirect; wirft bei !ok.
+async function formulateText(text, kind, gangLabel) {
+  const r = await api("/api/designer/formulate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, kind: kind || null,
+                           gang_label: gangLabel || null }),
+  });
+  if (!r) return null;                       // 401 -> Redirect bereits erfolgt
+  const data = await r.json().catch(() => null);
+  if (!r.ok || !data || !data.text) {
+    throw new Error((data && data.error) || `Fehler ${r.status}`);
+  }
+  return data.text;
+}
+
+// Download (US-077): Storyboard -> PPTX-Bundle (Data-URL). slides tragen
+// overrides (Text) + image_overrides (Data-URLs). Liefert das pptx-Data-URL
+// oder null bei 401-Redirect; wirft bei !ok.
 async function downloadDeck(slides) {
   const r = await api("/api/slidesuche/download", {
     method: "POST",
@@ -102,394 +189,6 @@ async function downloadDeck(slides) {
   return data && data.pptx;
 }
 
-// Freitext-Suche (US-066): Slidesuche-ANN über den Korpus.
-// Liefert das Treffer-Array (results) oder null bei 401-Redirect.
-async function search(q) {
-  const r = await api("/api/slidesuche/search", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query: q, limit: 5 }),
-  });
-  if (!r) return null;                       // 401 -> Redirect bereits erfolgt
-  const data = await r.json().catch(() => null);
-  if (!r.ok) {
-    const err = new Error((data && data.error) || `Fehler ${r.status}`);
-    err.status = r.status;
-    throw err;
-  }
-  return (data && data.results) || [];
-}
-
-// --- Storyboard-Modul (US-065) --------------------------------------------
-// Identität einer Board-Karte = deck/page (Dedup-Schlüssel; deckt sich mit
-// dem Download-Payload {slides:[{deck,page}]} und der Preview-Route
-// /api/slidesuche/preview/{deck}/{page}.png).
-
-function boardKey(it) { return `${it.deck}::${it.page}`; }
-
-function boardIndexOf(item) {
-  const k = boardKey(item);
-  return state.board.findIndex((b) => boardKey(b) === k);
-}
-
-// Add (aus Karten-Klick). Duplikat-Schutz: gleiche deck/page nur 1×.
-// Liefert true bei Aufnahme, false wenn bereits im Deck.
-function addToBoard(item) {
-  if (!item || item.deck == null || item.page == null) return false;
-  if (boardIndexOf(item) !== -1) return false;
-  const entry = {
-    deck: item.deck,
-    page: item.page,
-    png_url: item.png_url || item.preview || "",
-    label: item.label || `${item.deck} / ${item.page}`,
-    slot: item.slot || null,
-    kind: item.kind || null,
-    gangLabel: item.gangLabel || null,
-    overrides: {},                            // Text-Overrides (#66)
-  };
-  // #64: Slot-Karten in Deck-Reihenfolge einsortieren — hinter den
-  // letzten Eintrag mit slot <= eigenem; Slide ohne Slot (Suche) ans Ende.
-  let at = state.board.length;
-  if (entry.slot != null) {
-    at = 0;
-    state.board.forEach((b, i) => {
-      if (b.slot != null && b.slot <= entry.slot) at = i + 1;
-    });
-  }
-  state.board.splice(at, 0, entry);
-  persistAndRender();
-  return true;
-}
-
-function removeFromBoard(index) {
-  if (index < 0 || index >= state.board.length) return;
-  state.board.splice(index, 1);
-  persistAndRender();
-}
-
-// Reorder via ↑/↓ (kein Drag&Drop-Dep, FEATURE-012 §9).
-function moveBoardItem(index, delta) {
-  const target = index + delta;
-  if (index < 0 || index >= state.board.length) return;
-  if (target < 0 || target >= state.board.length) return;
-  const [it] = state.board.splice(index, 1);
-  state.board.splice(target, 0, it);
-  persistAndRender();
-}
-
-function isOnBoard(item) { return boardIndexOf(item) !== -1; }
-
-function persistAndRender() {
-  saveState(state);              // Persistenz bei JEDER Änderung (EARS 3)
-  renderBoard();
-  syncTextsButton();
-}
-
-// --- DOM-Rendering des Storyboards ----------------------------------------
-
-function el(tag, cls, txt) {
-  const n = document.createElement(tag);
-  if (cls) n.className = cls;
-  if (txt != null) n.textContent = txt;
-  return n;
-}
-
-function renderBoard() {
-  const host = document.getElementById("dz-board");
-  const empty = document.getElementById("dz-board-empty");
-  const dl = document.getElementById("dz-download");
-  if (!host) return;
-
-  host.innerHTML = "";
-  const n = state.board.length;
-
-  if (empty) empty.style.display = n === 0 ? "" : "none";
-  if (dl) dl.disabled = n === 0;
-
-  state.board.forEach((it, i) => {
-    const row = el("div", "dz-board-item");
-    row.dataset.deck = it.deck;
-    row.dataset.page = it.page;
-
-    row.appendChild(el("span", "dz-ix", String(i + 1)));
-
-    if (it.png_url) {
-      const img = document.createElement("img");
-      img.className = "dz-board-thumb";
-      img.src = it.png_url;
-      img.alt = it.label || "";
-      // Preview fehlt (404) -> Platzhalter statt Karte verwerfen (Pitfall §12.3 / EARS 5).
-      img.onerror = () => { img.classList.add("dz-thumb-missing"); img.removeAttribute("src"); };
-      row.appendChild(img);
-    }
-
-    row.appendChild(el("span", "dz-board-label", it.label || `${it.deck} / ${it.page}`));
-
-    const ctrl = el("span", "dz-board-ctrl");
-    const up = el("button", "btn btn-ghost dz-up", "↑");
-    up.type = "button";
-    up.title = "Nach oben";
-    up.disabled = i === 0;
-    up.addEventListener("click", () => moveBoardItem(i, -1));
-
-    const down = el("button", "btn btn-ghost dz-down", "↓");
-    down.type = "button";
-    down.title = "Nach unten";
-    down.disabled = i === n - 1;
-    down.addEventListener("click", () => moveBoardItem(i, +1));
-
-    const rm = el("button", "btn btn-ghost dz-remove", "✕");
-    rm.type = "button";
-    rm.title = "Entfernen";
-    rm.addEventListener("click", () => removeFromBoard(i));
-
-    ctrl.appendChild(up);
-    ctrl.appendChild(down);
-    ctrl.appendChild(rm);
-    row.appendChild(ctrl);
-
-    host.appendChild(row);
-  });
-
-  // Zähler im Spalten-Header (additiv, falls vorhanden).
-  const counter = document.getElementById("dz-board-count");
-  if (counter) counter.textContent = n ? `(${n})` : "";
-}
-
-// Karten-Klicks (US-064/066) feuern dieses Event; das Board entkoppelt sich
-// so von der Karten-Render-Logik:  el.dispatchEvent(new CustomEvent(
-//   "designer:add", {bubbles:true, detail:{deck,page,png_url,label}}))
-function onDesignerAdd(ev) {
-  if (ev && ev.detail) addToBoard(ev.detail);
-}
-
-// --- Vorschlags-Karten (US-064) -------------------------------------------
-// Eine Kandidaten-Karte: PNG (onerror -> Platzhalter statt verwerfen,
-// EARS 5), Label, Score. Klick dockt via designer:add ans Board (US-065).
-// `card()` ist die gemeinsame Render-Funktion, die US-066 (Suche) mitnutzt.
-
-function card(cand, slot, group) {
-  const c = el("button", "dz-card");
-  c.type = "button";
-  c.dataset.deck = cand.deck;
-  c.dataset.page = cand.page;
-
-  const img = document.createElement("img");
-  img.loading = "lazy";
-  img.src = cand.preview || cand.preview_url || "";
-  img.alt = cand.label || cand.headline || "";
-  // EARS 5: fehlt das Preview-PNG (404), Platzhalter setzen statt Karte killen.
-  img.onerror = () => {
-    img.classList.add("dz-thumb-missing");
-    img.removeAttribute("src");
-    c.classList.add("dz-card-placeholder");
-  };
-  c.appendChild(img);
-
-  const cap = el("div", "dz-cap");
-  cap.appendChild(el("span", "dz-cap-label",
-    cand.label || cand.headline || `${cand.deck} / ${cand.page}`));
-  if (typeof cand.score === "number") {
-    cap.appendChild(el("span", "dz-cap-score", cand.score.toFixed(2)));
-  }
-  c.appendChild(cap);
-
-  const detail = {
-    deck: cand.deck, page: cand.page,
-    png_url: cand.preview || cand.preview_url || "",
-    label: cand.label || cand.headline || "",
-    slot: slot || null,                      // Deck-Position (#64)
-    kind: (group && group.kind) || null,     // Slide-Art (#66)
-    gangLabel: (group && group.kind === "gang") ? group.label : null,
-  };
-  const sync = () => c.classList.toggle("dz-card-on", isOnBoard(detail));
-  c.addEventListener("click", () => {
-    c.dispatchEvent(new CustomEvent("designer:add",
-      { bubbles: true, detail }));
-    sync();                                  // „im Deck"-Markierung
-  });
-  sync();
-  return c;
-}
-
-// Vorschlags-Gruppen rendern: Spalte je Gruppe (Gang/Pflicht), Karten-Grid.
-function renderGroups(groups) {
-  const host = document.getElementById("dz-groups");
-  const empty = document.getElementById("dz-groups-empty");
-  if (!host) return;
-  host.innerHTML = "";
-  const list = groups || [];
-  if (empty) empty.style.display = list.length ? "none" : "";
-  // Slot-Ansicht (#64): Gruppen kommen vom Server in DECK-Reihenfolge —
-  // als "Slide N: …" nummerieren, 2-3 Alternativen nebeneinander,
-  // weitere hinter "+N weitere" (Mehrfachauswahl bleibt Karten-Klick).
-  list.forEach((g, gi) => {
-    const slot = gi + 1;
-    const sec = el("div", "dz-group dz-slot");
-    const suffix = g.kind === "pflicht" ? " (Pflicht)"
-      : g.kind === "konzept" ? " (aus Konzept)"
-      : g.kind === "cover" ? " (Cover)" : "";
-    sec.appendChild(el("div", "dz-group-h",
-      "Slide " + slot + ": " + g.label + suffix));
-    const grid = el("div", "dz-cards dz-cards-row");
-    const cands = g.candidates || [];
-    cands.slice(0, 3).forEach((cand) => grid.appendChild(card(cand, slot, g)));
-    if (cands.length > 3) {
-      const more = el("button", "dz-more",
-        "+" + (cands.length - 3) + " weitere");
-      more.type = "button";
-      more.addEventListener("click", () => {
-        cands.slice(3).forEach((cand) =>
-          grid.insertBefore(card(cand, slot, g), more));
-        more.remove();
-      });
-      grid.appendChild(more);
-    }
-    sec.appendChild(grid);
-    host.appendChild(sec);
-  });
-}
-
-// --- Freitext-Suche (US-066) ----------------------------------------------
-// Treffer im selben Karten-Format (card()), eigener Bereich #dz-results, der
-// die Vorschlags-Gruppen NICHT ersetzt (EARS 2). Klick dockt wie Vorschläge
-// ans Board (designer:add).
-
-function renderResults(results, msg) {
-  const host = document.getElementById("dz-results");
-  if (!host) return;
-  host.innerHTML = "";
-  const list = results || [];
-  if (!list.length) {
-    host.appendChild(el("div", "dz-empty", msg || "Keine Treffer."));
-    return;
-  }
-  const head = el("div", "dz-group-h", "Suchtreffer");
-  host.appendChild(head);
-  const grid = el("div", "dz-cards");
-  list.forEach((hit) => grid.appendChild(card(hit)));
-  host.appendChild(grid);
-}
-
-async function runSearch(q) {
-  const query = (q || "").trim();
-  if (!query) { renderResults([], "Suchbegriff eingeben."); return; }
-  renderResults([], "Suche läuft …");
-  try {
-    const results = await search(query);
-    if (results === null) return;            // 401 -> Redirect lief schon
-    state.query = query;
-    saveState(state);
-    renderResults(results);
-  } catch (e) {
-    renderResults([], e.message || "Suche fehlgeschlagen.");
-  }
-}
-
-function wireSearch() {
-  const inp = document.getElementById("dz-search");
-  if (!inp) return;
-  let t = null;
-  inp.addEventListener("keydown", (ev) => {
-    if (ev.key === "Enter") { clearTimeout(t); runSearch(inp.value); }
-  });
-  inp.addEventListener("input", () => {
-    clearTimeout(t);
-    t = setTimeout(() => { if (inp.value.trim()) runSearch(inp.value); }, 350);
-  });
-}
-
-// --- Quelle-Panel (US-064): Upload + Angebots-Dropdown -> suggest ---------
-
-function setStatus(msg, kind) {
-  const elS = document.getElementById("dz-source-status");
-  if (!elS) return;
-  elS.textContent = msg || "";
-  elS.className = "dz-status" + (kind ? " dz-status-" + kind : "");
-}
-
-async function runSuggest(payload) {
-  setStatus("Vorschläge werden geladen …", "load");
-  try {
-    const data = await fetchSuggestions(payload);
-    if (data === null) return;               // 401 -> Redirect lief schon
-    state.groups = data.groups || [];
-    state.offer = data.offer || null;        // Prompt-Quelle fürs Cover (#65)
-    saveState(state);
-    renderGroups(state.groups);
-    // Pauschal-Angebot ohne Menü-Gänge (#62): erklären statt schweigen.
-    const hasGang = state.groups.some((g) => g.kind === "gang");
-    const hasKonzept = state.groups.some((g) => g.kind === "konzept");
-    if (!hasGang && hasKonzept) {
-      setStatus("Keine Menü-Gänge im Angebot erkannt (Pauschal-Angebot) — "
-        + "Vorschläge basieren auf dem Catering-Konzept; ergänze per Suche.", "load");
-    } else if (!hasGang) {
-      setStatus("Keine Menü-Gänge im Angebot erkannt — nutze die Freitext-Suche.", "load");
-    } else {
-      setStatus("", "");
-    }
-  } catch (e) {
-    renderGroups([]);
-    // 503 = Korpus in diesem Deploy nicht verfügbar (Infra-Hinweis).
-    const hint = e.status === 503
-      ? "Korpus derzeit nicht verfügbar — bitte später erneut versuchen."
-      : (e.message || "Vorschläge konnten nicht geladen werden.");
-    setStatus(hint, "error");
-  }
-}
-
-async function loadOfferOptions() {
-  const sel = document.getElementById("dz-offer");
-  if (!sel) return;
-  const offers = await fetchOffers();
-  offers.forEach((o) => {
-    const opt = document.createElement("option");
-    opt.value = o.offer_id;
-    opt.textContent = `${o.kunde || "?"} — ${o.anlass || o.angebotsnummer || o.offer_id}`;
-    sel.appendChild(opt);
-  });
-}
-
-function wireSource() {
-  const sel = document.getElementById("dz-offer");
-  if (sel) {
-    sel.addEventListener("change", () => {
-      const id = sel.value;
-      if (id) runSuggest({ offer_id: Number(id) });
-    });
-  }
-
-  // Upload: Drop-Zone klickbar + Datei-Input (PDF -> FormData -> suggest).
-  const drop = document.getElementById("dz-upload");
-  const file = document.getElementById("dz-file");
-  if (drop && file) {
-    drop.addEventListener("click", () => file.click());
-    file.addEventListener("change", () => {
-      const f = file.files && file.files[0];
-      if (!f) return;
-      const fd = new FormData();
-      fd.append("file", f);
-      runSuggest(fd);
-    });
-    drop.addEventListener("dragover", (ev) => {
-      ev.preventDefault(); drop.classList.add("dz-drop-over");
-    });
-    drop.addEventListener("dragleave", () => drop.classList.remove("dz-drop-over"));
-    drop.addEventListener("drop", (ev) => {
-      ev.preventDefault(); drop.classList.remove("dz-drop-over");
-      const f = ev.dataTransfer && ev.dataTransfer.files[0];
-      if (!f) return;
-      const fd = new FormData();
-      fd.append("file", f);
-      runSuggest(fd);
-    });
-  }
-}
-
-// --- Download-Button (US-067) ---------------------------------------------
-// Storyboard -> PPTX. disabled bei leerem Board (renderBoard setzt das);
-// Klick lädt das Bundle als Data-URL (bestehendes Anker-Muster).
-
 function triggerDataUrlDownload(dataUrl, filename) {
   const a = document.createElement("a");
   a.href = dataUrl;
@@ -499,231 +198,1094 @@ function triggerDataUrlDownload(dataUrl, filename) {
   a.remove();
 }
 
-// --- Texte-Editor (#66, D5) ---------------------------------------------
-// Modus-Umschalter: mittlere Spalte zeigt statt der Vorschläge je
-// Board-Slide das PNG links + editierbare Texte rechts. Felder sind mit
-// Auto-Overrides aus dem Angebot vorbefüllt (Gang-Headline = Gang,
-// größter Text-Block = Gerichte, Cover = Kunde/Datum) — geänderte
-// Werte wandern als overrides in den Board-State und in den Download.
+// --- DOM-Helfer -----------------------------------------------------------
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? "" : s)
+  .replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
 
-let textsMode = false;
-
-function gangByLabel(label) {
-  const o = state.offer || {};
-  return (o.gaenge || []).find((g) => g.label === label) || null;
+function setStatus(msg, kind) {
+  const el = $("wz-status");
+  if (!el) return;
+  el.textContent = msg || "";
+  el.className = "wz-status" + (kind ? " wz-status-" + kind : "");
 }
 
-async function fetchSlideTexts() {
-  const slides = state.board.map((b) => ({
-    deck: b.deck, page: b.page, kind: b.kind || null,
-    gang: b.gangLabel ? gangByLabel(b.gangLabel) : null,
-  }));
-  const r = await api("/api/designer/texts", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ slides, offer: state.offer || null }),
-  });
-  if (!r || !r.ok) return null;
-  return (await r.json().catch(() => null));
+// --- Schritt-Modell -------------------------------------------------------
+// Schritt 0 = Quelle. Schritte 1..N = Gruppen in SERVER-Reihenfolge
+// (Pitfall 4: das FE sortiert NICHT um). Schritt N+1 = Abschluss.
+
+function stepCount() {
+  // Gesamtzahl Schritte: Quelle + N Gruppen + Abschluss.
+  return state.groups.length ? state.groups.length + 2 : 1;
 }
 
-function renderTextsEditor(data) {
-  const host = document.getElementById("dz-texts");
-  if (!host) return;
-  host.innerHTML = "";
-  (data.slides || []).forEach((sl, bi) => {
-    const b = state.board[bi];
-    if (!b || !sl.texts.length) {
-      if (b) {
-        const row = el("div", "dz-tx-row");
-        const img = document.createElement("img");
-        img.src = b.png_url; row.appendChild(img);
-        const f = el("div", "dz-tx-fields");
-        f.appendChild(el("div", "dz-tx-head",
-          "Slide " + (bi + 1) + ": " + (b.label || "")));
-        f.appendChild(el("div", "dz-tx-orig", "Keine Texte auf dieser Slide."));
-        row.appendChild(f); host.appendChild(row);
-      }
-      return;
+function isSourceStep() { return state.stepIndex === 0; }
+function isFinishStep() {
+  return state.groups.length > 0 && state.stepIndex === state.groups.length + 1;
+}
+function currentGroupIdx() {
+  // Bei Slide-Schritten: 0-basierter Gruppen-Index (Schritt 1 -> Gruppe 0).
+  return isSourceStep() || isFinishStep() ? -1 : state.stepIndex - 1;
+}
+
+// --- Rendering ------------------------------------------------------------
+
+function renderStep() {
+  const onSource = isSourceStep();
+  const onFinish = isFinishStep();
+  const hasDeck = state.groups.length > 0;
+
+  // Quelle (volle Breite) vs. Navigator+Editor-Shell.
+  $("wz-step0").hidden = !onSource;
+  $("wz-shell").hidden = onSource || !hasDeck;
+  $("wz-slide").hidden = onSource || onFinish;
+  $("wz-finish").hidden = !onFinish;
+
+  // Editor-Titel: auf den Slide-Schritten redundant zum Navigator links →
+  // ausgeblendet. Nur der Abschluss-Schritt behält seine Überschrift.
+  const title = $("wz-step-title"), sub = $("wz-step-sub");
+  const head = $("wz-main-head");
+  if (onFinish) {
+    if (head) head.hidden = false;
+    title.textContent = "Fertig — herunterladen";
+    sub.textContent = "";
+  } else if (head) {
+    head.hidden = true;
+  }
+
+  // Slide-Schritt-Inhalt: Alternativen-Leiste + Stage (Overlay-Editor).
+  if (!onSource && !onFinish) {
+    ensureDefaultSelection(currentGroupIdx());
+    renderAlts();
+    renderStage();
+    renderCover();
+  }
+  if (onFinish) renderFilm();                // US-077: Filmstreifen + Download
+  renderNav();
+}
+
+// Slide-Navigator (PPT-Stil): vertikale Liste aller Gruppen (Server-Reihenfolge,
+// Pitfall 4) mit Thumbnail der gewählten Alternative + Download-Eintrag. Klick
+// springt direkt zum Slide-Schritt; ersetzt den linearen Weiter/Zurück-Stepper.
+function renderNav() {
+  const nav = $("wz-nav");
+  if (!nav) return;
+  if (!state.groups.length) { nav.innerHTML = ""; return; }
+  nav.innerHTML = "";
+  // Einstieg zurück zur Angebotsauswahl (Schritt 0) — sonst kommt man aus dem
+  // Deck nicht mehr zum Angebots-Dropdown zurück.
+  const src = document.createElement("button");
+  src.type = "button";
+  src.className = "wz-nav-item wz-nav-src"
+    + (state.stepIndex === 0 ? " is-active" : "");
+  src.innerHTML = `<span class="wz-nav-ix">≡</span>`
+    + `<span class="wz-nav-lab">Angebot wechseln</span>`;
+  src.addEventListener("click", () => goToStep(0));
+  nav.appendChild(src);
+  state.groups.forEach((g, gi) => {
+    const stepIdx = gi + 1;
+    const cand = (g.candidates || [])[selectedCandIdx(gi)];
+    // Override-Bild bevorzugen (zeigt den echten Stand), sonst Kandidat-Preview.
+    let thumb = cand ? cand.preview : "";
+    if (cand) {
+      const iov = imageOverrides[_slideKey(cand.deck, cand.page)];
+      if (iov && Object.keys(iov).length) thumb = iov[Object.keys(iov)[0]];
     }
-    const row = el("div", "dz-tx-row");
-    const img = document.createElement("img");
-    img.src = b.png_url;
-    img.onerror = () => img.classList.add("dz-thumb-missing");
-    row.appendChild(img);
-    const fields = el("div", "dz-tx-fields");
-    fields.appendChild(el("div", "dz-tx-head",
-      "Slide " + (bi + 1) + ": " + (b.label || "")));
-    b.overrides = b.overrides || {};
-    sl.texts.forEach((t) => {
-      const key = String(t.i);
-      const sug = (sl.suggestions || {})[key];
-      // Vorbelegung: bestehender Override > Auto-Vorschlag > Ist-Text.
-      let val = b.overrides[key];
-      if (val === undefined && sug !== undefined) {
-        val = sug;
-        if (sug !== t.text) b.overrides[key] = sug;   // Auto-Override aktiv
-      }
-      if (val === undefined) val = t.text;
-      const ta = document.createElement("textarea");
-      ta.value = val;
-      ta.rows = Math.min(6, (val.split("\n").length || 1));
-      if (b.overrides[key] !== undefined) ta.classList.add("dz-tx-auto");
-      ta.addEventListener("input", () => {
-        if (ta.value === t.text) { delete b.overrides[key]; ta.classList.remove("dz-tx-auto"); }
-        else { b.overrides[key] = ta.value; ta.classList.add("dz-tx-auto"); }
-        saveState(state);
-      });
-      fields.appendChild(ta);
-      const orig = el("div", "dz-tx-orig", "Original: " + t.text);
-      fields.appendChild(orig);
-    });
-    const reset = el("button", "dz-tx-reset", "Original wiederherstellen");
-    reset.type = "button";
-    reset.addEventListener("click", () => {
-      b.overrides = {};
-      saveState(state);
-      fetchSlideTexts().then((d) => d && renderTextsEditor(d));
-    });
-    fields.appendChild(reset);
-    row.appendChild(fields);
-    host.appendChild(row);
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "wz-nav-item" + (state.stepIndex === stepIdx ? " is-active" : "");
+    item.innerHTML =
+      `<span class="wz-nav-ix">${gi + 1}</span>`
+      + `<span class="wz-nav-thumb">`
+      + (thumb ? `<img src="${esc(thumb)}" alt="" `
+          + `onerror="this.removeAttribute('src')">` : "")
+      + `</span>`
+      + `<span class="wz-nav-lab">${esc(g.label || "Slide")}</span>`;
+    item.addEventListener("click", () => goToStep(stepIdx));
+    nav.appendChild(item);
   });
-  saveState(state);
+  // Download-Eintrag (Abschluss-Schritt).
+  const dlStep = state.groups.length + 1;
+  const dl = document.createElement("button");
+  dl.type = "button";
+  dl.className = "wz-nav-item wz-nav-dl"
+    + (state.stepIndex === dlStep ? " is-active" : "");
+  dl.innerHTML = `<span class="wz-nav-ix">↓</span>`
+    + `<span class="wz-nav-lab">Fertig &amp; Download</span>`;
+  dl.addEventListener("click", () => goToStep(dlStep));
+  nav.appendChild(dl);
 }
 
-async function toggleTextsMode() {
-  const btn = document.getElementById("dz-edit-texts");
-  const texts = document.getElementById("dz-texts");
-  const groups = document.getElementById("dz-groups");
-  const results = document.getElementById("dz-results");
-  const emptyG = document.getElementById("dz-groups-empty");
-  textsMode = !textsMode;
-  if (textsMode) {
-    btn.textContent = "⬅ Zurück zu Vorschlägen";
-    groups.hidden = true; results.hidden = true;
-    if (emptyG) emptyG.hidden = true;
-    texts.hidden = false;
-    texts.innerHTML = '<div class="dz-empty">Texte werden geladen …</div>';
-    const d = await fetchSlideTexts();
-    if (d) renderTextsEditor(d);
-    else texts.innerHTML = '<div class="dz-empty">Texte konnten nicht geladen werden.</div>';
-  } else {
-    btn.textContent = "📝 Texte bearbeiten";
-    groups.hidden = false; results.hidden = false;
-    if (emptyG) emptyG.hidden = false;
-    texts.hidden = true;
+// Direkt-Sprung zu einem Schritt (Slide oder Download). Kollabiert die
+// Bilder-Liste neu (frische Slide startet aufgeräumt).
+function goToStep(idx) {
+  if (idx < 0 || idx >= stepCount()) return;
+  state.stepIndex = idx;
+  _imgsExpanded = false;
+  _fieldsExpanded = false;
+  saveState(state);
+  renderStep();
+}
+
+// --- US-075: Alternativen + Auswahl ---------------------------------------
+// EARS Nr. 1: 3-4 Alternativen je Schritt, Top-Kandidat (candidates[0])
+// vorausgewählt. Pitfall 4: KEINE Umsortierung — Reihenfolge bleibt Server.
+
+// max sichtbare Alternativen, Rest hinter "+N weitere" (Designer-Slot-Muster).
+
+function ensureDefaultSelection(gi) {
+  // Vorauswahl = Top-Kandidat candidates[0], falls noch keine Wahl getroffen.
+  const g = state.groups[gi];
+  if (!g || !g.candidates || !g.candidates.length) return;
+  if (state.selections[gi] == null) {
+    state.selections[gi] = 0;    // Index von candidates[0]
+    saveState(state);
   }
 }
 
-function wireTextsEditor() {
-  const btn = document.getElementById("dz-edit-texts");
-  if (btn) btn.addEventListener("click", toggleTextsMode);
+function selectedCandIdx(gi) {
+  const v = state.selections[gi];
+  return v == null ? 0 : v;
 }
 
-// --- Cover-Bild-Generator (#65) ----------------------------------------
-// Ein Klick → Gemini-Bildprompt aus dem geparsten Angebot (Kunde +
-// Gänge/Konzept) → POST /api/image (category=cover, 16:9, Negativraum
-// für Titel-Overlay). Bild bleibt in-memory (Data-URLs sind zu groß
-// für sessionStorage) — "PNG sichern" lädt es herunter.
+function selectAlt(gi, candIdx) {
+  state.selections[gi] = candIdx;
+  saveState(state);
+  renderAlts();
+  renderStage();
+}
+
+let _altsExpanded = false;       // "+N weitere" je Schritt (flüchtig)
+let _imgsExpanded = false;       // "+N weitere Bilder" je Slide (flüchtig)
+let _fieldsExpanded = false;     // "+N weitere Felder" je Slide (flüchtig)
+
+function renderAlts() {
+  const wrap = $("wizard-alts");
+  if (!wrap) return;
+  const gi = currentGroupIdx();
+  const g = state.groups[gi];
+  const cands = (g && g.candidates) || [];
+  // Gibt es nichts zu wählen (0/1 Variante), ist die Leiste nur eine
+  // redundante Vorschau zur großen Folie + zum Navigator → ausblenden.
+  if (cands.length <= 1) {
+    wrap.innerHTML = "";
+    wrap.hidden = true;
+    return;
+  }
+  wrap.hidden = false;
+  const sel = selectedCandIdx(gi);
+  // Max 4 sichtbar; Rest hinter "+N weitere" (Designer-Slot-Muster).
+  const visible = _altsExpanded ? cands : cands.slice(0, 4);
+  const rest = cands.length - visible.length;
+  wrap.innerHTML = visible.map((c, i) => {
+    const on = i === sel ? " wz-alt-on" : "";
+    const score = (c.score != null) ? `· ${c.score}` : "";
+    return `<button type="button" class="wz-alt${on}" data-cand="${i}">`
+      + `<img src="${esc(c.preview)}" alt="${esc(c.label)}" `
+      + `onerror="this.classList.add('wz-alt-missing');this.removeAttribute('src')">`
+      + `<div class="wz-alt-cap">${esc(c.label) || "Slide"} ${score}</div>`
+      + `</button>`;
+  }).join("");
+  if (rest > 0) {
+    const more = document.createElement("button");
+    more.type = "button";
+    more.className = "wz-more";
+    more.textContent = `+${rest} weitere`;
+    more.addEventListener("click", () => { _altsExpanded = true; renderAlts(); });
+    wrap.appendChild(more);
+  }
+  wrap.querySelectorAll(".wz-alt").forEach((btn) => {
+    btn.addEventListener("click", () => selectAlt(gi, Number(btn.dataset.cand)));
+  });
+}
+
+// --- US-076: Overlay-Editor (FEATURE-015 §8 Nr. 2+3+4) --------------------
+// Stage = Notext-Hintergrund der gewählten Slide + absolut positionierte
+// Text-Overlays (editierbar) und Bild-Overlays. Maßstab IMMER relativ aus
+// meta.w_pt/h_pt (Pitfall 1, nie hartkodieren), ResizeObserver rechnet die
+// Fontgrößen beim Layout-Wechsel nach.
+
+const _slideKey = (deck, page) => `${deck}::${page}`;
+
+// Cache der texts-API je Slide (vermeidet Re-Fetch beim Re-Render).
+const _textsCache = {};          // {"deck::page": slideObj} — flüchtig
+let _stageObserver = null;       // aktiver ResizeObserver der Stage
+
+// Vorbelegung eines Felds: Override > Auto-Suggestion > Ist-Text.
+function fieldValue(slide, idx) {
+  const key = _slideKey(slide.deck, slide.page);
+  const ov = state.textOverrides[key];
+  if (ov && ov[idx] != null) return ov[idx];
+  const sug = slide.suggestions || {};
+  if (sug[idx] != null) return sug[idx];
+  const t = (slide.texts || []).find((e) => e.i === idx);
+  return t ? t.text : "";
+}
+
+function setTextOverride(deck, page, idx, value) {
+  const key = _slideKey(deck, page);
+  if (!state.textOverrides[key]) state.textOverrides[key] = {};
+  state.textOverrides[key][idx] = value;
+  saveState(state);
+}
+
+// Kuratierte, web-sichere Schriftarten: rendern zuverlässig im Browser-
+// Preview UND als fontFace im PPTX (beim Empfänger meist vorhanden). label =
+// Anzeige, ppt = Name im PPTX (leer = Standard/aus Gewicht), css = Overlay-Font.
+const FONTS = [
+  { label: "Standard", ppt: "", css: "" },
+  { label: "Arial", ppt: "Arial", css: "Arial, sans-serif" },
+  { label: "Helvetica", ppt: "Helvetica", css: "Helvetica, Arial, sans-serif" },
+  { label: "Verdana", ppt: "Verdana", css: "Verdana, sans-serif" },
+  { label: "Trebuchet MS", ppt: "Trebuchet MS", css: '"Trebuchet MS", sans-serif' },
+  { label: "Tahoma", ppt: "Tahoma", css: "Tahoma, sans-serif" },
+  { label: "Georgia", ppt: "Georgia", css: "Georgia, serif" },
+  { label: "Times New Roman", ppt: "Times New Roman", css: '"Times New Roman", serif' },
+  { label: "Garamond", ppt: "Garamond", css: "Garamond, serif" },
+  { label: "Courier New", ppt: "Courier New", css: '"Courier New", monospace' },
+];
+
+function fontOverrideValue(deck, page, idx) {
+  const ov = state.fontOverrides[_slideKey(deck, page)];
+  return (ov && ov[idx]) || "";
+}
+
+// PPTX-Font-Name → CSS-Family fürs Overlay (Fallback: Name selbst + serif-frei).
+function fontCss(ppt) {
+  if (!ppt) return "";
+  const f = FONTS.find((x) => x.ppt === ppt);
+  return f ? f.css : `"${ppt}"`;
+}
+
+function setFontOverride(deck, page, idx, ppt) {
+  const key = _slideKey(deck, page);
+  if (!state.fontOverrides[key]) state.fontOverrides[key] = {};
+  if (ppt) state.fontOverrides[key][idx] = ppt;
+  else delete state.fontOverrides[key][idx];     // "" = Standard → entfernen
+  if (!Object.keys(state.fontOverrides[key]).length) {
+    delete state.fontOverrides[key];
+  }
+  saveState(state);
+}
+
+// Stage: gewählte Alternative groß. US-074-Stub wird hier gefüllt; lädt die
+// texts-API asynchron und rendert dann die Overlays.
+function renderStage() {
+  const stage = $("wizard-stage");
+  if (!stage) return;
+  if (_stageObserver) { _stageObserver.disconnect(); _stageObserver = null; }
+  const gi = currentGroupIdx();
+  const g = state.groups[gi];
+  const cands = (g && g.candidates) || [];
+  const c = cands[selectedCandIdx(gi)];
+  if (!c) {
+    stage.innerHTML = '<div class="wz-stage-empty">Wähle oben eine Alternative.</div>';
+    return;
+  }
+  const key = _slideKey(c.deck, c.page);
+  const cached = _textsCache[key];
+  if (cached) { renderStageOverlay(stage, g, c, cached); return; }
+  stage.innerHTML = '<div class="wz-stage-empty">Slide wird geladen …</div>';
+  fetchTexts(c.deck, c.page, g.kind, g.gang || null, state.offer)
+    .then((slide) => {
+      if (!slide) return;                    // 401 -> Redirect lief schon
+      _textsCache[key] = slide;
+      // Nur rendern, wenn noch derselbe Schritt/dieselbe Auswahl aktiv ist.
+      const g2 = state.groups[currentGroupIdx()];
+      const c2 = g2 && g2.candidates[selectedCandIdx(currentGroupIdx())];
+      if (c2 && c2.deck === c.deck && c2.page === c.page) {
+        renderStageOverlay(stage, g, c, slide);
+      }
+    })
+    .catch(() => {
+      stage.innerHTML = '<div class="wz-stage-empty">'
+        + 'Texte konnten nicht geladen werden.</div>';
+    });
+}
+
+function renderStageOverlay(stage, group, cand, slide) {
+  const meta = slide.meta || { w_pt: 960, h_pt: 540 };
+  // Overlay-Geometrie (x/y/w/h) kommt in ZOLL, meta.w_pt/h_pt in PUNKT (×72).
+  // Direkt 100*x/w_pt zu rechnen ergab 72× zu kleine Boxen (5×2 px →
+  // unsichtbar). Erst in Zoll umrechnen, dann als % der Folie.
+  const wIn = (meta.w_pt || 960) / 72;
+  const hIn = (meta.h_pt || 540) / 72;
+  // Farben kommen als bare Hex ("FFFFFF") — ohne # ist es ungültiges CSS und
+  // der Text fiel auf die dunkle Default-Farbe zurück (dunkel-auf-dunkel).
+  const cssColor = (c) => (c && /^[0-9a-fA-F]{6}$/.test(c)) ? "#" + c : (c || null);
+  // Hintergrund = preview_notext; onerror → normales preview + Notext-Badge.
+  // Maßstab relativ: Overlays in % der Folie, Stage hält das 16:9-Format.
+  stage.innerHTML = "";
+  // 2-Spalten-WYSIWYG (#W1-Layout): links die Folie als Live-Vorschau
+  // (sticky, bleibt beim Editieren sichtbar), rechts der scrollbare Editor.
+  // Vorher hingen Folie + Feldlisten als zentrierte Flex-Geschwister im
+  // Stage und zerstreuten sich über die Breite.
+  const wrap = document.createElement("div");
+  wrap.className = "wz-edit";
+  const previewCol = document.createElement("div");
+  previewCol.className = "wz-preview";
+  const editorCol = document.createElement("div");
+  editorCol.className = "wz-editor";
+  wrap.appendChild(previewCol);
+  wrap.appendChild(editorCol);
+  stage.appendChild(wrap);
+
+  const frame = document.createElement("div");
+  frame.className = "wz-frame";
+  frame.style.aspectRatio = `${meta.w_pt} / ${meta.h_pt}`;
+  const bg = document.createElement("img");
+  bg.className = "wz-bg";
+  bg.src = slide.preview_notext;
+  bg.alt = cand.label || "";
+  bg.addEventListener("error", () => {
+    // Fallback aufs normale preview + Hinweis-Badge (Texte sind dann
+    // eingebrannt, der Editor liegt trotzdem darüber).
+    bg.src = cand.preview;
+    if (!frame.querySelector(".wz-notext-badge")) {
+      const badge = document.createElement("div");
+      badge.className = "wz-notext-badge";
+      badge.textContent = "Notext-Vorschau fehlt — Texte ggf. doppelt";
+      frame.appendChild(badge);
+    }
+  });
+  frame.appendChild(bg);
+
+  // Text-Overlays absolut positioniert in % (Pitfall 1). Hybrid-Edit
+  // (Option 2): die Overlays sind JETZT direkt editierbar (contenteditable)
+  // UND das rechte Feld-Panel bleibt bidirektional synchron. _eds: idx →
+  // Overlay-Element, _tas: idx → Textarea — beide schreiben denselben
+  // textOverride und spiegeln ins jeweils ANDERE (nur wenn es nicht den
+  // Fokus hat → kein Caret-Sprung). #95-Lektion bewahrt: das Panel bleibt
+  // sichtbare, verlässliche Eingabe (Affordanz, Mobile, Font/Bild/Formulieren).
+  const _eds = {};
+  const _tas = {};
+  const k0 = _slideKey(cand.deck, cand.page);
+  // Anti-Clutter (Preis-/Tabellen-Slides mit dutzenden Text-Zellen): bei >8
+  // Texten nur die PROMINENTEN (große Schrift, dann große Fläche) editierbar
+  // machen + im Feld-Panel zeigen. Die übrigen bleiben REINE Anzeige (kein
+  // Rahmen/Tint, nicht editierbar) → die Folie sieht aus wie die echte Folie,
+  // nur die relevanten Texte sind hervorgehoben statt 80 wilder Edit-Boxen.
+  const _allTexts = slide.texts || [];
+  const _COLLAPSE_AT = 8, _KEEP = 6;
+  const _collapsing = _allTexts.length > _COLLAPSE_AT && !_fieldsExpanded;
+  const _hasContent = (t) => (fieldValue(slide, t.i) || "").trim() !== "";
+  // Beim Kollabieren NUR Felder mit Inhalt als prominent (nach Größe) — leere
+  // Platzhalter-Frames (im Korpus oft groß) wandern hinter "+N weitere Felder"
+  // statt als leere Eingabeboxen das Panel zu füllen und als Edit-Overlays die
+  // Folie zu sprenkeln. Nach Expand (_fieldsExpanded) sind alle erreichbar.
+  const _prominent = _collapsing
+    ? new Set([..._allTexts]
+        .filter(_hasContent)
+        .sort((a, b) => (b.size || 0) - (a.size || 0)
+          || (b.w * b.h) - (a.w * a.h))
+        .slice(0, _KEEP).map((t) => t.i))
+    : new Set(_allTexts.map((t) => t.i));
+  _allTexts.forEach((t) => {
+    const editable = _prominent.has(t.i);
+    const ov = document.createElement("div");
+    ov.className = "wz-tov" + (editable ? "" : " wz-tov-ro");
+    ov.dataset.idx = t.i;
+    ov.style.left = (100 * t.x / wIn) + "%";
+    ov.style.top = (100 * t.y / hIn) + "%";
+    ov.style.width = (100 * t.w / wIn) + "%";
+    ov.style.height = (100 * t.h / hIn) + "%";
+    const _col = cssColor(t.color);
+    if (_col) ov.style.color = _col;
+    if (t.weight) ov.style.fontWeight = t.weight;
+    if (t.italic) ov.style.fontStyle = "italic";
+    ov.dataset.size = String(t.size);        // pt; Fontgröße = size/h_pt*Höhe
+
+    const ed = document.createElement("div");
+    // Leere editierbare Felder: Klasse wz-ted-empty → Rahmen/Tint erst bei
+    // Hover/Focus (sonst verstreute leere Kästen über der Folie). Discoverability
+    // bleibt über das rechte Feld-Panel (#95).
+    const val = fieldValue(slide, t.i);
+    ed.className = "wz-ted" + (editable ? "" : " wz-ted-plain")
+      + (editable && !val.trim() ? " wz-ted-empty" : "");
+    ed.dataset.idx = t.i;
+    ed.textContent = val;
+    // Schriftart-Override live aufs Overlay (falls gesetzt).
+    const _font = fontOverrideValue(cand.deck, cand.page, t.i);
+    if (_font) ed.style.fontFamily = fontCss(_font);
+    // #95: Angebots-Suggestion sofort committen — sonst wird sie nur
+    // angezeigt, landet aber nie im Download (PPTX behielt den Originaltext).
+    const hasOv = state.textOverrides[k0] && state.textOverrides[k0][t.i] != null;
+    if (!hasOv && val !== t.text) {
+      setTextOverride(cand.deck, cand.page, t.i, val);
+    }
+    if (editable) {
+      ed.contentEditable = "plaintext-only";
+      ed.spellcheck = false;
+      // In-Place-Edit: Tippen auf der Folie schreibt den Override + spiegelt
+      // in die Textarea (nur wenn die nicht gerade selbst fokussiert ist).
+      ed.addEventListener("input", () => {
+        const v = ed.innerText;
+        setTextOverride(cand.deck, cand.page, t.i, v);
+        ed.classList.toggle("wz-ted-empty", !v.trim());
+        fitTed(ed);                                    // Auto-Fit bei Überlauf
+        const ta = _tas[t.i];
+        if (ta && document.activeElement !== ta) ta.value = v;
+      });
+      _eds[t.i] = ed;
+    }
+    ov.appendChild(ed);
+    frame.appendChild(ov);
+  });
+
+  // Bild-Overlays: Rahmen je images[]-Element + 🖼-Generieren.
+  const imgs = slide.images || [];
+  imgs.forEach((im) => {
+    const box = document.createElement("div");
+    box.className = "wz-iov";
+    box.dataset.idx = im.i;
+    box.style.left = (100 * im.x / wIn) + "%";
+    box.style.top = (100 * im.y / hIn) + "%";
+    box.style.width = (100 * im.w / wIn) + "%";
+    box.style.height = (100 * im.h / hIn) + "%";
+    const ovImg = currentImageOverride(cand, im.i);
+    if (ovImg) {
+      const el = document.createElement("img");
+      el.className = "wz-iov-img";
+      el.src = ovImg;
+      box.appendChild(el);
+    }
+    const gbtn = document.createElement("button");
+    gbtn.type = "button";
+    gbtn.className = "wz-iov-btn";
+    gbtn.textContent = "🖼";
+    gbtn.title = "Bild generieren";
+    gbtn.addEventListener("click",
+      () => generateImageOverlay(cand, group, im.i, box));
+    box.appendChild(gbtn);
+    frame.appendChild(box);
+  });
+
+  previewCol.appendChild(frame);
+  applyOverlayFontSizes(frame, meta);
+  // Pitfall 1: ResizeObserver rechnet die pt-basierten Fontgrößen nach,
+  // wenn sich die Stage-Breite ändert.
+  _stageObserver = new ResizeObserver(() => applyOverlayFontSizes(frame, meta));
+  _stageObserver.observe(frame);
+
+  // #95: Sichtbare Feldliste unter der Vorschau — DAS ist der Editor.
+  // Echte textareas mit Label, vorbefüllt aus dem Angebot; Tippen
+  // schreibt den Override und spiegelt live ins Bild oben.
+  const texts = slide.texts || [];
+  if (texts.length) {
+    const list = document.createElement("div");
+    list.className = "wz-fields";
+    const head = document.createElement("div");
+    head.className = "wz-fields-h";
+    head.textContent = "Texte dieser Slide";
+    list.appendChild(head);
+    // Feld-Panel nutzt dieselbe Prominenz-Auswahl wie die Overlays (oben):
+    // nur die prominenten Felder zeigen, Rest hinter "+N weitere Felder".
+    const shown = texts.filter((t) => _prominent.has(t.i));
+    const hiddenCount = texts.length - shown.length;
+    shown.forEach((t) => {
+      // Kompakte Zeile: Textarea + dezenter ✦-Icon-Button (Formulieren) oben
+      // rechts. Kein doppelter Rahmen, kein redundantes Label (der Feldinhalt
+      // IST der Text) und keine vollbreite Button-Zeile mehr → aufgeräumt.
+      const row = document.createElement("div");
+      row.className = "wz-field";
+      const ta = document.createElement("textarea");
+      ta.className = "wz-field-in";
+      ta.rows = Math.min(4, ((fieldValue(slide, t.i) || "").split("\n").length) || 1);
+      ta.value = fieldValue(slide, t.i);
+      _tas[t.i] = ta;                                       // Hybrid-Mirror
+      ta.addEventListener("input", () => {
+        setTextOverride(cand.deck, cand.page, t.i, ta.value);
+        // Spiegeln aufs Overlay — nur wenn es nicht selbst editiert wird
+        // (sonst Caret-Sprung). textContent statt innerHTML (plain text).
+        if (_eds[t.i] && document.activeElement !== _eds[t.i]) {
+          _eds[t.i].textContent = ta.value;
+          _eds[t.i].classList.toggle("wz-ted-empty", !ta.value.trim());
+          fitTed(_eds[t.i]);
+        }
+      });
+      const fbtn = document.createElement("button");
+      fbtn.type = "button";
+      fbtn.className = "wz-field-fmt";
+      fbtn.textContent = "✦";
+      fbtn.title = "Im KOCHfabrik-Ton neu formulieren";
+      fbtn.setAttribute("aria-label", "Im KOCHfabrik-Ton neu formulieren");
+      fbtn.addEventListener("click", async () => {
+        const prev = ta.value;
+        fbtn.disabled = true;
+        try {
+          const gangLabel = (group && group.kind === "gang") ? group.label : null;
+          const out = await formulateText(prev, group && group.kind, gangLabel);
+          if (out == null) return;             // 401 -> Redirect lief schon
+          ta.value = out;
+          setTextOverride(cand.deck, cand.page, t.i, out);
+          if (_eds[t.i]) {
+            _eds[t.i].textContent = out;
+            _eds[t.i].classList.toggle("wz-ted-empty", !out.trim());
+            fitTed(_eds[t.i]);
+          }
+        } catch (e) {
+          setStatus("Formulieren fehlgeschlagen: " + (e.message || e), "error");
+        } finally {
+          fbtn.disabled = false;
+        }
+      });
+      // Schriftart-Wähler (erscheint dezent bei Hover/Fokus, wie ✦).
+      const fsel = document.createElement("select");
+      fsel.className = "wz-field-font";
+      fsel.title = "Schriftart dieses Textes";
+      fsel.setAttribute("aria-label", "Schriftart dieses Textes");
+      const curFont = fontOverrideValue(cand.deck, cand.page, t.i);
+      FONTS.forEach((f) => {
+        const o = document.createElement("option");
+        o.value = f.ppt;
+        o.textContent = f.label;
+        if (f.ppt === curFont) o.selected = true;
+        fsel.appendChild(o);
+      });
+      fsel.addEventListener("change", () => {
+        setFontOverride(cand.deck, cand.page, t.i, fsel.value);
+        if (_eds[t.i]) _eds[t.i].style.fontFamily = fontCss(fsel.value);
+      });
+      const tools = document.createElement("div");
+      tools.className = "wz-field-tools";
+      tools.appendChild(fsel);
+      tools.appendChild(fbtn);
+      row.appendChild(ta);
+      row.appendChild(tools);
+      list.appendChild(row);
+    });
+    if (hiddenCount > 0) {
+      const more = document.createElement("button");
+      more.type = "button";
+      more.className = "wz-more";
+      more.textContent = `+${hiddenCount} weitere Felder`;
+      more.addEventListener("click", () => { _fieldsExpanded = true; renderStage(); });
+      list.appendChild(more);
+    }
+    editorCol.appendChild(list);
+  }
+
+  // W1: "Bilder dieser Slide" — editierbarer Prompt je image-Element, mit
+  // Vorschau-Thumbnail + Generieren. Spiegelt das #95-Text-Feldlisten-Muster
+  // (Editieren unten, Overlay oben nur Anzeige). Bei vielen Bildern (z.B.
+  // Cover mit 11 Platzhaltern): nur Hero + bereits generierte zeigen, Rest
+  // hinter "+N weitere Bilder" (gegen Clutter).
+  const imgList = slide.images || [];
+  if (imgList.length) {
+    const largest = largestImageIdx(slide);
+    const ilist = document.createElement("div");
+    ilist.className = "wz-imgs";
+    const ihead = document.createElement("div");
+    ihead.className = "wz-fields-h";
+    ihead.textContent = "Bilder dieser Slide";
+    ilist.appendChild(ihead);
+
+    // Eine Zeile bauen (ord = Original-Ordinal fürs stabile Label).
+    const buildImgRow = (im, ord) => {
+      const row = document.createElement("div");
+      row.className = "wz-img-row";
+
+      const lab = document.createElement("div");
+      lab.className = "wz-field-lab";
+      lab.textContent = "Bild " + (ord + 1)
+        + (im.i === largest ? " · groß (Titel/Hero)" : "");
+
+      const ta = document.createElement("textarea");
+      ta.className = "wz-img-prompt";
+      ta.rows = 3;
+      ta.value = imagePromptValue(cand, group, im.i);
+      ta.placeholder = "Bild-Prompt …";
+      ta.addEventListener("input", () => setImagePrompt(cand, im.i, ta.value));
+
+      const tools = document.createElement("div");
+      tools.className = "wz-img-tools";
+
+      const thumb = document.createElement("div");
+      thumb.className = "wz-img-thumb";
+      const ovImg = currentImageOverride(cand, im.i);
+      if (ovImg) {
+        const t = document.createElement("img");
+        t.src = ovImg;
+        thumb.appendChild(t);
+      } else {
+        thumb.classList.add("is-empty");
+        thumb.textContent = "—";
+      }
+
+      const status = document.createElement("div");
+      status.className = "wz-status wz-img-status";
+
+      const gen = document.createElement("button");
+      gen.type = "button";
+      gen.className = "btn wz-img-gen";
+      gen.textContent = ovImg ? "✨ Neu generieren" : "✨ Bild generieren";
+      gen.addEventListener("click",
+        () => generateImageForField(cand, group, im.i, gen, status));
+
+      tools.appendChild(thumb);
+      tools.appendChild(gen);
+      if (ovImg) {
+        const clr = document.createElement("button");
+        clr.type = "button";
+        clr.className = "wz-img-clear";
+        clr.textContent = "✕ entfernen";
+        clr.addEventListener("click", () => {
+          clearImageOverride(cand, im.i);
+          renderStage();
+        });
+        tools.appendChild(clr);
+      }
+      tools.appendChild(status);
+
+      row.appendChild(lab);
+      row.appendChild(ta);
+      row.appendChild(tools);
+      ilist.appendChild(row);
+    };
+
+    // Kollabieren ab >2 Bildern: Hero + bereits generierte immer sichtbar,
+    // Rest hinter Toggle. Ordinal bleibt am Original hängen.
+    const collapsible = imgList.length > 2 && !_imgsExpanded;
+    const alwaysShow = (im) =>
+      im.i === largest || currentImageOverride(cand, im.i) != null;
+    let hiddenCount = 0;
+    imgList.forEach((im, ord) => {
+      if (collapsible && !alwaysShow(im)) { hiddenCount++; return; }
+      buildImgRow(im, ord);
+    });
+    if (hiddenCount > 0) {
+      const more = document.createElement("button");
+      more.type = "button";
+      more.className = "wz-more";
+      more.textContent = `+${hiddenCount} weitere Bilder`;
+      more.addEventListener("click", () => { _imgsExpanded = true; renderStage(); });
+      ilist.appendChild(more);
+    }
+    editorCol.appendChild(ilist);
+  }
+}
+
+// Fontgröße = size_pt / h_pt * aktuelle Stage-Höhe (relativer Maßstab).
+// h_pt wird am Frame hinterlegt, damit fitTed() ohne meta-Closure rechnen kann.
+function applyOverlayFontSizes(frame, meta) {
+  const h = frame.clientHeight;
+  if (!h) return;
+  frame.dataset.hpt = meta.h_pt;
+  frame.querySelectorAll(".wz-ted").forEach((ed) => fitTed(ed));
+}
+
+// Treuer Render statt Auto-Fit-Heuristik: Die Schriftgröße kommt aus dem
+// gerenderten PDF (LibreOffice hat PowerPoints Autofit/fontScale bereits
+// eingebacken) — sie ist also schon final und korrekt. Wir übertragen sie nur
+// maßstäblich auf die Stage (PDF-Punkt × Stage-Höhe / Folien-Höhe). KEIN
+// Recompute aus der Box-Höhe, KEIN Shrink-Loop — das würde gegen die bereits
+// korrekten PDF-Größen arbeiten (Ursache für "mal zu klein, mal Überlauf").
+function fitTed(ed) {
+  const ov = ed.parentNode;
+  const frame = ov && ov.closest(".wz-frame");
+  if (!frame) return;
+  const h = frame.clientHeight;
+  const hpt = parseFloat(frame.dataset.hpt || "0");
+  const size = parseFloat(ov.dataset.size || "0");
+  if (!h || !hpt || !size) return;
+  ed.style.fontSize = (size / hpt * h) + "px";
+}
+
+// --- US-076: Bild-Overrides je Element + Cover-Auflösung ------------------
+// Cover (US-075) liefert ein pending image_override, das HIER aufs GRÖSSTE
+// image-Element der gewählten Slide aufgelöst wird (largest by w*h).
+
+function imgKey(cand) { return _slideKey(cand.deck, cand.page); }
+
+function currentImageOverride(cand, idx) {
+  const m = imageOverrides[imgKey(cand)];
+  return m ? m[idx] : null;
+}
+
+function setImageOverride(cand, idx, dataUrl) {
+  const key = imgKey(cand);
+  if (!imageOverrides[key]) imageOverrides[key] = {};
+  imageOverrides[key][idx] = dataUrl;        // in-memory (Pitfall 3)
+}
+
+function largestImageIdx(slide) {
+  const imgs = slide.images || [];
+  if (!imgs.length) return null;
+  return imgs.reduce((best, im) =>
+    (im.w * im.h) > (best.w * best.h) ? im : best, imgs[0]).i;
+}
+
+function clearImageOverride(cand, idx) {
+  const key = imgKey(cand);
+  const m = imageOverrides[key];
+  if (!m) return;
+  delete m[idx];
+  if (!Object.keys(m).length) delete imageOverrides[key];
+}
+
+// --- W1: editierbarer Bild-Prompt je image-Element ------------------------
+// Default = der schritt-passende Auto-Prompt (Cover -> coverPrompt, sonst
+// foodPrompt). Beide sind hoisted function declarations, daher hier nutzbar.
+function defaultImagePrompt(group) {
+  return (group && group.kind === "cover") ? coverPrompt() : foodPrompt(group);
+}
+
+function imageCategory(group) {
+  return (group && group.kind === "cover") ? "cover" : "food";
+}
+
+// Aktueller Prompt: editierter Wert (persistiert) > Auto-Prompt.
+function imagePromptValue(cand, group, idx) {
+  const m = state.imagePrompts[imgKey(cand)];
+  if (m && m[idx] != null) return m[idx];
+  return defaultImagePrompt(group);
+}
+
+function setImagePrompt(cand, idx, value) {
+  const key = imgKey(cand);
+  if (!state.imagePrompts[key]) state.imagePrompts[key] = {};
+  state.imagePrompts[key][idx] = value;
+  saveState(state);
+}
 
 function coverPrompt() {
+  // #95: Cover = atmosphärischer TITEL-Hintergrund, NICHT die Speisen.
+  // Früher hängten wir die Gang-Labels an → Gemini machte ein Essensbild
+  // trotz background-Scaffold. Jetzt Anlass/Location/Stimmung als
+  // Aufhänger, Speisen bleiben draußen.
   const o = state.offer || {};
-  const labels = (state.groups || [])
-    .filter((g) => g.kind === "gang" || g.kind === "konzept")
-    .map((g) => g.label);
-  const parts = ["Catering-Event"];
-  if (o.kunde) parts.push("für " + o.kunde);
-  if (labels.length) parts.push("Menü/Konzept: " + labels.join(", "));
-  return parts.join(" ");
+  const parts = ["Stimmungsvoller, atmosphärischer Veranstaltungs-Hintergrund "
+    + "für ein gehobenes Catering-Event"];
+  if (o.anlass) parts.push("Anlass: " + o.anlass);
+  else if (o.kunde) parts.push("Kunde: " + o.kunde);
+  if (o.ort) parts.push("Location: " + o.ort);
+  parts.push("elegante Eventstimmung, viel ruhiger Negativraum oben "
+    + "für einen Titel, kein Speisen-Close-up");
+  return parts.join(", ");
 }
 
-async function generateCover() {
-  const st = document.getElementById("dz-cover-status");
-  const wrap = document.getElementById("dz-cover");
-  const img = document.getElementById("dz-cover-img");
-  const save = document.getElementById("dz-cover-save");
-  const btn = document.getElementById("dz-genbild");
-  if (!st || !img) return;
-  btn.disabled = true;
-  st.textContent = "Cover-Bild wird generiert … (bis zu 1 Minute)";
-  st.className = "dz-status dz-status-load";
+// Food-Prompt eines Gang-/Gericht-Schritts (US-076 Bild-Element).
+function foodPrompt(group) {
+  const parts = ["Gericht-Foto, appetitlich, KOCHfabrik-Catering"];
+  if (group && group.label) parts.push(group.label);
+  const dishes = (group && group.gang && group.gang.dishes) || [];
+  const names = dishes.map((d) => d.name).filter(Boolean);
+  if (names.length) parts.push(names.join(", "));
+  return parts.join(" — ");
+}
+
+// Cover-Generieren-Panel nur im Cover-Schritt; das erzeugte Bild wird aufs
+// größte image-Element der gewählten Slide aufgelöst.
+function renderCover() {
+  const host = $("wz-cover-host");
+  if (!host) return;
+  const gi = currentGroupIdx();
+  const g = state.groups[gi];
+  const isCover = g && g.kind === "cover";
+  host.hidden = !isCover;
+  if (!isCover) return;
+  host.innerHTML =
+    `<button type="button" class="btn" id="wz-gencover">`
+    + `✨ Cover-Bild generieren</button>`
+    + `<div id="wz-cover-status" class="wz-status"></div>`;
+  const btn = $("wz-gencover");
+  if (btn) btn.addEventListener("click", () => generateCoverFor());
+}
+
+async function generateCoverFor() {
+  const gi = currentGroupIdx();
+  const g = state.groups[gi];
+  const cand = g && g.candidates[selectedCandIdx(gi)];
+  if (!cand) return;
+  const slide = _textsCache[_slideKey(cand.deck, cand.page)];
+  const idx = slide ? largestImageIdx(slide) : null;
+  const st = $("wz-cover-status");
+  const btn = $("wz-gencover");
+  if (btn) btn.disabled = true;
+  if (st) {
+    st.textContent = "Cover-Bild wird generiert … (bis zu 1 Minute)";
+    st.className = "wz-status wz-status-load";
+  }
   try {
-    const r = await api("/api/image", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: coverPrompt(), table: false,
-                             category: "cover" }),
-    });
-    if (!r) return;                          // 401 → Redirect lief schon
-    const d = await r.json().catch(() => null);
-    if (!r.ok || !d || !d.image) {
-      throw new Error((d && d.error) || ("Fehler " + r.status));
+    const img = await generateImage(coverPrompt(), "cover");
+    if (img == null) return;                 // 401 -> Redirect lief schon
+    if (idx != null) {
+      // Auf das größte image-Element auflösen (Pitfall 3: in-memory).
+      setImageOverride(cand, idx, img);
+      renderStage();
     }
-    img.src = d.image;
-    if (save) save.href = d.image;
-    wrap.hidden = false;
-    st.textContent = "";
-    st.className = "dz-status";
+    if (st) { st.textContent = ""; st.className = "wz-status"; }
   } catch (e) {
-    st.textContent = "Cover-Bild fehlgeschlagen: " + (e.message || e);
-    st.className = "dz-status dz-status-error";
+    if (st) {
+      st.textContent = "Cover-Bild fehlgeschlagen: " + (e.message || e);
+      st.className = "wz-status wz-status-error";
+    }
   } finally {
-    btn.disabled = false;
+    if (btn) btn.disabled = false;
   }
 }
 
-function syncTextsButton() {
-  const btn = document.getElementById("dz-edit-texts");
-  if (btn) btn.disabled = !state.board.length;
+// 🖼 je image-Element (Overlay-Shortcut): generiert mit dem AKTUELLEN
+// (ggf. editierten) Prompt aus dem Store → in-memory Override, deckt das
+// Element positionsgenau (das <img> liegt im positionierten .wz-iov-Rahmen).
+async function generateImageOverlay(cand, group, idx, box) {
+  const gbtn = box.querySelector(".wz-iov-btn");
+  if (gbtn) gbtn.disabled = true;
+  try {
+    const img = await generateImage(imagePromptValue(cand, group, idx),
+                                    imageCategory(group));
+    if (img == null) return;                 // 401 -> Redirect lief schon
+    setImageOverride(cand, idx, img);
+    renderStage();
+  } catch (e) {
+    setStatus("Bild generieren fehlgeschlagen: " + (e.message || e), "error");
+    if (gbtn) gbtn.disabled = false;
+  }
 }
 
-function wireCover() {
-  const btn = document.getElementById("dz-genbild");
-  const again = document.getElementById("dz-cover-again");
-  if (btn) btn.addEventListener("click", generateCover);
-  if (again) again.addEventListener("click", generateCover);
-}
-
-function wireDownload() {
-  const btn = document.getElementById("dz-download");
-  if (!btn) return;
-  btn.addEventListener("click", async () => {
-    if (!state.board.length) return;         // disabled-Logik (Doppel-Absicherung)
-    const slides = state.board.map((b) => ({
-      deck: b.deck, page: b.page,
-      overrides: (b.overrides && Object.keys(b.overrides).length)
-        ? b.overrides : undefined,           // Text-Overrides (#66)
-    }));
-    const prev = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = "Erzeuge PPTX …";
-    try {
-      const pptx = await downloadDeck(slides);
-      if (pptx) triggerDataUrlDownload(pptx, "kochfabrik-designer.pptx");
-    } catch (e) {
-      setStatus(e.message || "Download fehlgeschlagen.", "error");
-    } finally {
-      btn.textContent = prev;
-      btn.disabled = state.board.length === 0;
+// W1: Generieren aus der Feldliste — nutzt den im Textfeld stehenden Prompt
+// (bereits via setImagePrompt persistiert). Statuszeile lokal an der Zeile.
+async function generateImageForField(cand, group, idx, btn, statusEl) {
+  const prompt = imagePromptValue(cand, group, idx).trim();
+  if (!prompt) {
+    if (statusEl) {
+      statusEl.textContent = "Prompt ist leer.";
+      statusEl.className = "wz-status wz-status-error";
     }
+    return;
+  }
+  if (btn) btn.disabled = true;
+  if (statusEl) {
+    statusEl.textContent = "Bild wird generiert … (bis zu 1 Minute)";
+    statusEl.className = "wz-status wz-status-load";
+  }
+  try {
+    const img = await generateImage(prompt, imageCategory(group));
+    if (img == null) return;                 // 401 -> Redirect lief schon
+    setImageOverride(cand, idx, img);
+    renderStage();                           // baut Stage + Feldliste neu (Thumb)
+  } catch (e) {
+    if (statusEl) {
+      statusEl.textContent = "Fehlgeschlagen: " + (e.message || e);
+      statusEl.className = "wz-status wz-status-error";
+    }
+    if (btn) btn.disabled = false;
+  }
+}
+
+// ✦ Feld neu formulieren (Undo speichert den vorherigen Wert).
+async function formulateField(cand, group, idx, ed) {
+  const prev = ed.innerText;                 // für Undo
+  const gangLabel = (group && group.kind === "gang") ? group.label : null;
+  setStatus("Wird formuliert …", "load");
+  try {
+    const out = await formulateText(prev, group && group.kind, gangLabel);
+    if (out == null) return;                 // 401 -> Redirect lief schon
+    ed.innerText = out;
+    setTextOverride(cand.deck, cand.page, idx, out);
+    // Undo: ein Klick stellt den vorherigen Wert wieder her.
+    showFormulateUndo(cand, idx, ed, prev);
+    setStatus("");
+  } catch (e) {
+    setStatus("Formulieren fehlgeschlagen: " + (e.message || e), "error");
+  }
+}
+
+function showFormulateUndo(cand, idx, ed, prev) {
+  const el = $("wz-status");
+  if (!el) return;
+  el.className = "wz-status";
+  el.innerHTML = 'Neu formuliert. <button type="button" class="wz-undo" '
+    + 'id="wz-undo">↶ Undo</button>';
+  const ub = $("wz-undo");
+  if (ub) ub.addEventListener("click", () => {
+    ed.innerText = prev;
+    setTextOverride(cand.deck, cand.page, idx, prev);
+    setStatus("");
   });
 }
 
-// --- Init-Hook ------------------------------------------------------------
+// --- US-077: Abschluss — Filmstreifen + Download --------------------------
+// Die gewählten Slides in SERVER-Reihenfolge (Pitfall 4) → Filmstreifen +
+// PPTX-Download. Payload je Slide: {deck, page, overrides, image_overrides}.
+
+// Die gewählten Slides in Gruppen-Reihenfolge (eine je Gruppe mit Kandidaten).
+function chosenSlides() {
+  const out = [];
+  state.groups.forEach((g, gi) => {
+    const cands = g.candidates || [];
+    if (!cands.length) return;
+    const c = cands[selectedCandIdx(gi)];
+    if (c) out.push({ deck: c.deck, page: c.page, label: c.label, gi });
+  });
+  return out;
+}
+
+// Download-Payload: overrides (Text, leere = entfernen) + image_overrides.
+function downloadPayload() {
+  return chosenSlides().map((s) => {
+    const key = _slideKey(s.deck, s.page);
+    const tov = state.textOverrides[key];
+    const iov = imageOverrides[key];
+    const fov = state.fontOverrides[key];
+    const slide = { deck: s.deck, page: s.page };
+    if (tov && Object.keys(tov).length) slide.overrides = tov;
+    if (iov && Object.keys(iov).length) slide.image_overrides = iov;
+    if (fov && Object.keys(fov).length) slide.font_overrides = fov;
+    return slide;
+  });
+}
+
+function renderFilm() {
+  const film = $("wz-film");
+  const dl = $("wz-download");
+  const slides = chosenSlides();
+  if (film) {
+    if (!slides.length) {
+      film.innerHTML = '<div class="wz-stage-empty">Keine Slides gewählt.</div>';
+    } else {
+      // Statische Mini-Stage je Slide: Override-Bild deckt das Element, sonst
+      // das preview-PNG der gewählten Karte (Overlay-Thumbs reichen hier).
+      film.innerHTML = slides.map((s, i) => {
+        const key = _slideKey(s.deck, s.page);
+        const iov = imageOverrides[key];
+        const big = iov && Object.keys(iov).length
+          ? iov[Object.keys(iov)[0]] : null;
+        const cand = state.groups[s.gi].candidates[selectedCandIdx(s.gi)];
+        const src = big || (cand && cand.preview) || "";
+        return `<div class="wz-film-item"><span class="wz-film-ix">${i + 1}</span>`
+          + `<img src="${esc(src)}" alt="${esc(s.label)}" `
+          + `onerror="this.classList.add('wz-alt-missing');this.removeAttribute('src')">`
+          + `</div>`;
+      }).join("");
+    }
+  }
+  if (dl) dl.disabled = !slides.length;
+}
+
+async function runDownload() {
+  const dl = $("wz-download");
+  const slides = downloadPayload();
+  if (!slides.length) return;
+  const prev = dl ? dl.textContent : "";
+  if (dl) { dl.disabled = true; dl.textContent = "Erzeuge PPTX …"; }
+  setStatus("PPTX wird erzeugt …", "load");
+  try {
+    const pptx = await downloadDeck(slides);
+    if (pptx) {
+      triggerDataUrlDownload(pptx, "kochfabrik-wizard.pptx");
+      setStatus("");
+    }
+  } catch (e) {
+    setStatus(e.message || "Download fehlgeschlagen.", "error");
+  } finally {
+    if (dl) { dl.textContent = prev || "Download"; dl.disabled = !slides.length; }
+  }
+}
+
+// "Von vorn": State + in-memory-Overrides leeren, zurück auf Schritt 0.
+function resetWizard() {
+  state = emptyState();
+  for (const k of Object.keys(imageOverrides)) delete imageOverrides[k];
+  for (const k of Object.keys(_textsCache)) delete _textsCache[k];
+  _altsExpanded = false;
+  saveState(state);
+  const sel = $("wz-offer");
+  if (sel) sel.value = "";
+  setStatus("");
+  renderStep();
+}
+
+// --- Schritt-0: Quelle wählen ---------------------------------------------
+
+async function loadOffers() {
+  const sel = $("wz-offer");
+  if (!sel) return;
+  const offers = await fetchOffers();
+  for (const o of offers) {
+    const opt = document.createElement("option");
+    opt.value = o.offer_id;
+    opt.textContent = `${o.angebotsnummer || "—"} · ${o.kunde || ""}`.trim();
+    sel.appendChild(opt);
+  }
+}
+
+// suggest -> state.groups (Server-Reihenfolge, FE sortiert NICHT) -> Schritt 1.
+async function startFromPayload(payload, sourceMeta) {
+  setStatus("Vorschläge werden geladen …", "load");
+  try {
+    const data = await fetchSuggestions(payload);
+    if (!data) return;                       // 401 -> Redirect
+    state.source = sourceMeta;
+    state.offer = data.offer || null;
+    state.groups = Array.isArray(data.groups) ? data.groups : [];
+    state.selections = {};
+    state.textOverrides = {};
+    state.stepIndex = state.groups.length ? 1 : 0;
+    saveState(state);
+    setStatus(state.groups.length
+      ? "" : "Keine Vorschlags-Gruppen für dieses Angebot.",
+      state.groups.length ? "" : "error");
+    renderStep();
+  } catch (e) {
+    setStatus(e.message || "Fehler beim Laden der Vorschläge.", "error");
+  }
+}
+
+function onOfferPicked() {
+  const sel = $("wz-offer");
+  const id = sel && sel.value;
+  if (!id) return;
+  const label = sel.options[sel.selectedIndex].textContent;
+  startFromPayload({ offer_id: id }, { type: "offer", id, label });
+}
+
+function onFilePicked(file) {
+  if (!file) return;
+  const fd = new FormData();
+  fd.append("file", file);
+  startFromPayload(fd, { type: "upload", id: file.name, label: file.name });
+}
+
+// --- Init -----------------------------------------------------------------
+
+function bind() {
+  const drop = $("wz-upload"), file = $("wz-file");
+  if (drop && file) {
+    drop.addEventListener("click", () => file.click());
+    drop.addEventListener("dragover", (e) => {
+      e.preventDefault(); drop.classList.add("wz-drop-over");
+    });
+    drop.addEventListener("dragleave", () => drop.classList.remove("wz-drop-over"));
+    drop.addEventListener("drop", (e) => {
+      e.preventDefault(); drop.classList.remove("wz-drop-over");
+      onFilePicked(e.dataTransfer.files && e.dataTransfer.files[0]);
+    });
+    file.addEventListener("change", () => onFilePicked(file.files && file.files[0]));
+  }
+  const offer = $("wz-offer");
+  if (offer) offer.addEventListener("change", onOfferPicked);
+
+  const dl = $("wz-download");
+  if (dl) dl.addEventListener("click", runDownload);
+  const reset = $("wz-reset");
+  if (reset) reset.addEventListener("click", resetWizard);
+
+  const logout = $("logout");
+  if (logout) logout.addEventListener("click", async (e) => {
+    e.preventDefault();
+    await fetch("/api/logout", { method: "POST" });
+    location.href = "/login.html";
+  });
+}
 
 function init() {
-  document.addEventListener("designer:add", onDesignerAdd);
-  wireSource();
-  wireSearch();
-  wireDownload();
-  wireCover();
-  wireTextsEditor();
-  syncTextsButton();
-  loadOfferOptions();
-  renderGroups(state.groups);   // Restore: zuletzt geladene Vorschläge
-  renderBoard();                // Restore: Board aus sessionStorage
-  saveState(state);
+  bind();
+  loadOffers();
+  // Restore (EARS 6): reload-fest aus sessionStorage, Schritt-Position erhalten.
+  // Bei zurückgesetztem/leerem State landen wir wieder auf Schritt 0.
+  if (state.stepIndex >= stepCount()) state.stepIndex = 0;
+  renderStep();
 }
 
 if (document.readyState === "loading") {
@@ -731,9 +1293,3 @@ if (document.readyState === "loading") {
 } else {
   init();
 }
-
-export { STATE_KEY, loadState, saveState, emptyState, api, apiJson,
-  fetchOffers, fetchSuggestions, search,
-  addToBoard, removeFromBoard, moveBoardItem, isOnBoard, renderBoard,
-  boardKey, card, renderGroups, runSuggest, renderResults, runSearch,
-  downloadDeck };

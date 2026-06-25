@@ -4,7 +4,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/)
 
 ## [Unreleased]
 
+### Behoben (Designer-Editor)
+- **Dichte Slides (Preis-/Tabellen) nicht mehr „wild"** — Folien mit dutzenden Text-Zellen (z.B. Personal-Preistabelle, 50–80 Text-Elemente) zeigten 20+ wild angeordnete Edit-Boxen + ebenso viele Editor-Felder. Jetzt: bei >8 Texten nur die **prominenten** (große Schrift, dann große Fläche) editierbar + im Feld-Panel; der Rest ist **reine Anzeige** auf der Folie (kein Edit-Rahmen/Tint) und im Panel hinter „+N weitere Felder" kollabiert. Logout-Button + Live-Suche siehe unten.
+- **Logout auf jeder Seite** — Abmelden-Link einheitlich im Konto-Block (Seitenleiste) aller Seiten (vorher fehlte er auf 6 Seiten bzw. lag inkonsistent in der Topbar).
+- **Slide-Suche: Live-Suche** — Treffer erscheinen beim Tippen (debounced ~450ms, ab 3 Zeichen) statt erst nach Klick auf „Suchen".
+
+### Geändert
+- **Präsentations-Builder konsolidiert (Wizard → „Designer")** — die zwei überlappenden Tools (Wizard + alter Designer, gleiche Engine/Backend `/api/designer/*`) auf EINEN reduziert: der ausgereifte Wizard (Overlay-Edit, Schriftart-Auswahl, Live-Vorschau, fixer Navigator) ist jetzt der alleinige „Designer". `wizard.html`/`wizard.js` → `designer.html`/`assets/designer.js` umbenannt; alter Designer (freies Storyboard) nach `web/_legacy/` eingemottet (Backend-Routen unverändert, reaktivierbar); Sidebar-Nav aller Seiten auf einen „Designer"-Eintrag reduziert. Trade-off: freie manuelle Slide-Zusammenstellung entfällt (geführter Weg bleibt).
+- **W2: angebotsbezogene Text-Vorschläge** — `_gang_groups` liefert das `gang`-Objekt (label+dishes) jetzt mit; vorher kam im Wizard `gang=null` an → Vorschläge passten nicht zum Angebot. Gilt auch für Pauschal-/Konzept-Angebote. Regression-Test `backend/tests/test_w2_gang.py`.
+
 ### Behoben
+- **Kundenname „Unbekannter Kunde" eingefroren** — `save_offer` übernahm beim erneuten Speichern eines bestehenden Angebots (`_offer_id` gesetzt) den editierten Kundennamen nicht: der `else`-Zweig lud nur den vorhandenen Customer per `customer_id` und ignorierte `angebot["kunde"]`. Ein ohne Namen angelegtes Angebot (Fallback „Unbekannter Kunde") ließ sich daher nie korrigieren. Fix: bei abweichendem Namen wird der Customer per `(owner_email, name)` ge-upsertet und das Angebot darauf re-linked (owner-scoped, kein Cross-Tenant-Leak); der geteilte „Unbekannter Kunde"-Sammeleintrag bleibt für die übrigen namenlosen Angebote bestehen. Upsert-Logik in `_get_or_create_customer` extrahiert (Erstanlage + Re-Save teilen sie). Regression-Tests in `backend/tests/test_customer_rename.py`
+- **Logout-Button** — Designer und Wizard hatten keinen Abmelden-Knopf; jetzt im Konto-Block der Seitenleiste (`#logout` → `POST /api/logout`)
 - **Wizard-Editor (#95)** — vier Prod-Defekte des Präsentations-Wizards: (1) Angebots-Texte landen jetzt im Download statt nur angezeigt zu werden (Auto-Override wird committet) — die PPTX trägt nicht mehr den Originaltext (z.B. „BECHTLE"); (2) Textfelder liegen über den Bild-Overlays und sind sichtbar/klickbar (z-index + pointer-events); (3) generiertes Cover wird in der Stage angezeigt; (4) Cover-Prompt nutzt Veranstaltungsanlass + Location statt der Gänge → atmosphärischer Titelhintergrund statt Essensbild
 
 ## [Sprint 15] — 2026-06-12 — CI/Delivery + Treue-Harness + Korpus-Batches

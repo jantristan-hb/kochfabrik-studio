@@ -26,6 +26,22 @@ async def _ensure_user(s, email: str):
         await s.flush()
 
 
+async def _get_or_create_customer(s, owner_email: str, name: str) -> Customer:
+    """Customer per (owner_email, name) finden oder neu anlegen (owner-scoped,
+    kein Cross-Tenant-Leak). Neu = nächste Kundennummer atomar zuweisen."""
+    cust = (await s.execute(
+        select(Customer).where(
+            Customer.owner_email == owner_email,
+            Customer.name == name))).scalars().first()
+    if cust is None:
+        cust = Customer(
+            kundennummer=await next_kundennummer(s),
+            name=name, owner_email=owner_email)
+        s.add(cust)
+        await s.flush()
+    return cust
+
+
 async def save_offer(owner_email: str, angebot: dict) -> dict:
     """Angebot persistieren. Customer (name+owner) upsert; bei
     Erstanlage Kunden-/Angebotsnummer atomar zuweisen. Idempotent pro
@@ -41,16 +57,7 @@ async def save_offer(owner_email: str, angebot: dict) -> dict:
                 if offer and offer.owner_email != owner_email:
                     offer = None                       # fremd -> neu
             if offer is None:
-                cust = (await s.execute(
-                    select(Customer).where(
-                        Customer.owner_email == owner_email,
-                        Customer.name == name))).scalars().first()
-                if cust is None:
-                    cust = Customer(
-                        kundennummer=await next_kundennummer(s),
-                        name=name, owner_email=owner_email)
-                    s.add(cust)
-                    await s.flush()
+                cust = await _get_or_create_customer(s, owner_email, name)
                 offer = Offer(
                     angebotsnummer=await next_angebotsnummer(s),
                     customer_id=cust.id, owner_email=owner_email,
@@ -59,6 +66,15 @@ async def save_offer(owner_email: str, angebot: dict) -> dict:
                 await s.flush()
             else:
                 cust = await s.get(Customer, offer.customer_id)
+                # Bug-Fix: Kundennamen aus dem Angebot übernehmen, wenn er
+                # sich geändert hat. Vorher fror der Name bei der Erstanlage
+                # ein → ein als "Unbekannter Kunde" angelegtes Angebot ließ
+                # sich nie korrigieren. Re-Link auf den (ggf. neuen) Customer
+                # per (owner, name); der alte Sammel-Customer bleibt für die
+                # übrigen namenlosen Angebote bestehen.
+                if cust is None or cust.name != name:
+                    cust = await _get_or_create_customer(s, owner_email, name)
+                    offer.customer_id = cust.id
             angebot = dict(angebot)
             angebot["angebots_nr"] = offer.angebotsnummer
             angebot["kundennr"] = cust.kundennummer

@@ -232,6 +232,9 @@ class SlideRef(BaseModel):
     # Bild-Overrides (#71): seq-Index -> Data-URL. Ersetzt die src des
     # image-Elements an idx durch ein ins Bundle gelegtes Override-Bild.
     image_overrides: Optional[Dict[str, str]] = None
+    # Schriftart-Overrides: seq-Index -> Font-Name (z.B. "Georgia"). Setzt
+    # fontFace pro Text-Element; unabhängig vom Text-Override anwendbar.
+    font_overrides: Optional[Dict[str, str]] = None
 
 
 class DownloadReq(BaseModel):
@@ -289,6 +292,21 @@ def _apply_image_overrides(seq, ov, shared, slot):
     return out
 
 
+def _apply_font_overrides(seq, fov):
+    """Schriftart-Overrides anwenden: setzt `font` auf ALLE Zeilen des
+    Text-Elements an idx (unabhängig von Text-Overrides — der Nutzer kann
+    nur die Schrift ändern). Leerer Wert = kein Override. Nicht-Text bleibt
+    unberührt; frische Element-/Zeilen-Kopie wie _apply_overrides."""
+    out = []
+    for idx, e in enumerate(seq):
+        f = (fov.get(str(idx)) or "").strip()
+        if not f or e.get("t") != "text" or not e.get("lines"):
+            out.append(e)
+            continue
+        out.append(dict(e, lines=[dict(ln, font=f) for ln in e["lines"]]))
+    return out
+
+
 def _apply_overrides(seq, ov):
     """Text-Overrides (#66) auf eine Element-Sequenz anwenden: Zeilen
     des Elements ersetzen (Stil der ersten Original-Zeile erben),
@@ -341,6 +359,8 @@ def download(r: DownloadReq, request: Request):
             continue
         if s.overrides:
             seq = _apply_overrides(seq, s.overrides)
+        if s.font_overrides:
+            seq = _apply_font_overrides(seq, s.font_overrides)
         if s.image_overrides:
             try:
                 seq = _apply_image_overrides(seq, s.image_overrides,

@@ -4,59 +4,245 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>KOCHfabrik Studio — Designer</title>
-<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="assets/style.css?v=w2c">
 <style>
-  /* Designer-spezifische, additive Klassen (Layout §1/§4). */
-  .dz-cols{display:grid;grid-template-columns:300px 1fr 320px;gap:22px;align-items:start}
-  .dz-col{display:flex;flex-direction:column;gap:16px}
-  .dz-col-h{font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);font-weight:700}
-  .dz-field{display:flex;flex-direction:column;gap:6px}
-  .dz-field label{font-size:.78rem;font-weight:700;color:var(--ink-soft)}
-  .dz-field input,.dz-field select{border:1px solid var(--line);border-radius:8px;
-    padding:9px 12px;font:inherit;font-size:.9rem;outline:none}
-  .dz-field input:focus,.dz-field select:focus{border-color:var(--gold)}
-  .dz-drop{border:1.5px dashed var(--line);border-radius:var(--radius);padding:22px;
-    text-align:center;color:var(--ink-soft);font-size:.86rem;background:var(--gold-tint-2)}
-  .dz-empty{color:var(--ink-soft);font-size:.88rem;padding:18px 0}
-  .dz-group-h{font-size:.95rem;font-weight:800;margin:6px 0 2px}
-  .dz-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
-  .dz-card{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;
-    background:var(--panel);transition:.16s}
-  .dz-card:hover{border-color:var(--gold);box-shadow:var(--shadow)}
-  .dz-card img{width:100%;height:auto;display:block;aspect-ratio:16/9;object-fit:cover;background:var(--gold-tint)}
-  .dz-card{cursor:pointer;text-align:left;padding:0;font:inherit;color:inherit}
-  .dz-card .dz-cap{padding:8px 10px;font-size:.78rem;color:var(--ink-soft);
-    display:flex;justify-content:space-between;gap:8px;align-items:center}
-  .dz-cap-score{font-weight:700;color:var(--gold-deep);flex:none}
-  .dz-card-on{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold-soft) inset}
-  .dz-card-placeholder img,.dz-thumb-missing{background:var(--gold-tint)}
-  .dz-thumb-missing{min-height:88px;display:block}
-  .dz-group{margin-bottom:18px}
-  .dz-status{font-size:.82rem;color:var(--ink-soft);min-height:1.2em}
-  .dz-status-error{color:#a8324b}
-  .dz-status-load{color:var(--gold-deep)}
-  .dz-drop-over{border-color:var(--gold);background:var(--gold-tint)}
-  .dz-board-item{display:flex;align-items:center;gap:10px;border:1px solid var(--line);
-    border-radius:10px;padding:8px 10px;background:var(--panel)}
-  .dz-board-item .dz-ix{font-weight:800;color:var(--gold-deep);flex:none}
-  .dz-board-thumb{width:54px;height:auto;border-radius:5px;flex:none;background:var(--gold-tint)}
-  .dz-board-label{flex:1;font-size:.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .dz-board-ctrl{display:flex;gap:4px;flex:none}
-  .dz-board-ctrl .btn{padding:4px 8px;font-size:.8rem}
-  .dz-cards-row { display: flex; flex-wrap: nowrap; gap: 10px; overflow-x: auto; align-items: stretch; }
-  .dz-cards-row .dz-card { flex: 0 0 31%; min-width: 150px; }
-  .dz-more { flex: 0 0 auto; align-self: center; border: 1px dashed #c9a227; background: none; color: #8a6d1d; border-radius: 8px; padding: 8px 10px; cursor: pointer; font: inherit; }
-  .dz-cover { margin-bottom: 12px; }
-  .dz-cover img { width: 100%; border-radius: 8px; display: block; margin-top: 8px; }
-  .dz-cover-actions { display: flex; gap: 8px; margin-top: 6px; }
-  .dz-tx-row { display: flex; gap: 14px; margin-bottom: 18px; align-items: flex-start; border-bottom: 1px solid #eee2c4; padding-bottom: 14px; }
-  .dz-tx-row img { flex: 0 0 42%; max-width: 42%; border-radius: 8px; display: block; }
-  .dz-tx-fields { flex: 1; display: flex; flex-direction: column; gap: 8px; }
-  .dz-tx-fields textarea { width: 100%; font: inherit; padding: 6px 8px; border: 1px solid #d8c89a; border-radius: 6px; resize: vertical; min-height: 38px; }
-  .dz-tx-fields textarea.dz-tx-auto { border-color: #c9a227; background: #fdf8ec; }
-  .dz-tx-orig { font-size: 11px; color: #999; white-space: pre-line; }
-  .dz-tx-head { font-weight: 600; margin-bottom: 2px; }
-  .dz-tx-reset { align-self: flex-start; border: none; background: none; color: #8a6d1d; cursor: pointer; font-size: 12px; text-decoration: underline; padding: 0; }
+  /* Wizard-spezifische, additive Klassen (FEATURE-015 §4). */
+  .wz{display:flex;flex-direction:column;gap:18px}
+
+  /* Fortschrittszeile: ein Chip je Schritt, aktiver Schritt hervorgehoben. */
+  .wz-progress{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .wz-prog-step{display:flex;align-items:center;gap:7px;border:1px solid var(--line);
+    border-radius:999px;padding:6px 13px;font-size:.8rem;color:var(--ink-soft);
+    background:var(--panel);white-space:nowrap}
+  .wz-prog-step .wz-prog-ix{font-weight:800;color:var(--gold-deep)}
+  .wz-prog-step.is-active{border-color:var(--gold);background:var(--gold-tint);color:var(--ink)}
+  .wz-prog-step.is-done{border-color:var(--gold-soft)}
+  .wz-prog-step.is-done .wz-prog-ix{color:var(--gold)}
+
+  /* Vollbild-Pane (nur Wizard, page-scoped): View füllt den Viewport, die
+     Seite selbst scrollt nicht. Dadurch bleibt der linke Navigator FIX —
+     gescrollt wird ausschließlich die rechte Editor-Spalte (#wz-main).
+     Offset-frei (kein magisches max-height), robust über Viewport-Größen. */
+  main.view{height:100vh;overflow:hidden}
+  .content{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+  .panel.wz{flex:1;min-height:0;display:flex;flex-direction:column}
+  #wizard-step{flex:1;min-height:0;display:flex;flex-direction:column}
+
+  /* Slide-Navigator (links) + Editor (rechts) — PPT-Stil. */
+  .wz-shell{display:grid;grid-template-columns:212px minmax(0,1fr);gap:18px;
+    align-items:start;flex:1;min-height:0}
+  .wz-nav{display:flex;flex-direction:column;gap:6px;
+    max-height:100%;overflow:auto;padding-right:2px}
+  .wz-nav-item{display:flex;gap:9px;align-items:center;border:1px solid var(--line);
+    border-radius:10px;padding:6px 8px;background:var(--panel);cursor:pointer;
+    text-align:left;font:inherit;color:inherit;transition:.14s}
+  .wz-nav-item:hover{border-color:var(--gold)}
+  .wz-nav-item.is-active{border-color:var(--gold);background:var(--gold-tint);
+    box-shadow:0 0 0 2px var(--gold-soft) inset}
+  .wz-nav-ix{font-weight:800;color:var(--gold-deep);font-size:.72rem;flex:0 0 auto;
+    width:15px;text-align:center}
+  .wz-nav-thumb{flex:0 0 auto;width:50px;height:29px;border-radius:5px;overflow:hidden;
+    background:var(--gold-tint);border:1px solid var(--line)}
+  .wz-nav-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .wz-nav-lab{font-size:.74rem;color:var(--ink-soft);line-height:1.18;overflow:hidden;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .wz-nav-dl{margin-top:6px;border-style:dashed;border-color:var(--gold-soft);
+    justify-content:center;color:var(--gold-deep);font-weight:700;font-size:.8rem}
+  .wz-nav-sep{font-size:.62rem;text-transform:uppercase;letter-spacing:.12em;
+    color:var(--ink-soft);padding:8px 4px 2px}
+  /* Rechte Spalte = einzige Scroll-Region. So bleibt die Seitenhöhe im
+     Viewport → die Seite scrollt NICHT mehr → der Navigator links bleibt
+     fix stehen (statt erst mitzuwandern, bis sticky greift). */
+  .wz-main{min-width:0;max-height:100%;overflow-y:auto;
+    overflow-x:hidden;padding-right:4px}
+  @media (max-width:880px){
+    main.view{height:auto;overflow:visible}
+    .content{overflow:visible}
+    .wz-shell{grid-template-columns:1fr;min-height:0}
+    .wz-main{max-height:none;overflow:visible}
+    .wz-nav{flex-direction:row;overflow-x:auto;position:static;max-height:none;
+      padding-bottom:4px}
+    .wz-nav-item{flex:0 0 auto}
+    .wz-nav-lab{display:none}
+    .wz-nav-dl{flex:0 0 auto}
+  }
+
+  /* Schritt-Container: Titel + Body (Alternativen-Leiste + Stage). */
+  .wz-step-h{display:flex;justify-content:space-between;align-items:baseline;gap:14px}
+  .wz-step-h[hidden]{display:none}
+  .wz-step-h h2{margin:0}
+  .wz-step-sub{font-size:.85rem;color:var(--ink-soft)}
+  .wz-status{font-size:.82rem;color:var(--ink-soft);min-height:1.2em}
+  .wz-status-error{color:#a8324b}
+  .wz-status-load{color:var(--gold-deep)}
+
+  /* Alternativen-Leiste (US-075 füllt sie): horizontale Kandidaten-Streifen. */
+  .wz-alts{display:flex;gap:12px;overflow-x:auto;padding:4px 0;align-items:stretch}
+  .wz-alts[hidden]{display:none}
+  .wz-alt{flex:0 0 168px;border:1px solid var(--line);border-radius:var(--radius);
+    overflow:hidden;background:var(--panel);cursor:pointer;text-align:left;
+    padding:0;font:inherit;color:inherit;transition:.16s}
+  .wz-alt:hover{border-color:var(--gold);box-shadow:var(--shadow-s)}
+  .wz-alt-on{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold-soft) inset}
+  .wz-alt img{width:100%;height:auto;display:block;aspect-ratio:16/9;object-fit:cover;background:var(--gold-tint)}
+  .wz-alt-missing{aspect-ratio:16/9;background:var(--gold-tint)}
+  .wz-alt-cap{padding:7px 9px;font-size:.76rem;color:var(--ink-soft)}
+  .wz-more{flex:0 0 auto;align-self:center;border:1px dashed var(--gold-soft);
+    background:none;color:var(--gold-deep);border-radius:8px;padding:8px 12px;
+    cursor:pointer;font:inherit;white-space:nowrap}
+
+  /* Cover-Generieren (nur Cover-Schritt). */
+  .wz-cover-host{display:flex;flex-direction:column;gap:8px;margin:14px 0}
+
+  /* Große Stage: gewählte Slide groß + Overlay-Editor (US-076). */
+  .wz-stage{border:1px solid var(--line);border-radius:var(--radius);
+    background:var(--gold-tint-2);min-height:280px;position:relative;overflow:visible;
+    padding:14px}
+  .wz-stage-empty{color:var(--ink-soft);font-size:.9rem;padding:40px;text-align:center}
+  /* #W1-Layout: zwei Spalten — links Live-Folie (sticky), rechts Editor. */
+  .wz-edit{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(300px,1fr);
+    gap:18px;align-items:start}
+  .wz-preview{position:sticky;top:14px;min-width:0}
+  /* Editor fließt jetzt im #wz-main-Scroller (kein eigener Scroll mehr →
+     keine doppelten Scrollbalken). Die Live-Folie (.wz-preview) bleibt
+     per sticky oben, während die Felder darunter scrollen. */
+  .wz-editor{display:flex;flex-direction:column;gap:14px;min-width:0}
+  @media (max-width:880px){
+    .wz-edit{grid-template-columns:1fr}
+    .wz-preview{position:static}
+  }
+  /* #95: sichtbare Feldliste = der eigentliche Editor (unter der Vorschau). */
+  .wz-fields{display:flex;flex-direction:column;gap:5px}
+  .wz-fields-h{font-weight:600;font-size:.85rem;color:var(--ink-soft);
+    text-transform:uppercase;letter-spacing:.04em}
+  .wz-field-lab{font-size:.72rem;color:var(--ink-soft)}
+  .wz-field{position:relative}
+  .wz-field-in{width:100%;font:inherit;font-size:.9rem;padding:6px 30px 6px 9px;
+    border:1px solid var(--line);border-radius:7px;resize:vertical;
+    background:#fff;color:var(--ink)}
+  .wz-field-in:focus{outline:none;border-color:var(--gold);
+    box-shadow:0 0 0 2px var(--gold-tint-2)}
+  .wz-field-tools{position:absolute;top:5px;right:5px;display:flex;gap:5px;
+    align-items:center}
+  .wz-field-fmt{width:23px;height:23px;flex:0 0 auto;
+    display:grid;place-items:center;border:1px solid var(--gold-soft);
+    background:var(--panel);color:var(--gold-deep);border-radius:6px;
+    cursor:pointer;font-size:.82rem;line-height:1;opacity:.45;
+    transition:opacity .12s}
+  .wz-field:hover .wz-field-fmt,.wz-field:focus-within .wz-field-fmt{opacity:1}
+  .wz-field-fmt:hover{background:var(--gold-tint);border-color:var(--gold)}
+  .wz-field-fmt:disabled{opacity:.3;cursor:default}
+  /* Schriftart-Wähler: am Ruhepunkt eingeklappt, erscheint bei Hover/Fokus. */
+  .wz-field-font{height:23px;max-width:0;width:0;padding:0;border-width:0;
+    opacity:0;pointer-events:none;overflow:hidden;font-size:.72rem;
+    border:1px solid var(--gold-soft);border-radius:6px;background:var(--panel);
+    color:var(--ink-soft);cursor:pointer;transition:opacity .12s}
+  .wz-field:hover .wz-field-font,.wz-field:focus-within .wz-field-font{
+    max-width:130px;width:auto;padding:0 4px;border-width:1px;opacity:1;
+    pointer-events:auto}
+  /* W1: "Bilder dieser Slide" — editierbarer Prompt je image-Element. */
+  .wz-imgs{display:flex;flex-direction:column;gap:10px}
+  .wz-img-row{display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);
+    border-radius:var(--radius);padding:8px 10px;background:var(--panel)}
+  .wz-img-prompt{width:100%;font:inherit;font-size:.9rem;padding:6px 8px;
+    border:1px solid var(--gold-soft);border-radius:6px;resize:vertical;
+    background:#fff;color:var(--ink);min-height:46px}
+  .wz-img-prompt:focus{outline:none;border-color:var(--gold);
+    box-shadow:0 0 0 2px var(--gold-tint-2)}
+  .wz-img-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .wz-img-thumb{width:64px;height:36px;flex:0 0 auto;border:1px solid var(--line);
+    border-radius:6px;overflow:hidden;display:flex;align-items:center;
+    justify-content:center;background:var(--gold-tint);font-size:.7rem;color:var(--ink-soft)}
+  .wz-img-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .wz-img-gen{font-size:.82rem;padding:5px 12px}
+  .wz-img-clear{border:1px solid var(--gold-soft);background:none;color:var(--gold-deep);
+    border-radius:6px;padding:4px 9px;cursor:pointer;font:inherit;font-size:.8rem}
+  .wz-img-status{flex:1;min-width:120px}
+  /* Overlay-Frame: hält das Slide-Seitenverhältnis (aspect-ratio aus w_pt/h_pt). */
+  .wz-frame{position:relative;width:100%;max-width:100%;background:var(--panel)}
+  .wz-bg{width:100%;height:auto;display:block}
+  .wz-notext-badge{position:absolute;top:8px;left:8px;z-index:5;
+    background:rgba(168,50,75,.92);color:#fff;font-size:.7rem;padding:4px 8px;border-radius:6px}
+  /* Text-Overlay: absolut in % positioniert, editierbar.
+     #95: z-index 4 (über den Bild-Overlays) + Ruhe-Affordanz (immer
+     sichtbarer Rahmen + Tint + Textschatten), sonst war der Editor
+     unsichtbar bzw. von den Bild-Boxen überdeckt. */
+  .wz-tov{position:absolute;display:flex;align-items:flex-start;z-index:4}
+  .wz-ted{width:100%;height:auto;min-height:100%;outline:none;line-height:1.12;
+    overflow:visible;white-space:pre-wrap;cursor:text;
+    /* Ruhezustand CLEAN: kein sichtbarer Rahmen/Tint — die Vorschau soll wie
+       die fertige Folie aussehen, nicht wie ein Editor. Edit-Affordanz kommt
+       erst bei Hover/Focus (Regeln unten). Discoverability via Feld-Panel (#95).
+       Transparenter 1px-Rahmen bleibt nur fürs stabile Box-Modell (kein
+       Layout-Sprung beim Hover). */
+    border:1px dashed transparent;
+    background:transparent;border-radius:3px;
+    text-shadow:0 1px 2px rgba(0,0,0,.55);
+    /* Hybrid-Edit: hochkontrastiger Caret (Text kann weiß ODER dunkel sein,
+       currentColor würde auf gleichfarbigem Grund verschwinden). */
+    caret-color:#e8b923}
+  .wz-tov:hover .wz-ted{border-color:var(--gold-soft);background:rgba(0,0,0,.2)}
+  .wz-tov:focus-within .wz-ted{border:1.5px solid var(--gold);
+    background:rgba(0,0,0,.34);box-shadow:0 0 0 2px rgba(201,162,39,.35)}
+  /* Leere editierbare Felder: am Ruhepunkt unsichtbar (transparenter Rahmen,
+     kein Tint), Edit-Affordanz erst bei Hover/Focus — die Hover/Focus-Regeln
+     oben haben höhere Spezifität und blenden Rahmen+Tint wieder ein. Verhindert
+     die verstreuten leeren Kästen über der Folie; Discoverability via Feld-Panel. */
+  .wz-ted-empty{border-color:transparent;background:transparent;text-shadow:none}
+  /* Reine Anzeige-Overlays (nicht-prominente Texte auf dichten Slides):
+     kein Edit-Look (Rahmen/Tint), keine Klick-Interaktion → die Folie wirkt
+     wie die echte Folie, nur die prominenten Texte sind editierbar markiert. */
+  .wz-tov-ro{pointer-events:none}
+  .wz-ted-plain{border:0;background:none;cursor:default}
+  .wz-tov-tools{position:absolute;top:-13px;right:-6px;display:none;z-index:7}
+  .wz-tov:hover .wz-tov-tools,.wz-tov:focus-within .wz-tov-tools{display:block}
+  .wz-tov-btn{border:1px solid var(--gold);background:var(--panel);color:var(--gold-deep);
+    border-radius:6px;width:22px;height:22px;cursor:pointer;font-size:.78rem;line-height:1;padding:0}
+  /* Bild-Overlay: positionierter Rahmen + Generieren-Button.
+     #95: z-index 2 (unter Textfeldern) + pointer-events:none, damit die
+     vollflächige Cover-Bildbox die Textfelder nicht mehr abdeckt/Klicks
+     schluckt; nur der Generieren-Button bleibt klickbar. */
+  /* Ruhezustand CLEAN: transparenter Rahmen, Generieren-Button ausgeblendet —
+     die Vorschau zeigt die fertige Folie. Rahmen + 🖼 erscheinen erst beim
+     Hover über die Folie (.wz-iov hat pointer-events:none, daher .wz-frame:hover
+     statt .wz-iov:hover). */
+  .wz-iov{position:absolute;border:1px dashed transparent;box-sizing:border-box;
+    z-index:2;pointer-events:none}
+  .wz-frame:hover .wz-iov{border-color:var(--gold-soft)}
+  .wz-iov-img{width:100%;height:100%;object-fit:cover;display:block}
+  .wz-iov-btn{position:absolute;bottom:4px;right:4px;border:1px solid var(--gold);
+    background:var(--panel);border-radius:6px;width:26px;height:26px;cursor:pointer;
+    font-size:.85rem;line-height:1;padding:0;z-index:6;pointer-events:auto;
+    opacity:0;transition:opacity .12s}
+  .wz-frame:hover .wz-iov-btn{opacity:1}
+  .wz-undo{border:1px solid var(--gold-soft);background:none;color:var(--gold-deep);
+    border-radius:6px;padding:2px 8px;cursor:pointer;font:inherit;font-size:.8rem;margin-left:6px}
+
+  /* Schritt-0-Panel: Quelle wählen. */
+  .wz-drop{border:1.5px dashed var(--line);border-radius:var(--radius);padding:26px;
+    text-align:center;color:var(--ink-soft);font-size:.88rem;background:var(--gold-tint-2);cursor:pointer}
+  .wz-drop-over{border-color:var(--gold);background:var(--gold-tint)}
+  .wz-field{display:flex;flex-direction:column;gap:6px;max-width:420px}
+  .wz-field label{font-size:.78rem;font-weight:700;color:var(--ink-soft)}
+  .wz-field select{border:1px solid var(--line);border-radius:8px;padding:9px 12px;
+    font:inherit;font-size:.9rem;outline:none}
+  .wz-field select:focus{border-color:var(--gold)}
+  .wz-or{font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);
+    text-align:center;margin:4px 0}
+
+  /* Filmstreifen (Abschluss): gewählte Slides in Reihenfolge. */
+  .wz-film{display:flex;gap:10px;overflow-x:auto;padding:6px 0}
+  .wz-film-item{position:relative;flex:0 0 200px;border:1px solid var(--line);
+    border-radius:var(--radius);overflow:hidden;background:var(--panel)}
+  .wz-film-item img{width:100%;height:auto;display:block;aspect-ratio:16/9;
+    object-fit:cover;background:var(--gold-tint)}
+  .wz-film-ix{position:absolute;top:6px;left:6px;z-index:2;background:var(--gold);
+    color:#fff;font-weight:800;font-size:.74rem;border-radius:999px;
+    width:22px;height:22px;display:flex;align-items:center;justify-content:center}
+  .wz-finish-actions{display:flex;gap:10px;margin-top:14px;align-items:center}
+
+  /* Steuer-Leiste. */
+  .wz-ctrl{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--line-2);padding-top:16px}
 </style>
 </head>
 <body>
@@ -68,7 +254,6 @@
       <a class="nav-item" href="index.html"><span class="ic">&#9632;</span> Dashboard</a>
       <a class="nav-item" href="chat.html"><span class="ic">&#9993;</span> Angebotsgenerator</a>
       <a class="nav-item" href="slidesuche.html"><span class="ic">&#9906;</span> Slide Suche</a>
-      <a class="nav-item" href="wizard.html"><span class="ic">&#9881;</span> Wizard</a>
       <a class="nav-item active" href="designer.html"><span class="ic">&#9998;</span> Designer</a>
       <a class="nav-item" href="bildgenerator.html"><span class="ic">&#9788;</span> Bildgenerator</a>
       <div class="nav-label">Wissen</div>
@@ -76,68 +261,68 @@
       <a class="nav-item" href="client.html"><span class="ic">&#9906;</span> Client Research</a>
       <a class="nav-item" href="bibliothek.html"><span class="ic">&#9783;</span> Bibliothek</a>
     </nav>
-    <div class="side-foot"><div class="avatar">PD</div><div><div class="nm">Patrick Diehr</div><div class="rl">KOCHfabrik</div></div></div>
+    <div class="side-foot"><div class="avatar">PD</div><div><div class="nm">Patrick Diehr</div><div class="rl">KOCHfabrik</div></div><a href="#" id="logout" class="side-logout" title="Abmelden" aria-label="Abmelden">Abmelden</a></div>
   </aside>
 
   <main class="view">
     <div class="topbar">
-      <div><h1>Designer</h1><div class="sub">Storyboard aus Vorschlägen zusammenstellen</div></div>
+      <div><h1>Designer</h1><div class="sub">Geführt durch Angebot, Auswahl und Download</div></div>
     </div>
 
     <div class="content">
-      <div class="dz-cols">
+      <div class="panel wz">
 
-        <!-- Links: Quelle (Upload / Angebot) + Freitext-Suche -->
-        <section id="designer-source" class="panel dz-col">
-          <div class="dz-col-h">Quelle</div>
-          <div class="dz-drop" id="dz-upload">Angebots-PDF hier ablegen oder klicken</div>
-          <input id="dz-file" type="file" accept="application/pdf" hidden>
-          <div class="dz-field">
-            <label for="dz-offer">Aus Angebot</label>
-            <select id="dz-offer"><option value="">Angebot wählen …</option></select>
-          </div>
-          <div class="dz-field">
-            <label for="dz-search">Freitext-Suche</label>
-            <input id="dz-search" type="search" placeholder="Begriff suchen …" autocomplete="off">
-          </div>
-          <div id="dz-source-status" class="dz-status"></div>
-        </section>
-
-        <!-- Mitte: Vorschlags-Gruppen + Suchtreffer (PNG-Karten) -->
-        <section id="designer-groups" class="panel dz-col">
-          <div class="dz-col-h">Vorschläge</div>
-          <div class="dz-empty" id="dz-groups-empty">Noch keine Vorschläge. Quelle wählen oder suchen.</div>
-          <div id="dz-groups"></div>
-          <div id="dz-results"></div>
-          <!-- Texte-Editor (#66): Bild links, editierbare Texte rechts -->
-          <div id="dz-texts" hidden></div>
-        </section>
-
-        <!-- Rechts: Storyboard (Reihenfolge / Entfernen / Download) -->
-        <section id="designer-board" class="panel dz-col">
-          <div class="dz-col-h">Storyboard</div>
-          <!-- Cover-Bild-Generator (#65): Gemini-Bild für Slide 1 -->
-          <div class="dz-cover" id="dz-cover-wrap">
-            <button class="btn" id="dz-genbild" type="button">✨ Cover-Bild generieren</button>
-            <button class="btn" id="dz-edit-texts" type="button" disabled>📝 Texte bearbeiten</button>
-            <div id="dz-cover-status" class="dz-status"></div>
-            <div id="dz-cover" hidden>
-              <img id="dz-cover-img" alt="Generiertes Cover-Bild" />
-              <div class="dz-cover-actions">
-                <a id="dz-cover-save" class="btn" download="kochfabrik-cover.png">PNG sichern</a>
-                <button id="dz-cover-again" class="btn" type="button">Neu generieren</button>
-              </div>
+        <section id="wizard-step">
+          <!-- Schritt 0: Quelle wählen (noch kein Deck) — volle Breite. -->
+          <div id="wz-step0">
+            <div class="wz-step-h"><h2 id="wz-src-title">Angebot wählen</h2></div>
+            <div class="wz-drop" id="wz-upload">Angebots-PDF hier ablegen oder klicken</div>
+            <input id="wz-file" type="file" accept="application/pdf" hidden>
+            <div class="wz-or">oder</div>
+            <div class="wz-field">
+              <label for="wz-offer">Aus bestehendem Angebot</label>
+              <select id="wz-offer"><option value="">Angebot wählen …</option></select>
             </div>
           </div>
-          <div class="dz-empty" id="dz-board-empty">Storyboard leer. Karten hinzufügen.</div>
-          <div id="dz-board"></div>
-          <button class="btn btn-primary" id="dz-download" disabled>Download</button>
+
+          <!-- Deck vorhanden: Slide-Navigator (links) + Editor der gewählten
+               Slide (rechts). Ersetzt den linearen Stepper — alle Slides immer
+               im Blick, direktes Anspringen via Klick. -->
+          <div id="wz-shell" class="wz-shell" hidden>
+            <aside id="wz-nav" class="wz-nav"></aside>
+            <div id="wz-main" class="wz-main">
+              <div class="wz-step-h" id="wz-main-head">
+                <h2 id="wz-step-title">Slide</h2>
+                <span id="wz-step-sub" class="wz-step-sub"></span>
+              </div>
+
+              <!-- Slide-Editor: Alternativen-Leiste + 2-Spalten-WYSIWYG. -->
+              <div id="wz-slide" hidden>
+                <div id="wizard-alts" class="wz-alts"></div>
+                <div id="wz-cover-host" class="wz-cover-host" hidden></div>
+                <div id="wizard-stage" class="wz-stage">
+                  <div class="wz-stage-empty">Wähle oben eine Alternative.</div>
+                </div>
+              </div>
+
+              <!-- Abschluss: Filmstreifen + Download. -->
+              <div id="wz-finish" hidden>
+                <div id="wz-film" class="wz-film"></div>
+                <div class="wz-finish-actions">
+                  <button class="btn btn-primary" id="wz-download" disabled>PPTX herunterladen</button>
+                  <button class="btn" id="wz-reset" type="button">↺ Von vorn</button>
+                </div>
+              </div>
+
+              <div id="wz-status" class="wz-status"></div>
+            </div>
+          </div>
         </section>
 
       </div>
     </div>
   </main>
 </div>
-<script src="assets/designer.js" type="module"></script>
+<script src="assets/designer.js?v=d8" type="module"></script>
 </body>
 </html>

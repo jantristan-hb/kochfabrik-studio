@@ -64,6 +64,19 @@ async def auth_gate(request: Request, call_next):
     return RedirectResponse("/login.html", status_code=302)
 
 
+@app.middleware("http")
+async def no_cache_assets(request: Request, call_next):
+    """HTML/JS/CSS immer revalidieren lassen. Ohne explizite Header cacht der
+    Browser die Seiten heuristisch — geänderte Inline-CSS in *.html (kein
+    Query-Buster möglich) schlägt dann nicht durch. `no-cache` erzwingt
+    Revalidierung (ETag → 304 wenn unverändert, also weiter effizient)."""
+    resp = await call_next(request)
+    p = request.url.path
+    if p == "/" or p.endswith((".html", ".js", ".css")):
+        resp.headers["Cache-Control"] = "no-cache"
+    return resp
+
+
 @app.get("/api/health")
 async def health():
     try:
