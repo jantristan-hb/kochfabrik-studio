@@ -55,38 +55,41 @@ def client(app_module):
 
 
 def _wizard_html():
-    return (WEB / "wizard.html").read_text(encoding="utf-8")
+    # Wizard → "Designer" umbenannt (Sprint nach #95): die Wizard-UI-Kette
+    # lebt jetzt unter web/designer.html + web/assets/designer.js.
+    return (WEB / "designer.html").read_text(encoding="utf-8")
 
 
 def _wizard_js():
-    return (WEB / "assets" / "wizard.js").read_text(encoding="utf-8")
+    return (WEB / "assets" / "designer.js").read_text(encoding="utf-8")
 
 
 # --- US-074: Auslieferung + Marker -----------------------------------------
 
 def test_wizard_page_served_200(auth_client):
-    r = auth_client.get("/wizard.html")
+    r = auth_client.get("/designer.html")
     assert r.status_code == 200
     assert "text/html" in r.headers["content-type"]
 
 
 def test_wizard_page_gated_without_cookie(client):
     # Modul-Seite hinter dem Auth-Gate (IST: Nicht-API -> 302 /login.html).
-    r = client.get("/wizard.html")
+    r = client.get("/designer.html")
     assert r.status_code == 302
     assert r.headers["location"] == "/login.html"
 
 
 def test_wizard_page_has_area_markers():
     html = _wizard_html()
-    for marker in ("wizard-progress", "wizard-step", "wizard-alts",
-                   "wizard-stage"):
+    # Stepper (wizard-progress) wurde durch den PPT-Stil-Navigator (#wz-nav)
+    # ersetzt; die inhaltlichen Bereichs-Marker bleiben.
+    for marker in ("wizard-step", "wizard-alts", "wizard-stage"):
         assert marker in html, f"Bereichs-Marker fehlt: {marker}"
 
 
 def test_wizard_js_served_200(client):
     # /assets ist public (kein Cookie nötig).
-    r = client.get("/assets/wizard.js")
+    r = client.get("/assets/designer.js")
     assert r.status_code == 200
 
 
@@ -105,9 +108,9 @@ def test_wizard_js_has_login_redirect_pattern():
 
 def test_at_least_five_pages_link_wizard():
     pages = [p for p in WEB.glob("*.html")
-             if "wizard.html" in p.read_text(encoding="utf-8")]
+             if "designer.html" in p.read_text(encoding="utf-8")]
     assert len(pages) >= 5, (
-        f"Nur {len(pages)} Seiten verlinken wizard.html (>=5 erwartet)")
+        f"Nur {len(pages)} Seiten verlinken designer.html (>=5 erwartet)")
 
 
 # --- US-074: Schritt-0 + State-Maschine ------------------------------------
@@ -120,10 +123,11 @@ def test_wizard_js_wires_suggest():
 
 
 def test_wizard_js_step_machine_present():
-    # Schritt-Maschine: stepIndex + Weiter/Zurück + Restore.
+    # Schritt-Maschine: stepIndex + Navigator-Sprung (renderNav/goToStep
+    # ersetzten den linearen nextStep/prevStep-Stepper) + Step-Render.
     js = _wizard_js()
     assert "stepIndex" in js, "stepIndex (Schritt-Zeiger) fehlt"
-    for fn in ("nextStep", "prevStep", "renderStep"):
+    for fn in ("renderNav", "goToStep", "renderStep"):
         assert fn in js, f"Schritt-Maschinen-Funktion fehlt: {fn}"
 
 
@@ -149,10 +153,10 @@ def test_wizard_step0_panel_markers():
 
 
 def test_wizard_nav_buttons_present():
-    # Zurück/Weiter-Steuerung.
+    # Navigation: PPT-Stil-Slide-Navigator (#wz-nav) ersetzt die
+    # Zurück/Weiter-Buttons des linearen Steppers.
     html = _wizard_html()
-    assert 'id="wz-back"' in html
-    assert 'id="wz-next"' in html
+    assert 'id="wz-nav"' in html
 
 
 # --- US-075: Alternativen + Auswahl (FEATURE-015 §8 Nr. 1 + Nr. 4-Teil) -----

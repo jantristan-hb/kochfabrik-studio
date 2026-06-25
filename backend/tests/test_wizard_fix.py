@@ -49,7 +49,7 @@ def test_parse_offer_md_carries_anlass():
 
 def test_wizard_commits_auto_suggestion():
     """#1: Suggestion wird beim Render in textOverrides committet."""
-    js = _read("web", "assets", "wizard.js")
+    js = _read("web", "assets", "designer.js")
     # nach fieldValue muss ein setTextOverride-Commit der Suggestion stehen
     assert "val !== t.text" in js
     assert "setTextOverride(cand.deck, cand.page, t.i, val)" in js
@@ -57,7 +57,7 @@ def test_wizard_commits_auto_suggestion():
 
 def test_wizard_cover_prompt_drops_dishes():
     """#4: coverPrompt nutzt Anlass/Ort, listet keine Gänge mehr."""
-    js = _read("web", "assets", "wizard.js")
+    js = _read("web", "assets", "designer.js")
     assert "o.anlass" in js and "o.ort" in js
     assert "Menü/Konzept:" not in js          # Gang-Auflistung raus
     assert "kein Speisen-Close-up" in js
@@ -65,7 +65,7 @@ def test_wizard_cover_prompt_drops_dishes():
 
 def test_wizard_css_layering():
     """#2/#3: Textfelder über Bild-Overlays, Bild-Boxen klick-durchlässig."""
-    html = _read("web", "wizard.html")
+    html = _read("web", "designer.html")
     assert "pointer-events:none" in html      # .wz-iov fängt keine Klicks
     assert ".wz-iov-btn" in html and "pointer-events:auto" in html
     # Text-Overlay-Ebene über Bild-Overlay-Ebene
@@ -75,9 +75,9 @@ def test_wizard_css_layering():
 def test_wizard_visible_field_editor():
     """#95b: sichtbarer textarea-Editor unter der Vorschau (Overlays waren
     als Editor nicht erkennbar). Tippen spiegelt live ins Bild."""
-    js = _read("web", "assets", "wizard.js")
-    html = _read("web", "wizard.html")
+    js = _read("web", "assets", "designer.js")
+    html = _read("web", "designer.html")
     assert "wz-fields" in js and 'createElement("textarea")' in js
     assert "_eds[t.i].textContent = ta.value" in js   # Live-Spiegelung
     assert ".wz-field-in" in html                      # sichtbares Feld-CSS
-    assert "wizard.js?v=" in html                      # Cache-Bust
+    assert "designer.js?v=" in html                    # Cache-Bust
